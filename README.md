@@ -135,7 +135,7 @@ npx vsce publish                  # needs a publisher + PAT (or Entra ID)
 
 What still depends on you:
 
-1. **`publisher`** — currently `hermes-agent`; it must match your Marketplace publisher id exactly.
+1. **`publisher`** — currently `Danil0ws`; it must match your Marketplace publisher id exactly.
 2. **Token** — an Azure DevOps PAT with the *Marketplace → Manage* scope, or Entra ID authentication
    (`vsce publish --azure-credential`). Global Azure DevOps PATs are retired on 2026-12-01, so Entra
    ID is Microsoft's own recommendation.

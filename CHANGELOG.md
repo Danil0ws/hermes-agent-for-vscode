@@ -4,6 +4,15 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ## [Não publicado]
 
+### Corrigido
+
+- **`publisher` do manifesto era `hermes-agent`**: o upload no Marketplace recusou com "Publisher ID
+  'hermes-agent' provided in the extension manifest should match the publisher ID 'Danil0ws' under
+  which you are trying to publish this extension". O campo passou a ser o id real (`Danil0ws`), o
+  mesmo dono de `repository`/`homepage`. `vsce package` valida o **formato** do id, não a existência
+  da conta: quem publica só descobre a divergência no upload. O `.vsix` já empacotado precisa ser
+  refeito (o id vai dentro do `package.json` do pacote).
+
 ### Adicionado
 
 - **`docs/ROADMAP.md`**: as lacunas verificadas de `ARCHITECTURE.md` §11 e o M9 parcial viram
