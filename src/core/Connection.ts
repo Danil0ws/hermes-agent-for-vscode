@@ -96,7 +96,7 @@ export class Connection {
           terminal: true,
           auth: { terminal: true },
         },
-        clientInfo: { name: 'hermes-agent-vscode', version: '0.1.0' },
+        clientInfo: { name: 'hermes-agent-for-vscode', version: '0.1.0' },
       }),
       exited,
     ]);

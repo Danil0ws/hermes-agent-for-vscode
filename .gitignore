@@ -3,7 +3,7 @@ dist/
 *.vsix
 dist-test/
 *.log
-hermes-agent-vscode-*.vsix
+hermes-agent-for-vscode-*.vsix
 
 # macOS
 .DS_Store

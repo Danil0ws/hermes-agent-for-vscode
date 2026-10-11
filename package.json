@@ -1,5 +1,5 @@
 {
-  "name": "hermes-agent-vscode",
+  "name": "hermes-agent-for-vscode",
   "displayName": "Hermes Agent for VS Code",
   "description": "Native VS Code interface for the Hermes Agent CLI (Nous Research) over ACP — chat, tools, diffs, approvals, plans, sessions and the full CLI.",
   "version": "0.1.0",
@@ -12,12 +12,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Danil0ws/hermes-agent-vscode.git"
+    "url": "https://github.com/Danil0ws/hermes-agent-for-vscode.git"
   },
   "bugs": {
-    "url": "https://github.com/Danil0ws/hermes-agent-vscode/issues"
+    "url": "https://github.com/Danil0ws/hermes-agent-for-vscode/issues"
   },
-  "homepage": "https://github.com/Danil0ws/hermes-agent-vscode#readme",
+  "homepage": "https://github.com/Danil0ws/hermes-agent-for-vscode#readme",
   "engines": {
     "vscode": "^1.100.0",
     "node": ">=18"
@@ -43,7 +43,7 @@
         {
           "id": "hermes",
           "title": "%viewContainer.hermes.title%",
-          "icon": "media/hermes-agent-vscode.svg"
+          "icon": "media/hermes-agent-for-vscode.svg"
         }
       ]
     },

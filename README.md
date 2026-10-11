@@ -28,7 +28,7 @@ MIT licensed · 4 languages (en, pt-BR, ru, zh-CN) · no hardcoded colors.
 ## Installation
 
 ```bash
-git clone https://github.com/Danil0ws/hermes-agent-vscode.git ~/Dev/hermes-for-vs-code
+git clone https://github.com/Danil0ws/hermes-agent-for-vscode.git ~/Dev/hermes-for-vs-code
 cd ~/Dev/hermes-for-vs-code
 export NODE_ENV=development   # devDependencies are required to build
 npm install
@@ -38,8 +38,8 @@ npm run build                 # tsc --noEmit + esbuild (extension host) + vite (
 Then open the folder in VS Code and press **F5** (Extension Development Host), or package it:
 
 ```bash
-npm run package               # produces hermes-agent-vscode-<version>.vsix
-code --install-extension hermes-agent-vscode-0.1.0.vsix
+npm run package               # produces hermes-agent-for-vscode-<version>.vsix
+code --install-extension hermes-agent-for-vscode-0.1.0.vsix
 ```
 
 ## Usage
@@ -113,7 +113,7 @@ The Command Palette holds the full list — the table above is the day-to-day su
 
 ## Icon
 
-The Hermes art is **one** file, `media/hermes-agent-vscode.svg`, used on both themes:
+The Hermes art is **one** file, `media/hermes-agent-for-vscode.svg`, used on both themes:
 
 - **Activity Bar**: the manifest points at it in
   `contributes.viewsContainers.activitybar[0].icon`. The VS Code schema requires `icon` to be a
@@ -129,7 +129,7 @@ Measured contrast (WCAG for non-text elements, 3:1 minimum):
 
 | File | Color | Where | Contrast |
 |---|---|---|---|
-| `hermes-agent-vscode.svg` | `#2B8AD9` | Activity Bar, light and dark themes | 3.66:1 on white · 3.45:1 on `#333` · 4.51:1 on `#1F1F1F` |
+| `hermes-agent-for-vscode.svg` | `#2B8AD9` | Activity Bar, light and dark themes | 3.66:1 on white · 3.45:1 on `#333` · 4.51:1 on `#1F1F1F` |
 | `icon.png` (`icon-source.svg`) | `#1E88E5` | marketplace card, both themes | 3.68:1 light · 3.43:1 dark |
 
 The original pair of blues (`#007ACC` for light, `#3B9EFF` for dark) does not survive the schema: one
@@ -159,12 +159,12 @@ What still depends on you:
    (`vsce publish --azure-credential`). Global Azure DevOps PATs are retired on 2026-12-01, so Entra
    ID is Microsoft's own recommendation.
 
-`repository` is already in the manifest (`github.com/Danil0ws/hermes-agent-vscode`), and it is what
+`repository` is already in the manifest (`github.com/Danil0ws/hermes-agent-for-vscode`), and it is what
 lets `vsce` resolve the local art in this README: with the field present, `vsce package` rewrites the
 image to the absolute GitHub URL and passes; without it, packaging **fails** (not a warning). The
 store icon comes from `package.json > icon` (`media/icon.png`) and is independent of that.
 
-Checked: `hermes-agent.hermes-agent-vscode` is **still free** on the Marketplace (name and display
+Checked: `hermes-agent.hermes-agent-for-vscode` is **still free** on the Marketplace (name and display
 name have to be unique; if it were taken, publishing would fail with "already exists").
 
 ## Auto-approve (YOLO)

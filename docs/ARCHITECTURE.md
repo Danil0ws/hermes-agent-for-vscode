@@ -420,7 +420,7 @@ Notas de implementação:
 | M9 | Temas, acessibilidade, Remote, polimento, `.vsix` | ⚠️ parcial: `.vsix` empacota (176 KB); falta a passada visual de temas e a de acessibilidade com o VS Code de verdade |
 
 Gates no estado atual: `tsc --noEmit` limpo · `npm run build` OK · `npm test` **44/44** ·
-`vsce package` → `hermes-agent-vscode-0.1.0.vsix` (15 arquivos, 176 KB).
+`vsce package` → `hermes-agent-for-vscode-0.1.0.vsix` (15 arquivos, 176 KB).
 
 M9 é a única parte que **não** pode ser fechada por execução de linha de comando: exige abrir o
 Extension Development Host, alternar Dark+ → Light+ → High Contrast → um tema de terceiros, e

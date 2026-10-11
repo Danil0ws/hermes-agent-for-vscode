@@ -104,7 +104,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
   deste repo. Duas afirmações do §11 (§11.14 e §11.5) ficaram desatualizadas e o roadmap registra o
   estado real (o contador por sessão é de aprovação pendente; a janela por modelo não tem fonte
   local) — o diagnóstico do §11.14 foi corrigido na mesma entrega.
-- **Publicação: `repository`, `bugs` e `homepage` no manifesto** (`github.com/Danil0ws/hermes-agent-vscode`)
+- **Publicação: `repository`, `bugs` e `homepage` no manifesto** (`github.com/Danil0ws/hermes-agent-for-vscode`)
   e a arte do Hermes de volta na primeira linha do README. Era o único aviso que o `vsce` emitia — e
   o campo é o que dá URL base para o `vsce` resolver imagem local: com ele, `vsce package` passa com
   a imagem no topo; sem ele, falha (não avisa). `CONTRIBUTING.md` deixou de documentar o contorno.
@@ -181,7 +181,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
   VS Code exige `icon` **string** — o container inteiro é descartado, com apenas duas linhas no log
   (`a propriedade icon é obrigatória e deve ser do tipo string` e `O contêiner de modo de exibição
   'hermes' não existe`), e todas as views caem em `Explorer`. Agora o ícone é um arquivo só,
-  `media/hermes-agent-vscode.svg` com `#2B8AD9` (3,66:1 sobre branco, 3,45:1 sobre `#333`, medido)
+  `media/hermes-agent-for-vscode.svg` com `#2B8AD9` (3,66:1 sobre branco, 3,45:1 sobre `#333`, medido)
   — o `#007ACC` da variante clara dava 2,80:1 no fundo escuro e o par nem era aceito. Dois testes
   novos no manifesto cobram `icon` string (com o arquivo existindo em disco) e todo
   `contributes.views` apontando para um container declarado.
