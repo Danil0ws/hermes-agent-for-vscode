@@ -53,7 +53,7 @@ export function ModelsTab() {
       <div class="list" role="list">
         {groups.map((g) => (
           <details class="group" key={g.provider} open>
-            <summary>{g.label} <span class="kind">({g.models.length})</span></summary>
+            <summary><Icon name="chevron-right" cls="chev" />{g.label} <span class="kind">({g.models.length})</span></summary>
             {g.models.map((x) => {
               const active = x.modelId === m.current;
               const fav = m.favorites.includes(x.modelId);
@@ -176,7 +176,7 @@ export function ToolsTab() {
         <button onClick={() => sendManage({ type: 'manage/mcp/add' })}>{t.tools.addMcp}</button>
       </div>
 
-      <p class="notice warning" role="status">{t.tools.newSession}</p>
+      <p class="notice warning" role="status"><Icon name="warning" /> {t.tools.newSession}</p>
       {!tl.source.toolsOk && <p class="hint">{t.tools.unavailable}</p>}
 
       <div class="kv">
@@ -193,7 +193,7 @@ export function ToolsTab() {
       <div class="list" role="list">
         {tl.groups.map((g) => (
           <details class="group" key={g.kind} open>
-            <summary>{g.kind === 'builtin' ? t.tools.builtin : t.tools.plugin} <span class="kind">({g.items.length})</span></summary>
+            <summary><Icon name="chevron-right" cls="chev" />{g.kind === 'builtin' ? t.tools.builtin : t.tools.plugin} <span class="kind">({g.items.length})</span></summary>
             {g.items.map((it) => (
               <div class="item" role="listitem" key={it.name}>
                 <Icon name={it.enabled ? 'check' : 'close'} cls={`dot ${it.enabled ? 'on' : 'off'}`} />

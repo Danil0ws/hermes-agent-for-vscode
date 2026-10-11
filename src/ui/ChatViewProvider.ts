@@ -12,6 +12,7 @@ import { QueueManager } from '../core/QueueManager';
 import { activeAgent, settings, workingDirectory } from '../config/Settings';
 import { estimateTokens } from '../utils/Tokens';
 import type { ChatState, ContextChip, HostToWebview, WebviewToHost } from '../core/types';
+import { tr } from '../l10n';
 
 export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disposable {
   static readonly viewType = 'hermes.chat';
@@ -27,12 +28,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     private readonly ctx: vscode.ExtensionContext,
     private readonly agents: AgentManager,
     private readonly log: (level: 'info' | 'warn' | 'error', text: string) => void,
-    permissions: (id: string, optionId: string) => void,
   ) {
     this.queue = new QueueManager(ctx.workspaceState);
     this.agents.onEvent((m) => this.post(m));
     this.agents.onAuthRequired(() => void this.runAuthTerminal());
-    void permissions;
   }
 
   resolveWebviewView(view: vscode.WebviewView): void { this.attach(view); }
@@ -244,7 +243,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
 
   private async insertInEditor(text: string): Promise<void> {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) { void vscode.window.showWarningMessage('Sem editor ativo.'); return; }
+    if (!editor) { void vscode.window.showWarningMessage(tr('Sem editor ativo.')); return; }
     await editor.edit((b) => b.insert(editor.selection.active, text));
   }
 

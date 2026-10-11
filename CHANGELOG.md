@@ -2,6 +2,80 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versionamento semântico.
 
+## [Não publicado]
+
+### Adicionado
+
+- **Código aberto**: `LICENSE` (MIT) e `CONTRIBUTING.md` (ambiente, gates obrigatórios, arquitetura
+  em uma tela, o padrão de lanes paralelas e as regras de documentação). `private: true` saiu do
+  manifesto, com `license` e `author` declarados.
+- **Quatro idiomas**: inglês (padrão), português, русский e 简体中文. O manifesto usa
+  `package.nls.{json,pt-br,ru,zh-cn}.json` (58 chaves por idioma, cobertura verificada por script);
+  o runtime usa `webview/*/i18n.<locale>.ts` — tipados por `Strings`, então o `tsc` garante
+  paridade de chaves — e `src/l10n.<locale>.ts`. O idioma segue o idioma de exibição do VS Code.
+- `webview/shared/l10n.ts`: detecção por `<html lang>` (que o host escreve a partir de
+  `vscode.env.language`) e um Proxy sobre o bundle corrente, então **nenhum componente** precisou
+  saber que existe mais de um idioma.
+- `num()` passa a formatar pelo idioma corrente (pt-BR `1.218`, en/zh `1,218`, ru com espaço
+  estreito) — antes era fixo em pt-BR.
+
+### Corrigido
+
+- **Peso das opções de aprovação** (achado ao renderizar a UI, não em teste): `Permitir sempre` — a
+  concessão gravada na allowlist permanente — era o botão primário azul e `Negar` o secundário, ou
+  seja, a UI empurrava o usuário para a permissão mais ampla. Agora a primeira opção de permissão é
+  a primária, as concessões mais amplas ficam secundárias, cada botão explica seu efeito no tooltip
+  e há um aviso fixo quando existe opção que grava na allowlist permanente. As opções em si
+  continuam exatamente as que o agente envia.
+- Alinhamento dos codicons: sem `font-size` e `vertical-align` fixos o glifo ficava fora da linha de
+  base do texto ao lado (visível na captura do componente renderizado).
+- `src/l10n.ts` não importa mais o runtime do `vscode` (só tipos): o import derrubava as suítes que
+  carregam features e catálogos direto, com `MODULE_NOT_FOUND`.
+- Uma frase de UI dizia "Ver na view" (anglicismo) → "Ver no painel".
+
+### Notas
+
+- Um teste afirmava o formato pt-BR **fixo** de `num()`. Com a formatação por idioma ele passou a
+  falhar; a asserção foi atualizada para o contrato novo (e agora cobre pt-BR, en, ru e zh-CN), não
+  silenciada. Total: **45 testes**.
+
+### Corrigido (defeitos encontrados RODANDO a extensão, não em teste)
+
+- **`command 'hermes.manage.open' not found`** — a causa não era o CLI. `hermes.manage` estava
+  registrado em **dois** lugares (`extension.ts` e a feature de Gerenciar); o segundo
+  `registerCommand` lança, e como o bloco da feature não tinha `try/catch`, tudo depois dele nunca
+  registrava: `hermes.manage.open`, `agents.test`, `mcp.add`, `skill.open`, `instructions.open`,
+  `approvals.open` e o próprio painel. O lançamento era engolido pelo `try/catch` do loop de
+  features, então a UI só dizia "command not found" no clique. Agora cada comando tem **um dono**.
+- **Windows/WSL nunca subia o processo**: `splitCommand('wsl hermes')` devolvia
+  `{file:'hermes', prefix:['wsl']}` e a extensão spawnava `hermes wsl acp` — invertido. O primeiro
+  token é o executável: agora é `spawn('wsl', ['hermes','acp'])`. O `--profile` também ia antes do
+  wrapper (`wsl --profile x hermes acp`); passou a vir depois do prefixo.
+- **`hermes.permissions` não fazia nada**: o handler era descartado com `void permissions;` e o
+  painel exibia a política como se valesse. Ver "Aprovação automática" abaixo.
+
+### Adicionado
+
+- **Detecção e instalação do Hermes**: na ativação (que é lazy, logo há intenção real), a extensão
+  roda `hermes --version` e `hermes acp --check`. Faltando o CLI, aparece um aviso **modal** com
+  "Instalar o Hermes" (script oficial: `curl -fsSL https://hermes-agent.nousresearch.com/install.sh
+  | bash`, ou o `install.ps1` no Windows), "Já tenho: informar o caminho" (grava `hermes.cliPath`) e
+  "Ver diagnóstico" (`hermes doctor`). Comandos: `Hermes: Verificar / instalar o Hermes`.
+- **Aprovação automática (YOLO) de verdade**: `hermes.permissions = allowAll` passou a ser
+  respeitado no momento em que o agente pede permissão — a extensão responde sozinha com a primeira
+  opção de permissão oferecida (nunca uma de negar). `allowSession` repete a concessão já dada na
+  sessão. Comando `Hermes: Alternar aprovação automática (YOLO)`, com confirmação modal para ligar,
+  e um item na barra de status **enquanto estiver ligada** (política que aprova tudo sem indicador é
+  um jeito de esquecer que ela está ligada).
+- **Checagem de cobertura de comandos na ativação**: o canal `Hermes` informa
+  `comandos: N/M registrados` e avisa se algum comando declarado no manifesto não foi registrado —
+  exatamente o defeito acima, que antes só aparecia no clique. Verificado em execução real:
+  `comandos: 39/39 registrados`.
+- **Teste de invariante do manifesto** (`src/test/manifest.test.ts`): nenhum id registrado duas
+  vezes, todo comando declarado tem quem registre, todo `executeCommand('hermes.*')` aponta para id
+  registrado (comandos `<viewId>.focus` do próprio VS Code são isentos) e as 4 localidades do
+  `package.nls` cobrem as mesmas chaves.
+
 ## [0.1.0] — 2026-10-11
 
 Interface nativa do Hermes Agent no VS Code sobre ACP. 50 arquivos TypeScript (~6 700 linhas),

@@ -12,6 +12,7 @@ import * as vscode from 'vscode';
 import { activeAgent, settings, workingDirectory } from '../config/Settings';
 import { contextApi } from './context';
 import type { Feature, FeatureDeps } from './registry';
+import { tr } from '../l10n';
 
 export const feature: Feature = {
   id: 'editor',
@@ -46,7 +47,7 @@ class HermesCodeActionProvider implements vscode.CodeActionProvider {
       const action = new vscode.CodeAction('Corrigir problema com o Hermes', vscode.CodeActionKind.QuickFix);
       action.diagnostics = [d];
       action.command = {
-        title: 'Corrigir problema com o Hermes',
+        title: tr('Corrigir problema com o Hermes'),
         command: 'hermes.fixProblem',
         arguments: [d, document.uri],
       };
@@ -65,10 +66,10 @@ async function fixProblem(
   try {
     const editor = vscode.window.activeTextEditor;
     const target = uri ?? editor?.document.uri;
-    if (!target) { void vscode.window.showWarningMessage('Nenhum arquivo ativo.'); return; }
+    if (!target) { void vscode.window.showWarningMessage(tr('Nenhum arquivo ativo.')); return; }
     const document = await vscode.workspace.openTextDocument(target);
     const diagnostic = diag ?? diagnosticsAt(document, editor?.selection.active);
-    if (!diagnostic) { void vscode.window.showInformationMessage('Nenhum problema no cursor.'); return; }
+    if (!diagnostic) { void vscode.window.showInformationMessage(tr('Nenhum problema no cursor.')); return; }
 
     const rel = vscode.workspace.asRelativePath(target);
     const line = diagnostic.range.start.line + 1;
@@ -88,7 +89,7 @@ async function fixProblem(
       session = await deps.agents.newSession(activeAgent(s).cfg, workingDirectory(s), activeAgent(s).name);
     }
     if (session.busy) {
-      void vscode.window.showInformationMessage('O turno está em andamento: o diagnóstico foi anexado ao contexto.');
+      void vscode.window.showInformationMessage(tr('O turno está em andamento: o diagnóstico foi anexado ao contexto.'));
       return;
     }
     await session.prompt(text, chip ? [chip] : []);
@@ -118,8 +119,8 @@ async function copyResponse(): Promise<void> {
   const selection = editor && !editor.selection.isEmpty ? editor.document.getText(editor.selection) : '';
   if (selection) {
     await vscode.env.clipboard.writeText(selection);
-    void vscode.window.showInformationMessage('Seleção do editor copiada.');
+    void vscode.window.showInformationMessage(tr('Seleção do editor copiada.'));
     return;
   }
-  void vscode.window.showInformationMessage('Use o botão "Copiar" do balão da resposta no chat.');
+  void vscode.window.showInformationMessage(tr('Use o botão "Copiar" do balão da resposta no chat.'));
 }

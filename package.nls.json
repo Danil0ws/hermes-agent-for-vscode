@@ -56,5 +56,7 @@
   "command.hermes.sessions.copyId.title": "Copy Session ID",
   "command.hermes.context.add.title": "Add Context",
   "command.hermes.context.remove.title": "Remove Context",
-  "command.hermes.context.toggleImplicit.title": "Toggle Implicit Context"
+  "command.hermes.context.toggleImplicit.title": "Toggle Implicit Context",
+  "command.hermes.setupCli.title": "Check / install Hermes",
+  "command.hermes.permissions.toggleYolo.title": "Toggle auto-approve (YOLO)"
 }

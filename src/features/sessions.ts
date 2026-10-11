@@ -17,6 +17,7 @@ import {
   type SessionRow, type SessionState,
 } from '../ui/SessionTreeProvider';
 import { StatusBar } from '../ui/StatusBar';
+import { tr } from '../l10n';
 
 const CLI_NOTE =
   'Renomear, arquivar e excluir abrem a CLI num terminal integrado: o protocolo ACP não expõe ' +
@@ -215,7 +216,7 @@ export const feature: Feature = {
       const s = settings();
       const session = await deps.agents.loadSession(workingDirectory(s), id, activeAgent(s).name);
       if (!session) {
-        void vscode.window.showWarningMessage('Não foi possível abrir a sessão — o Hermes não está conectado?');
+        void vscode.window.showWarningMessage(tr('Não foi possível abrir a sessão — o Hermes não está conectado?'));
         return;
       }
       await vscode.commands.executeCommand('hermes.chat.focus');
@@ -226,7 +227,7 @@ export const feature: Feature = {
       const id = idOf(arg);
       if (!id) return;
       const title = await vscode.window.showInputBox({
-        title: 'Renomear sessão',
+        title: tr('Renomear sessão'),
         value: titleOf(arg) ?? '',
         prompt: 'Novo título. A CLI aplica a mudança (o ACP só informa o título, não o altera).',
         validateInput: (v) => (v.trim().length ? undefined : 'Informe um título.'),
@@ -243,7 +244,7 @@ export const feature: Feature = {
       const cwd = workingDirectory(s);
       const session = liveSession(id) ?? await deps.agents.loadSession(cwd, id, activeAgent(s).name);
       if (!session) {
-        void vscode.window.showWarningMessage('Não foi possível duplicar: a sessão não está viva.');
+        void vscode.window.showWarningMessage(tr('Não foi possível duplicar: a sessão não está viva.'));
         return;
       }
       const forked = await session.fork(cwd);
@@ -292,8 +293,7 @@ export const feature: Feature = {
       try { summaries = await deps.agents.listSessions(cwd); }
       catch (err) { deps.log('warn', `sessions.pick: ${String(err)}`); }
       if (!summaries.length) {
-        void vscode.window.showInformationMessage(
-          'Nenhuma sessão encontrada. Inicie uma conversa — o Hermes precisa estar conectado para listar o histórico.',
+        void vscode.window.showInformationMessage(tr('Nenhuma sessão encontrada. Inicie uma conversa — o Hermes precisa estar conectado para listar o histórico.'),
         );
         return;
       }
@@ -312,8 +312,8 @@ export const feature: Feature = {
         }
       }
       const picked = await vscode.window.showQuickPick(items, {
-        title: 'Histórico de sessões',
-        placeHolder: 'Buscar por título, modelo ou estado…',
+        title: tr('Histórico de sessões'),
+        placeHolder: tr('Buscar por título, modelo ou estado…'),
         matchOnDescription: true,
         matchOnDetail: true,
       });

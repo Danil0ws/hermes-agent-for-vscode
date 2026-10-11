@@ -23,11 +23,18 @@ export interface ConnectionEvents {
   onExit?(code: number | null, signal: string | null): void;
 }
 
-/** Divide `"wsl hermes"` em comando + prefixo, sem shell (sem injeção). */
+/**
+ * Divide `"wsl hermes"` em executável + seu prefixo de ambiente, sem shell (sem injeção).
+ *
+ * O PRIMEIRO token é o executável e os seguintes são os argumentos do wrapper:
+ * `"wsl hermes"` → spawn('wsl', ['hermes', 'acp']). Invertido (pegar o último token como
+ * executável) fazia o Windows/WSL spawnar `hermes wsl acp`, que nunca sobe — o CLI "não era
+ * encontrado" justamente no caminho documentado.
+ */
 export function splitCommand(command: string): { file: string; prefix: string[] } {
   const parts = command.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) throw new Error('hermes.cliPath vazio');
-  return { file: parts[parts.length - 1], prefix: parts.slice(0, -1) };
+  return { file: parts[0], prefix: parts.slice(1) };
 }
 
 export class Connection {
@@ -53,9 +60,10 @@ export class Connection {
     if (process.env.HERMES_ACP_SKIP_CONFIGURED_MCP === undefined) {
       env.HERMES_ACP_SKIP_CONFIGURED_MCP = '1';
     }
-    const args = [...prefix, ...this.cfg.args];
+    // `--profile` é do Hermes, então vem DEPOIS do prefixo do wrapper: `wsl hermes --profile x acp`,
+    // nunca `wsl --profile x hermes acp` (que passaria a flag para o wsl).
     const profile = this.cfg.profile?.trim();
-    if (profile) args.unshift('--profile', profile);
+    const args = [...prefix, ...(profile ? ['--profile', profile] : []), ...this.cfg.args];
 
     this.child = spawn(file, args, { cwd, env, stdio: ['pipe', 'pipe', 'pipe'] });
     const exited = new Promise<never>((_, reject) => {

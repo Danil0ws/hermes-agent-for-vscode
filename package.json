@@ -254,6 +254,16 @@
         "command": "hermes.context.toggleImplicit",
         "title": "%command.hermes.context.toggleImplicit.title%",
         "category": "Hermes"
+      },
+      {
+        "command": "hermes.setupCli",
+        "title": "%command.hermes.setupCli.title%",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.permissions.toggleYolo",
+        "title": "%command.hermes.permissions.toggleYolo.title%",
+        "category": "Hermes"
       }
     ],
     "menus": {

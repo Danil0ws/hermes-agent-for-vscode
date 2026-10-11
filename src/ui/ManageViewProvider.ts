@@ -18,6 +18,7 @@ import { ToolCatalog, parseYamlList, type CliExec, type ToolSnapshot } from '../
 import { estimateFileTokens, estimateTokens } from '../utils/Tokens';
 import { settings, workingDirectory, type Settings } from '../config/Settings';
 import { t } from '../../webview/manage/i18n';
+import { tr } from '../l10n';
 import type {
   AdvancedTab, AgentView, ApprovalsTab, ContextTab, InstructionView, ManageState, ManageTab,
   ManageToHost, ModelEntry, ModelsTab, ProfileView, SkillEntryView, SkillsTab, ToolsTab,
@@ -210,7 +211,7 @@ export class ManageViewProvider implements vscode.Disposable {
       used: sess?.snapshot.usage?.used,
       estimates: [
         { label: 'Instruções', tokens: instructions.filter((f) => f.found).reduce((a, f) => a + f.tokens, 0) },
-        { label: 'Skills (nome + descrição)', tokens: skillList.reduce((a, k) => a + estimateTokens(k.name + k.description), 0) },
+        { label: tr('Skills (nome + descrição)'), tokens: skillList.reduce((a, k) => a + estimateTokens(k.name + k.description), 0) },
       ],
     };
 

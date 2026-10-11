@@ -20,6 +20,7 @@ import { WorkingSet } from '../core/WorkingSet';
 import { ContextView, type ContextGroup } from '../ui/ContextView';
 import type { HermesSession } from '../core/HermesSession';
 import type { Feature, FeatureDeps } from './registry';
+import { tr } from '../l10n';
 
 export interface ContextApi {
   manager: ContextManager;
@@ -66,8 +67,8 @@ export const feature: Feature = {
       canCompact: () => !(session()?.busy ?? false),
       onCompact: async () => {
         const s = session();
-        if (!s) { void vscode.window.showInformationMessage('Sem sessão para compactar.'); return; }
-        if (s.busy) { void vscode.window.showInformationMessage('Aguarde o turno ou cancele antes de compactar.'); return; }
+        if (!s) { void vscode.window.showInformationMessage(tr('Sem sessão para compactar.')); return; }
+        if (s.busy) { void vscode.window.showInformationMessage(tr('Aguarde o turno ou cancele antes de compactar.')); return; }
         await s.prompt('/compress', []);
       },
       onNewConversation: async () => { await vscode.commands.executeCommand('hermes.newConversation'); },
@@ -113,10 +114,10 @@ async function applyContent(uri: vscode.Uri, content: string): Promise<void> {
 async function pickFile(workingSet: WorkingSet, path: string | undefined, fn: (path: string) => void): Promise<void> {
   if (path) { fn(path); return; }
   const files = workingSet.details();
-  if (!files.length) { void vscode.window.showInformationMessage('Nenhum arquivo alterado nesta sessão.'); return; }
+  if (!files.length) { void vscode.window.showInformationMessage(tr('Nenhum arquivo alterado nesta sessão.')); return; }
   const chosen = await vscode.window.showQuickPick(
     files.map((f) => ({ label: f.path, description: `${f.status} +${f.added} −${f.removed}` })),
-    { title: 'Arquivo alterado' },
+    { title: tr('Arquivo alterado') },
   );
   if (chosen) fn(chosen.label);
 }
@@ -141,7 +142,7 @@ function buildGroups(manager: ContextManager, session: HermesSession | undefined
     }
   }
   const instructionsGroup: ContextGroup = {
-    title: 'Instruções do sistema/projeto',
+    title: tr('Instruções do sistema/projeto'),
     tokens: sum(instructions),
     percent: pct(sum(instructions)),
     items: instructions,
@@ -153,7 +154,7 @@ function buildGroups(manager: ContextManager, session: HermesSession | undefined
   const shown = skills.sort((a, b) => b.tokens - a.tokens).slice(0, 50);
   const skillsTokens = sum(skills);
   const skillsGroup: ContextGroup = {
-    title: 'Skills ativas',
+    title: tr('Skills ativas'),
     tokens: skillsTokens,
     percent: pct(skillsTokens),
     items: shown,
@@ -173,7 +174,7 @@ function buildGroups(manager: ContextManager, session: HermesSession | undefined
     ...mcpServers.map((m) => ({ id: `mcp:${m}`, label: `MCP: ${m}`, tokens: 0 })),
   ];
   const toolsGroup: ContextGroup = {
-    title: 'Ferramentas / MCP',
+    title: tr('Ferramentas / MCP'),
     tokens: estimateTokens(toolsText),
     percent: pct(estimateTokens(toolsText)),
     items: toolsItems,
@@ -183,7 +184,7 @@ function buildGroups(manager: ContextManager, session: HermesSession | undefined
   /* Arquivos e anexos — chips (removíveis/fixáveis). */
   const chips = manager.chips;
   const filesGroup: ContextGroup = {
-    title: 'Arquivos e anexos',
+    title: tr('Arquivos e anexos'),
     tokens: manager.sumTokens(),
     percent: pct(manager.sumTokens()),
     items: chips.map((c) => ({ id: c.id, label: c.label, tokens: c.tokensEstimate, removable: true, pinned: manager.isPinned(c.id) })),
@@ -193,7 +194,7 @@ function buildGroups(manager: ContextManager, session: HermesSession | undefined
   /* Raciocínio (último turno) — medido pelo agente. */
   const thought = session?.snapshot.turnUsage?.thoughtTokens ?? 0;
   const reasoningGroup: ContextGroup = {
-    title: 'Raciocínio (último turno)',
+    title: tr('Raciocínio (último turno)'),
     tokens: thought,
     percent: pct(thought),
     items: [],
@@ -204,7 +205,7 @@ function buildGroups(manager: ContextManager, session: HermesSession | undefined
   const attributed = instructionsGroup.tokens + skillsGroup.tokens + toolsGroup.tokens + filesGroup.tokens + reasoningGroup.tokens;
   const history = used > 0 ? Math.max(0, used - attributed) : 0;
   const historyGroup: ContextGroup = {
-    title: 'Histórico da conversa',
+    title: tr('Histórico da conversa'),
     tokens: history,
     percent: pct(history),
     items: [],

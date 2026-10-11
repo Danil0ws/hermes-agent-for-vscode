@@ -95,9 +95,15 @@ test('diff do tool_call (blocos ACP) e atribuição de +/-', () => {
   assert.doesNotThrow(() => JSON.stringify(content));
 });
 
-test('splitCommand: prefixo de ambiente sem shell', () => {
+test('splitCommand: o PRIMEIRO token e o executavel, o resto e argumento do wrapper', () => {
   assert.deepEqual(splitCommand('hermes'), { file: 'hermes', prefix: [] });
-  assert.deepEqual(splitCommand('wsl hermes'), { file: 'hermes', prefix: ['wsl'] });
-  assert.deepEqual(splitCommand('  bun   x  '), { file: 'x', prefix: ['bun'] });
+  // 'wsl hermes' tem de virar spawn('wsl', ['hermes', 'acp']); a versao anterior devolvia
+  // file='hermes' e gerava 'hermes wsl acp', que nunca sobe no Windows/WSL.
+  assert.deepEqual(splitCommand('wsl hermes'), { file: 'wsl', prefix: ['hermes'] });
+  assert.deepEqual(splitCommand('  bun   x  '), { file: 'bun', prefix: ['x'] });
   assert.throws(() => splitCommand('   '));
+
+  // o argv final, como a Connection monta: executavel + prefixo + args
+  const { file, prefix } = splitCommand('wsl hermes');
+  assert.deepEqual([file, ...prefix, 'acp'], ['wsl', 'hermes', 'acp']);
 });

@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 import { basename } from 'node:path';
 import type { Feature, FeatureDeps } from './registry';
 import { DiffProvider, composeApplied, diffTitle, kindOf, normalizeDiffPath } from '../ui/DiffProvider';
+import { tr } from '../l10n';
 
 export const feature: Feature = {
   id: 'diff',
@@ -20,7 +21,7 @@ export const feature: Feature = {
 
     register(ctx, deps, 'hermes.diff.open', async (arg?: unknown) => {
       const path = typeof arg === 'string' ? arg : (arg as { path?: string } | undefined)?.path;
-      if (!path) { void vscode.window.showInformationMessage('Nenhum arquivo para mostrar o diff.'); return; }
+      if (!path) { void vscode.window.showInformationMessage(tr('Nenhum arquivo para mostrar o diff.')); return; }
 
       const diffs = deps.agents.session?.diffsFor(path) ?? [];
       if (!diffs.length) {

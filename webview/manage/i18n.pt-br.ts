@@ -124,7 +124,13 @@ export const t = {
     setModelFail: 'Não foi possível trocar o modelo (sem sessão ativa?).',
     saved: 'Salvo na configuração real.',
   },
-} as const;
+};
 
-/** Shape canônico: todo bundle de idioma tem de satisfazer este tipo. */
+/**
+ * Shape canônico: todo bundle de idioma tem de satisfazer este tipo.
+ *
+ * SEM `as const` no bundle de origem: com `as const` os valores viram tipos literais
+ * ("Gerenciar"), e aí nenhuma tradução consegue satisfazer o contrato. Sem ele os valores são
+ * `string` e as assinaturas de função continuam intactas.
+ */
 export type Strings = typeof t;

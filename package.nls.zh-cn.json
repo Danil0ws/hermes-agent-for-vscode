@@ -56,5 +56,7 @@
   "command.hermes.sessions.copyId.title": "复制会话 ID",
   "command.hermes.context.add.title": "添加上下文",
   "command.hermes.context.remove.title": "移除上下文",
-  "command.hermes.context.toggleImplicit.title": "启用/停用隐式上下文"
+  "command.hermes.context.toggleImplicit.title": "启用/停用隐式上下文",
+  "command.hermes.setupCli.title": "检查 / 安装 Hermes",
+  "command.hermes.permissions.toggleYolo.title": "切换自动批准 (YOLO)"
 }

@@ -56,5 +56,7 @@
   "command.hermes.sessions.copyId.title": "Копировать ID сессии",
   "command.hermes.context.add.title": "Добавить контекст",
   "command.hermes.context.remove.title": "Удалить контекст",
-  "command.hermes.context.toggleImplicit.title": "Включить/выключить неявный контекст"
+  "command.hermes.context.toggleImplicit.title": "Включить/выключить неявный контекст",
+  "command.hermes.setupCli.title": "Проверить / установить Hermes",
+  "command.hermes.permissions.toggleYolo.title": "Переключить автоодобрение (YOLO)"
 }

@@ -65,7 +65,10 @@ definindo `window.acquireVsCodeApi` e postando mensagens `HostToWebview` (o cont
 | Webviews | `webview/chat`, `webview/manage` | só tokens `--vscode-*`, Codicons, teclado 100% |
 
 **Ao adicionar um comando:** declare-o no `package.json` e registre-o em **um** lugar só (a feature
-dona). Um `registerCommand` duplicado lança, o `try/catch` engole e a feature fica inerte sem avisar.
+dona). Um `registerCommand` duplicado lança; se o bloco não tiver `try/catch`, **tudo depois dele
+naquele bloco nunca registra** e a UI só mostra "command not found" no clique. A receita para
+descobrir: `npm test` (a suíte `manifest.test.ts` cobra dono único, declarado↔registrado e
+localidades do `nls`) e o canal `Hermes`, que na ativação informa `comandos: N/M registrados`.
 
 **Ao adicionar um campo no contrato:** é compatível se for variante nova ou campo opcional; mudar
 campo existente é breaking e exige bump de `PROTOCOL`.

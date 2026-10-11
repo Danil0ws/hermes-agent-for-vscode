@@ -11,7 +11,7 @@ import {
   meterLevel, moveDeltas, percent, replaceToken, splitFenced, triggerToken, visibleTurns,
 } from '../../webview/chat/logic.ts';
 import { S, num } from '../../webview/chat/i18n.ts';
-import { setCurrentLocale } from '../../webview/shared/l10n.ts';
+import { setCurrentLocale, setLocale } from '../../webview/shared/l10n.ts';
 import type { ContextChip } from '../core/types.ts';
 
 /* ─────────── tokens / limiares ─────────── */
@@ -143,6 +143,7 @@ test('i18n: ícones de todas as variantes (kinds) e nenhum emoji', () => {
 });
 
 test('i18n: placeholder contextual troca por estado do composer', () => {
+  setLocale('pt-br');   // o bundle segue o <html lang>; fora do navegador o padrão é 'en'
   assert.match(S.composer.placeholderIdle, /# para contexto/);
   assert.match(S.composer.placeholderBusy, /direção/);
   assert.equal(S.composer.placeholderChips(1), 'Pergunte sobre o item anexado');
@@ -150,9 +151,11 @@ test('i18n: placeholder contextual troca por estado do composer', () => {
 });
 
 test('num formata pelo idioma corrente (pt-BR usa ponto, en usa vírgula)', () => {
-  // o idioma é detectado do `<html lang>` da webview; fora do navegador o padrão é en
+  // o idioma é detectado do `<html lang>` da webview; fora do navegador o padrão é en.
+  // Cada caso fixa o idioma: nada aqui depende de qual teste rodou antes.
+  setLocale('en');
   assert.equal(num(12400), '12,400');
-  setCurrentLocale('pt-br');
+  setLocale('pt-br');
   assert.equal(num(12400), '12.400');
   setCurrentLocale('zh-cn');
   assert.equal(num(12400), '12,400');

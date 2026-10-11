@@ -9,6 +9,7 @@ import * as vscode from 'vscode';
 import * as acp from '@agentclientprotocol/sdk';
 import { Connection, type AgentConfig } from './Connection';
 import { HermesSession, type SessionDeps } from './HermesSession';
+import { settings } from '../config/Settings';
 import type { HostToWebview, PermissionRequest, SessionSummary } from './types';
 
 export class AgentManager implements acp.Client {
@@ -86,6 +87,15 @@ export class AgentManager implements acp.Client {
   }
 
   async answerPermission(id: string, optionId: string): Promise<void> {
+    // Guarda a CONCESSÃO (não a negação) para a política `allowSession` não voltar a perguntar
+    // o que o usuário já autorizou nesta sessão do ACP.
+    const req = this.pendingPermReq.get(id);
+    const chosen = req?.options.find((o) => o.optionId === optionId);
+    if (chosen && !chosen.kind.startsWith('reject')) {
+      this.sessionGrants.add(chosen.kind);
+      this.log('info', `concessão registrada na sessão: ${chosen.kind}`);
+    }
+    this.pendingPermReq.delete(id);
     this.pendingPerms.get(id)?.(optionId);
     this.pendingPerms.delete(id);
   }
@@ -104,6 +114,29 @@ export class AgentManager implements acp.Client {
   /* ─────────── SessionDeps: workspace, arquivos, permissões ─────────── */
 
   private pendingPerms = new Map<string, (optionId: string | null) => void>();
+  private pendingPermReq = new Map<string, PermissionRequest>();
+  /** Concessões já dadas nesta sessão do ACP, para a política `allowSession`. */
+  private sessionGrants = new Set<string>();
+
+  /**
+   * Política de aprovação → resposta automática, ou `null` para perguntar.
+   *
+   * `ask`: sempre pergunta. `allowAll` (YOLO): responde sozinho com a primeira opção de permissão
+   * que o agente ofereceu — nunca com uma opção de negar. `allowSession`: repete a concessão que o
+   * usuário já deu nesta sessão, sem voltar a perguntar.
+   *
+   * As opções respondidas são SEMPRE as que o agente mandou: a política escolhe entre elas, não
+   * inventa uma.
+   */
+  private autoAnswer(req: PermissionRequest): string | null {
+    const policy = settings().permissions;
+    if (policy === 'ask') return null;
+    const allows = req.options.filter((o) => !o.kind.startsWith('reject'));
+    if (allows.length === 0) return null;
+    if (policy === 'allowAll') return allows[0].optionId;
+    const known = allows.find((o) => this.sessionGrants.has(o.kind));
+    return known?.optionId ?? null;
+  }
 
   private deps(): SessionDeps {
     return {
@@ -116,7 +149,15 @@ export class AgentManager implements acp.Client {
         await vscode.workspace.fs.writeFile(vscode.Uri.file(p), new TextEncoder().encode(content));
       },
       askPermission: (req: PermissionRequest, resolve) => {
+        const auto = this.autoAnswer(req);
+        if (auto) {
+          const kind = req.options.find((o) => o.optionId === auto)?.kind ?? auto;
+          this.log('info', `aprovação automática (hermes.permissions=${settings().permissions}): ${req.title ?? req.id} → ${kind}`);
+          resolve(auto);
+          return;
+        }
         this.pendingPerms.set(req.id, resolve);
+        this.pendingPermReq.set(req.id, req);
         this.notify({ type: 'permission/ask', req });
       },
       log: this.log,

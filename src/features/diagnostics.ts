@@ -17,6 +17,7 @@ import { settings, workingDirectory } from '../config/Settings';
 import type { Feature, FeatureDeps } from './registry';
 import type { HostToWebview } from '../core/types';
 import { DiagnosticsView } from '../ui/DiagnosticsView';
+import { tr } from '../l10n';
 
 const ENV_URI = 'hermes-doctor:/ambiente';
 
@@ -130,8 +131,7 @@ export async function offerCheckpointRestore(deps: FeatureDeps, cwd?: string): P
     );
     if (pick === restore) await deps.openCli({ args: ['chat', '--checkpoints'] });
   } else {
-    void vscode.window.showInformationMessage(
-      'A sessão ACP não tira checkpoints (o adaptador ignora `checkpoints.enabled`). Para restaurar um turno, abra a CLI: `hermes chat --checkpoints` e use /rollback.',
+    void vscode.window.showInformationMessage(tr('A sessão ACP não tira checkpoints (o adaptador ignora `checkpoints.enabled`). Para restaurar um turno, abra a CLI: `hermes chat --checkpoints` e use /rollback.'),
     );
   }
 }
@@ -145,12 +145,12 @@ async function exportConversation(deps: FeatureDeps): Promise<void> {
   // abaixo não existir ainda, degradamos com aviso (ver relatório — mudança no ChatViewProvider).
   const msgs = (deps.provider as unknown as { transcript?: HostToWebview[] }).transcript;
   if (!msgs || msgs.length === 0) {
-    void vscode.window.showInformationMessage('Nada para exportar nesta conversa.');
+    void vscode.window.showInformationMessage(tr('Nada para exportar nesta conversa.'));
     return;
   }
 
   const target = await vscode.window.showSaveDialog({
-    title: 'Exportar conversa do Hermes',
+    title: tr('Exportar conversa do Hermes'),
     saveLabel: 'Exportar',
     filters: { Markdown: ['md'], JSON: ['json'] },
   });

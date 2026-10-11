@@ -13,7 +13,7 @@ export const ptBR = {
       ['Encontrar problemas', 'Encontre problemas no código deste workspace e priorize os riscos.'],
       ['Escrever testes', 'Escreva testes para o que ainda não tem cobertura.'],
       ['Planejar uma mudança', 'Planeje, passo a passo, a mudança que eu descrever.'],
-    ] as const,
+    ],
     manage: 'Gerenciar modelos, skills e MCP…',
   },
 
@@ -218,5 +218,11 @@ export const ptBR = {
 };
 
 
-/** Shape canônico: todo bundle de idioma tem de satisfazer este tipo. */
+/**
+ * Shape canônico: todo bundle de idioma tem de satisfazer este tipo.
+ *
+ * SEM `as const` no bundle de origem: com `as const` os valores viram tipos literais
+ * ("Gerenciar"), e aí nenhuma tradução consegue satisfazer o contrato. Sem ele os valores são
+ * `string` e as assinaturas de função continuam intactas.
+ */
 export type Strings = typeof ptBR;

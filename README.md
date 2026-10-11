@@ -5,8 +5,13 @@ VS Code. Não reimplementa o agente: fala **ACP (JSON-RPC sobre stdio)** com `he
 a mesma config (`~/.hermes`), os mesmos providers, modelos, skills, MCP, memória e toolsets da CLI.
 Nada que a CLI faz fica inacessível — o que o ACP não expõe vira terminal integrado.
 
-Estado: **M1 concluído** (conexão ACP + chat com streaming + cancelar + composer básico).
+Estado: **M1–M8 implementados** (conexão ACP, chat com streaming, raciocínio, tool calls, diff
+nativo, aprovações, pickers, medidor de contexto, chips, sessões em paralelo, fila, painel
+Gerenciar, plano, working set e escape hatches da CLI). M9 (passada visual nos 4 temas, teclado/
+leitor de tela e Remote) está **parcial** — ver `docs/ARCHITECTURE.md` §10.
 Ver `docs/ARCHITECTURE.md` (marcos e lacunas reais) e `docs/UX.md` (wireframes).
+
+Licença MIT · 4 idiomas (en, pt-BR, ru, zh-CN) · sem nenhuma cor hardcoded.
 
 ## Requisitos
 
@@ -53,6 +58,8 @@ code --install-extension hermes-agent-vscode-0.1.0.vsix
 | `Hermes: Abrir em editor` | a mesma view como aba |
 | `Hermes: Abrir CLI completa` | `hermes` (TUI) no terminal integrado, na pasta do workspace |
 | `Hermes: Executar comando da CLI…` | quick pick: `model`, `setup`, `doctor`, `update`, `sessions browse`, `skills`, `mcp`, `tools`, `approvals`, `checkpoints`, `profile`, `config`, `insights` |
+| `Hermes: Verificar / instalar o Hermes` | detecta o CLI (`--version` + `acp --check`) e oferece instalar, informar o caminho ou rodar o `doctor` |
+| `Hermes: Alternar aprovação automática (YOLO)` | liga/desliga `hermes.permissions = allowAll` (confirmação modal; indicador na barra de status enquanto ligado) |
 | `Hermes: Diagnóstico` | `hermes doctor` + `hermes acp --check` no terminal |
 | `Hermes: Mostrar log` / `Mostrar tráfego` | canais de saída `Hermes` e `Hermes Traffic` |
 | `Hermes: Perguntar/Explicar sobre a seleção` | anexa a seleção como chip e foca o composer |
@@ -75,12 +82,55 @@ code --install-extension hermes-agent-vscode-0.1.0.vsix
 | `hermes.notifications` | `windowNotFocused` | notificações de sessões em background |
 | `hermes.logTraffic` | `false` | JSON-RPC bruto no canal `Hermes Traffic` (com redação de segredos) |
 
+## Aprovação automática (YOLO)
+
+Por padrão o Hermes **pergunta** antes de executar comandos e editar arquivos. A política vive em
+`hermes.permissions` e tem três valores: `ask` (padrão), `allowSession` (repete nesta sessão o que
+você já autorizou uma vez) e `allowAll` (não pergunta nunca).
+
+```jsonc
+// settings.json — equivalente ao comando da palette
+{ "hermes.permissions": "allowAll" }
+```
+
+A extensão responde com as opções que o **agente** ofereceu — nunca inventa uma permissão — e nunca
+escolhe uma opção de negar. Enquanto o YOLO estiver ligado, um item fica na barra de status
+(`Hermes: aprovando tudo`, fundo de aviso) e clicar nele desliga. O workspace em modo restrito
+(Workspace Trust) continua valendo: nada executa.
+
+## Idiomas
+
+O idioma da extensão segue o **idioma de exibição do VS Code** (não há seletor próprio): troque em
+`Ctrl+Shift+P` → *Configure Display Language* e recarregue a janela.
+
+| Idioma | Manifesto / Command Palette | UI das webviews | Host (avisos, pickers, barra de status) |
+|---|---|---|---|
+| English (`en`) | padrão | ✅ | ✅ |
+| Português (`pt-BR`) | ✅ | ✅ (idioma de origem) | ✅ (idioma de origem) |
+| Русский (`ru`) | ✅ | ✅ | ✅ |
+| 简体中文 (`zh-CN`) | ✅ | ✅ | ✅ |
+
+Como funciona: o manifesto usa `package.nls.*.json` (58 chaves por idioma, a mecanismo nativo do
+VS Code) e o runtime usa dois dicionários — `webview/*/i18n.<locale>.ts` (tipados por `Strings`, o
+compilador garante paridade de chaves) e `src/l10n.<locale>.ts` (mapa texto pt-BR → tradução).
+
+O **pt-BR é o idioma de origem**: é o texto-fonte, e uma string sem tradução cai nele em vez de
+mostrar uma chave crua. Não é `vscode.l10n` + language pack: o idioma entra por
+`vscode.env.language`, o que reflete os language packs instalados sem exigir empacotamento de
+`bundle.l10n.*.json` (`docs/ARCHITECTURE.md` §11.18 explica a escolha).
+
+## Contribuindo
+
+Ver `CONTRIBUTING.md` (ambiente, gates obrigatórios, arquitetura em uma tela, o padrão de lanes
+paralelas e as regras de documentação). Licença **MIT** — ver `LICENSE`.
+Falta apenas uma URL de repositório público para `vsce publish`.
+
 ## Desenvolvimento
 
 ```bash
 npm run compile     # tsc --noEmit (o gate de tipos)
 npm run build       # tudo
-npm test            # 9 testes; a integração spawna o `hermes acp` de verdade
+npm test            # 45 testes; a integração spawna o `hermes acp` de verdade
 npm run watch       # esbuild em watch (extension host)
 ```
 
@@ -96,6 +146,11 @@ nunca fingem passar.
 | Modo/picker vazio | o agente não anunciou modos | normal em versões antigas; a UI degrada em vez de inventar |
 | Windows | Hermes não roda nativo | use WSL2 e `hermes.cliPath = "wsl hermes"` |
 | `npm install` não instala nada | `NODE_ENV=production` no shell pula devDeps | `export NODE_ENV=development` |
+| UI em português e eu quero inglês | o idioma segue o VS Code | *Configure Display Language* → English → recarregar a janela |
+| Tradução faltando numa string | string nova sem entrada no dicionário | cai no pt-BR de propósito; adicione a entrada em `src/l10n.<locale>.ts` ou `webview/*/i18n.<locale>.ts` |
+| `command 'hermes.x' not found` | comando declarado no manifesto que ninguém registrou (normalmente um registro duplicado lançando e sendo engolido) | o canal `Hermes` diz `comandos: N/M registrados` na ativação; `npm test` tem a invariante do manifesto |
+| Extensão não acha o Hermes | `hermes.cliPath` errado, CLI fora do PATH ou instalação via WSL | `Hermes: Verificar / instalar o Hermes`; no Windows o valor tem de ser `wsl hermes` — o primeiro token é o executável |
+| YOLO ligado e você esqueceu | `hermes.permissions = allowAll` | item `Hermes: aprovando tudo` na barra de status; clique para desligar |
 
 ## Documentação
 

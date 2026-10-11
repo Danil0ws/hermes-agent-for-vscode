@@ -16,6 +16,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import type { ContextChip } from './types';
 import { estimateTokens } from '../utils/Tokens';
+import { tr } from '../l10n';
 
 const execFileAsync = promisify(execFile);
 
@@ -214,15 +215,15 @@ export class ContextManager {
     qp.matchOnDetail = true;
 
     const meta = (): PickItem[] => [
-      { label: '$(file) Arquivo…', detail: 'do workspace', action: { t: 'file' } },
-      { label: '$(folder) Pasta…', action: { t: 'folder' } },
-      { label: '$(symbol-method) Símbolo…', action: { t: 'symbol' } },
-      { label: '$(selection) Seleção atual', action: { t: 'selection' } },
-      { label: '$(warning) Problemas (diagnósticos)', action: { t: 'diagnostics' } },
-      { label: '$(terminal) Terminal (última saída)', action: { t: 'terminal' } },
-      { label: '$(git-commit) Alterações do Git', action: { t: 'git' } },
-      { label: '$(link) URL…', action: { t: 'url' } },
-      { label: '$(file-media) Imagem…', action: { t: 'image' } },
+      { label: tr('$(file) Arquivo…'), detail: tr('do workspace'), action: { t: 'file' } },
+      { label: tr('$(folder) Pasta…'), action: { t: 'folder' } },
+      { label: tr('$(symbol-method) Símbolo…'), action: { t: 'symbol' } },
+      { label: tr('$(selection) Seleção atual'), action: { t: 'selection' } },
+      { label: tr('$(warning) Problemas (diagnósticos)'), action: { t: 'diagnostics' } },
+      { label: tr('$(terminal) Terminal (última saída)'), action: { t: 'terminal' } },
+      { label: tr('$(git-commit) Alterações do Git'), action: { t: 'git' } },
+      { label: tr('$(link) URL…'), action: { t: 'url' } },
+      { label: tr('$(file-media) Imagem…'), action: { t: 'image' } },
     ];
 
     const files = await vs.workspace.findFiles('**/*', '**/{node_modules,.git,dist,out,.venv,__pycache__}/**', 500);
@@ -301,7 +302,7 @@ export class ContextManager {
           await this.attachGit();
           return;
         case 'url': {
-          const url = await vs.window.showInputBox({ title: 'Adicionar URL', prompt: 'Endereço (entra como referência textual).' });
+          const url = await vs.window.showInputBox({ title: tr('Adicionar URL'), prompt: 'Endereço (entra como referência textual).' });
           if (url?.trim()) this.add({ kind: 'url', label: url.trim(), ref: url.trim(), text: url.trim() });
           return;
         }
@@ -332,7 +333,7 @@ export class ContextManager {
   private attachCurrentSelection(): void {
     const vs = this.deps.vs;
     const editor = vs.window.activeTextEditor;
-    if (!editor || editor.selection.isEmpty) { void vs.window.showInformationMessage('Sem seleção no editor.'); return; }
+    if (!editor || editor.selection.isEmpty) { void vs.window.showInformationMessage(tr('Sem seleção no editor.')); return; }
     const sel = editor.selection;
     const text = editor.document.getText(sel);
     const lines: [number, number] = [sel.start.line + 1, sel.end.line + 1];
@@ -352,14 +353,14 @@ export class ContextManager {
         rows.push(`${vs.workspace.asRelativePath(uri)}:${d.range.start.line + 1} [${sev}] ${d.message}`);
       }
     }
-    if (!rows.length) { void vs.window.showInformationMessage('Sem problemas no workspace.'); return; }
+    if (!rows.length) { void vs.window.showInformationMessage(tr('Sem problemas no workspace.')); return; }
     this.add({ kind: 'diagnostic', label: `${rows.length} problema(s)`, ref: byFile[0] ?? 'diagnostics', text: rows.join('\n') });
   }
 
   private async attachTerminal(): Promise<void> {
     const vs = this.deps.vs;
     const term = vs.window.activeTerminal;
-    if (!term) { void vs.window.showInformationMessage('Sem terminal ativo.'); return; }
+    if (!term) { void vs.window.showInformationMessage(tr('Sem terminal ativo.')); return; }
     // A API de buffer do terminal ainda é proposta: usa se existir, senão copia a seleção.
     const win = vs.window as unknown as { onDidWriteTerminalData?: (cb: (e: { data: string }) => void) => { dispose(): void } };
     let text = '';
@@ -370,21 +371,21 @@ export class ContextManager {
       await vs.commands.executeCommand('workbench.action.terminal.copySelection');
       text = await vs.env.clipboard.readText();
     }
-    if (!text.trim()) { void vs.window.showInformationMessage('Sem saída do terminal para anexar.'); return; }
+    if (!text.trim()) { void vs.window.showInformationMessage(tr('Sem saída do terminal para anexar.')); return; }
     this.add({ kind: 'terminal', label: `Terminal: ${term.name}`, ref: 'terminal', text });
   }
 
   private async attachGit(): Promise<void> {
     const vs = this.deps.vs;
     const cwd = vs.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    if (!cwd) { void vs.window.showInformationMessage('Sem pasta de workspace.'); return; }
+    if (!cwd) { void vs.window.showInformationMessage(tr('Sem pasta de workspace.')); return; }
     try {
       const { stdout } = await execFileAsync('git', ['diff', '--no-color'], { cwd, maxBuffer: 8 * 1024 * 1024 });
-      if (!stdout.trim()) { void vs.window.showInformationMessage('Sem alterações não commitadas.'); return; }
-      await this.attachText({ kind: 'git', label: 'Alterações do Git (git diff)', ref: cwd }, stdout);
+      if (!stdout.trim()) { void vs.window.showInformationMessage(tr('Sem alterações não commitadas.')); return; }
+      await this.attachText({ kind: 'git', label: tr('Alterações do Git (git diff)'), ref: cwd }, stdout);
     } catch (err) {
       this.deps.log('warn', `git diff falhou: ${String(err)}`);
-      void vs.window.showWarningMessage('Não foi possível ler as alterações do Git.');
+      void vs.window.showWarningMessage(tr('Não foi possível ler as alterações do Git.'));
     }
   }
 
@@ -430,8 +431,8 @@ export class ContextManager {
     const pct = windowSize > 0 ? `${warningPercent(tokens, windowSize)}% da janela do modelo ativo` : 'janela do agente ainda não reportada';
     const pick = await vs.window.showQuickPick(
       [
-        { label: 'Incluir tudo', action: 'all' as const },
-        { label: 'Incluir trecho (definir intervalo)', action: 'range' as const },
+        { label: tr('Incluir tudo'), action: 'all' as const },
+        { label: tr('Incluir trecho (definir intervalo)'), action: 'range' as const },
         { label: 'Resumir', action: 'summary' as const },
       ],
       { title: `Anexar ${label}`, placeHolder: `≈ ${k}k tokens — cerca de ${pct}.`, ignoreFocusOut: true },
@@ -443,7 +444,7 @@ export class ContextManager {
     const vs = this.deps.vs;
     const total = text.split('\n').length;
     const answer = await vs.window.showInputBox({
-      title: 'Incluir trecho',
+      title: tr('Incluir trecho'),
       prompt: `Intervalo de linhas (1–${total}), ex.: 40-78`,
       validateInput: (v) => (/^\d+\s*-\s*\d+$/.test(v.trim()) ? undefined : 'Use o formato início-fim, ex.: 40-78'),
     });

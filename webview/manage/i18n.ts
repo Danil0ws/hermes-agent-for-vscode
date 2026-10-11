@@ -5,6 +5,7 @@
  * `t` é um Proxy sobre o bundle corrente — main.tsx, tabs.tsx e o host seguem usando `t.chave`.
  */
 import { detectLocale, localeProxy, type Locale } from '../shared/l10n';
+export { setLocale } from '../shared/l10n';
 import { t as ptBR, type Strings } from './i18n.pt-br';
 import { en } from './i18n.en';
 import { ru } from './i18n.ru';

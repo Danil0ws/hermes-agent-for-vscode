@@ -12,6 +12,7 @@ import * as vscode from 'vscode';
 import type { Feature, FeatureDeps } from './registry';
 import type { PlanEntry } from '../core/types';
 import { PlanView } from '../ui/PlanView';
+import { tr } from '../l10n';
 
 export const feature: Feature = {
   id: 'plan',
@@ -51,12 +52,12 @@ export function buildImplementationPrompt(entries: PlanEntry[]): string {
 async function implementPlan(deps: FeatureDeps): Promise<void> {
   const session = deps.agents.session;
   if (!session) {
-    void vscode.window.showWarningMessage('Sem sessão ativa. Inicie uma conversa para implementar o plano.');
+    void vscode.window.showWarningMessage(tr('Sem sessão ativa. Inicie uma conversa para implementar o plano.'));
     return;
   }
   const entries = session.snapshot.plan ?? [];
   if (entries.every((e) => e.status === 'completed')) {
-    void vscode.window.showInformationMessage('O plano não tem tarefas pendentes.');
+    void vscode.window.showInformationMessage(tr('O plano não tem tarefas pendentes.'));
     return;
   }
 
@@ -66,8 +67,7 @@ async function implementPlan(deps: FeatureDeps): Promise<void> {
   // Em `default` a edição pede aprovação a cada passo: sugerir (não impor) `accept_edits`.
   if (session.snapshot.currentMode === 'default') {
     const trocar = 'Trocar para "Aceitar edições"';
-    const pick = await vscode.window.showInformationMessage(
-      'Plano enviado. O modo atual ("Default") pede aprovação de edição a cada alteração.',
+    const pick = await vscode.window.showInformationMessage(tr('Plano enviado. O modo atual ("Default") pede aprovação de edição a cada alteração.'),
       trocar, 'Manter "Default"',
     );
     if (pick === trocar) await session.setMode('accept_edits');

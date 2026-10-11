@@ -472,8 +472,70 @@ passar por teclado/leitor de tela em cada superfície. Registrado como pendênci
     usa `ThemeIcon`. Pegadinha registrada: o Vite precisa de `base: './'`, senão o `@font-face` do
     `codicon.css` referencia `/codicon.ttf`, que na webview resolve para a raiz do `vscode-webview` e
     devolve 404 (ícones viram tofu).
-16. **L10n de runtime**: o manifesto está em `package.nls` (en + pt-BR, 58 chaves verificadas), mas
-    as strings das webviews vivem em `webview/*/i18n.ts` (pt-BR) — migrar para `vscode.l10n` é uma
-    passada separada.
+16. **L10n**: resolvido em **4 idiomas** (en, pt-BR, ru, zh-CN). O manifesto usa
+    `package.nls.*.json` (58 chaves por idioma, cobertura checada por script a cada geração); o
+    runtime usa dicionários tipados — `webview/*/i18n.<locale>.ts`, onde o tipo `Strings` faz o
+    `tsc` **garantir** paridade de chaves, e `src/l10n.<locale>.ts` (mapa texto pt-BR → tradução,
+    alimentado por `setLanguage(vscode.env.language)` na ativação). Três ressalvas honestas:
+    (a) a **qualidade** das traduções ru/zh-CN não foi revisada por falante nativo — a estrutura é
+    verificada pelo compilador, o texto não;
+    (b) strings de `src/` fora do script de conversão continuam só em pt-BR (o script cobriu 90
+    chamadas de UI: `show*Message`, rótulos/descrições/placeholders de quick pick; literais dentro
+    de template strings e nomes de OutputChannel ficaram de fora de propósito, porque interpolam
+    valores e não são texto de UI);
+    (c) `num()` formata pelo idioma corrente (pt-BR `1.218`, en/zh `1,218`, ru espaço estreito) — a
+    formatação deixou de ser fixa em pt-BR, o que mudou um teste existente (asserção atualizada
+    para o contrato novo, não silenciada).
 17. **M9 pendente**: verificação visual em 4 temas, passada de teclado/leitor de tela e teste em
     Remote (SSH/WSL/Dev Containers) não foram executados — exigem o Extension Development Host.
+18. **Por que não `vscode.l10n`**: o caminho nativo exige `l10n.t('literal')` em cada chamada **e**
+    um `bundle.l10n.<locale>.json` empacotado; o que se ganha é participar do pipeline de tradução
+    do marketplace. Como aqui o pt-BR é o idioma de **origem** e as chaves dos dicionários de host
+    são o próprio texto pt-BR, `tr()` resolve o mesmo problema com um mapa texto→texto e sem etapa
+    de extração — e a ausência de uma string no dicionário degrada para o pt-BR legível em vez de
+    uma chave crua. Custo aceito: não dá para traduzir pela interface de localization providers do
+    VS Code. Trocar depois é mecânico: `tr(x)` → `vscode.l10n.t(x)` e extrair os bundles.
+19. **Checkpoint por turno**: já registrado em §3.13 — o adaptador ACP ignora `checkpoints.enabled`,
+    então o botão de restaurar só aparece quando existe store real para o cwd. O caminho honesto é
+    passar `checkpoints_enabled` em `acp_adapter/session.py` e anunciar `/rollback` em `commands.py`
+    (duas edições pequenas upstream), não inventar um snapshot paralelo na extensão.
+20. **Aprovações são o único lugar onde a UI é mais restritiva que o protocolo**: o agente manda as
+    opções (até quatro: uma vez, sessão, sempre, negar) e a extensão **não** as altera — mas escolhe
+    o peso visual: a primeira opção de permissão é a primária e as concessões mais amplas ficam
+    secundárias, com o efeito de cada uma no `title` e um aviso fixo quando existe `allow_always`
+    (que grava na allowlist permanente do Hermes). Tornar a concessão permanente o botão mais
+    chamativo empurraria o usuário para ela sem ele perceber.
+
+21. **Dono único de comando é invariante, não estilo**: `hermes.manage` chegou a ser registrado em
+    `extension.ts` **e** na feature de Gerenciar. O segundo `registerCommand` lança; o bloco da
+    feature (sem `try/catch`) abortava ali mesmo, então `hermes.manage.open`, `agents.test`,
+    `mcp.add`, `skill.open`, `instructions.open`, `approvals.open` e o registro do painel nunca
+    aconteciam — e o `try/catch` do loop de features engolia o erro. O sintoma visível era
+    `command 'hermes.manage.open' not found` e nada no log. Duas proteções agora: a suíte
+    `src/test/manifest.test.ts` (dono único, declarado↔registrado, `executeCommand` para id vivo,
+    paridade das 4 localidades) e a checagem em runtime na ativação, que loga
+    `comandos: N/M registrados` e avisa quando falta algum. Verificado em execução real:
+    `39/39`.
+22. **`cliPath` com prefixo de ambiente**: o PRIMEIRO token é o executável, o resto são argumentos do
+    wrapper (`wsl hermes` → `spawn('wsl', ['hermes','acp'])`). A versão anterior pegava o último
+    token como executável e gerava `hermes wsl acp`, que nunca sobe — ou seja, o caminho documentado
+    para Windows estava quebrado desde o início e nenhum teste pegava, porque o teste do
+    `splitCommand` **afirmava o contrato invertido**. Lição: teste que codifica o comportamento
+    errado é pior que teste ausente; a asserção foi corrigida para o contrato certo e passou a
+    verificar o argv final.
+23. **Política de aprovação só existe se for aplicada**: `hermes.permissions` era lido pelo painel
+    Gerenciar e exibido como se valesse, mas o handler era descartado (`void permissions;`) e nada
+    respondia automaticamente. A aplicação agora acontece em `AgentManager.autoAnswer()` — no ponto
+    em que o agente pede permissão — escolhendo **entre as opções que o agente enviou** (nunca uma
+    opção de negar). `allowAll` responde com a primeira opção de permissão; `allowSession` repete a
+    concessão (`kind`) já dada na sessão. Como a política mais permissiva é invisível por natureza,
+    ela ganha indicador permanente na barra de status enquanto está ligada.
+24. **Detecção do CLI não é opcional**: sem o Hermes instalado, o ACP não sobe e a única pista era
+    "a conexão com o Hermes caiu". Agora a ativação roda `hermes --version` e `hermes acp --check` e,
+    faltando o CLI, mostra um modal com o comando oficial de instalação (da doc, não inventado),
+    a opção de gravar `hermes.cliPath` e o `hermes doctor`. Quando tudo está no lugar, o resultado
+    vai só para o canal `Hermes` — nada de modal em cima de quem já está funcionando.
+25. **i18n: limite conhecido das strings com interpolação**: o dicionário do host é
+    `texto pt-BR → tradução`, o que não expressa `tr(\`... ${x} ...\`)`. Essas duas strings ficam em
+    pt-BR em todos os idiomas. O caminho de correção é partir em chave + parâmetros (como as
+    funções do bundle da webview já fazem), não manter o texto composto.

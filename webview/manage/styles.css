@@ -12,6 +12,12 @@ body {
 .manage { display: flex; height: 100%; }
 
 /* ─────────── abas verticais ─────────── */
+.tabs button, .tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 8px; text-align: left;
+}
+.tabs button .ic, .tab .ic { color: inherit; }
+
 .tabs {
   display: flex;
   flex-direction: column;
@@ -75,6 +81,9 @@ input.search, select, input[type="search"] {
 select { color: var(--vscode-dropdown-foreground); background: var(--vscode-dropdown-background); border-color: var(--vscode-dropdown-border, transparent); }
 input:focus-visible, select:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
 .search { flex: 1 1 160px; min-width: 120px; }
+/* na linha de ferramentas o próprio campo cresce: o spacer vira o vão que a captura mostrou */
+.toolrow .search { flex: 1 1 260px; }
+.toolrow .spacer { flex: 0 0 0; }
 .check { display: inline-flex; align-items: center; gap: 6px; font-size: 0.95em; cursor: pointer; }
 
 .toolrow, .footer { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
@@ -85,7 +94,16 @@ input:focus-visible, select:focus-visible { outline: 1px solid var(--vscode-focu
 /* ─────────── listas ─────────── */
 .list { display: flex; flex-direction: column; gap: 1px; margin: 4px 0; }
 .group { margin: 4px 0; }
-.group > summary { cursor: pointer; font-weight: 600; padding: 3px 2px; }
+.group > summary {
+  cursor: pointer; font-weight: 600; padding: 3px 2px;
+  display: flex; align-items: center; gap: 4px;
+  /* o marcador nativo do <details> é um glifo de texto (▼) — fora do padrão do VS Code */
+  list-style: none;
+}
+.group > summary::-webkit-details-marker, .group > summary::marker { display: none; content: ''; }
+.group > summary .chev { transition: transform 90ms ease; }
+.group[open] > summary .chev { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .group > summary .chev { transition: none; } }
 .item {
   display: flex; align-items: center; gap: 8px;
   padding: 3px 6px; border-radius: var(--hermes-radius);
@@ -98,6 +116,8 @@ input:focus-visible, select:focus-visible { outline: 1px solid var(--vscode-focu
 .item .grow:hover { background: none; text-decoration: underline; }
 .star { background: none; color: var(--vscode-foreground); padding: 0 2px; font-size: 1em; }
 .star:hover { background: none; color: var(--vscode-textLink-foreground); }
+/* `aria-pressed` já diz o estado: preenchida e vazia tinham a MESMA cor */
+.star[aria-pressed='true'] { color: var(--vscode-charts-yellow, var(--vscode-foreground)); }
 .badge {
   font-size: 0.78em; padding: 0 5px; border-radius: 8px;
   color: var(--vscode-badge-foreground); background: var(--vscode-badge-background);
@@ -134,7 +154,11 @@ input:focus-visible, select:focus-visible { outline: 1px solid var(--vscode-focu
 .bar > span { display: block; height: 100%; background: var(--vscode-charts-green); }
 
 /* ─────────── avisos ─────────── */
-.notice { padding: 6px 10px; border-radius: var(--hermes-radius); border-left: 3px solid var(--vscode-panel-border, transparent); }
+.notice {
+  padding: 6px 10px; border-radius: var(--hermes-radius);
+  border-left: 3px solid var(--vscode-panel-border, transparent);
+  display: flex; gap: 6px; align-items: baseline;
+}
 .notice.info { border-left-color: var(--vscode-textLink-foreground); }
 .notice.warning { border-left-color: var(--vscode-editorWarning-foreground); }
 .notice.error { border-left-color: var(--vscode-errorForeground); }

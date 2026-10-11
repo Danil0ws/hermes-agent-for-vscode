@@ -16,6 +16,7 @@ import {
 import type { ManageTab } from './protocol';
 import '@vscode/codicons/dist/codicon.css';
 import './styles.css';
+import { Icon } from '../shared/icon';
 
 const TABS: ManageTab[] = ['models', 'skills', 'tools', 'instructions', 'context', 'agents', 'approvals', 'advanced'];
 
@@ -47,7 +48,15 @@ function App() {
     select(TABS[j]);
   };
 
-  const View = VIEWS[s.tab];
+  /** Codicon de cada aba — nome de ícone não é texto de UI, então não passa pelo i18n. */
+const NOTICE_ICON = { info: 'info', warning: 'warning', error: 'error' } as const;
+
+const TAB_ICON: Record<ManageTab, string> = {
+  models: 'chip', skills: 'book', tools: 'tools', instructions: 'file-text',
+  context: 'pie-chart', agents: 'person', approvals: 'shield', advanced: 'settings-gear',
+};
+
+const View = VIEWS[s.tab];
 
   return (
     <div class="manage">
@@ -65,14 +74,14 @@ function App() {
             tabindex={id === s.tab ? 0 : -1}
             onClick={() => select(id)}
             onKeyDown={(e) => onKey(e, i)}
-          >{t.tabs[id]}</button>
+          > <Icon name={TAB_ICON[id]} />{t.tabs[id]}</button>
         ))}
       </nav>
 
       <section class="panel" role="tabpanel" id={`panel-${s.tab}`} aria-labelledby={`tab-${s.tab}`} tabindex={-1}>
         <h2>{t.tabs[s.tab]}</h2>
-        {s.restricted && <p class="notice warning" role="status">{t.common.restricted}</p>}
-        {s.notice && <p class={`notice ${s.notice.level}`} role="status">{s.notice.text}</p>}
+        {s.restricted && <p class="notice warning" role="status"><Icon name="lock" /> {t.common.restricted}</p>}
+        {s.notice && <p class={`notice ${s.notice.level}`} role="status"><Icon name={NOTICE_ICON[s.notice.level]} /> {s.notice.text}</p>}
         <View />
       </section>
     </div>

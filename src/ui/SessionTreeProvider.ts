@@ -9,6 +9,7 @@
  * pronto em `SessionRow.state`; aqui só escolhemos rótulo/ícone/cor por token de tema.
  */
 import type * as vscode from 'vscode';
+import { tr } from '../l10n';
 
 type Vs = typeof import('vscode');
 
@@ -183,7 +184,7 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionNode>
     item.tooltip = this.tooltip(row);
     item.contextValue = 'hermes.session';
     item.id = row.sessionId;
-    item.command = { command: 'hermes.sessions.open', title: 'Abrir sessão', arguments: [row.sessionId] };
+    item.command = { command: 'hermes.sessions.open', title: tr('Abrir sessão'), arguments: [row.sessionId] };
     return item;
   }
 

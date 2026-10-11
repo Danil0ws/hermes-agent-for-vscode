@@ -11,7 +11,7 @@ import { en } from './i18n.en';
 import { ru } from './i18n.ru';
 import { zhCN } from './i18n.zh-cn';
 
-export { num } from '../shared/l10n';
+export { num, setLocale, setCurrentLocale } from '../shared/l10n';
 export type { Strings };
 
 const bundles: Record<Locale, Strings> = { en, 'pt-br': ptBR, ru, 'zh-cn': zhCN };

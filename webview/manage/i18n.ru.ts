@@ -1,9 +1,139 @@
 /**
- * Bundle ru do painel Gerenciar.
+ * Bundle ru do painel Gerenciar (tradução do pt-BR).
  *
- * STUB: hoje repassa o pt-BR. A tradução substitui o corpo mantendo `Strings` como contrato —
- * chave faltando ou a mais quebra o `tsc`.
+ * `Strings` vem de um objeto `as const` no pt-BR, então os valores são tipos literais.
+ * `Widen` troca literal → string mantendo as chaves: o `tsc` continua pegando chave
+ * faltando ou sobrando, mas aceita os textos traduzidos.
  */
-import { t as ptBR, type Strings } from './i18n.pt-br';
+import { type Strings } from './i18n.pt-br';
 
-export const ru: Strings = ptBR;
+type Widen<T> = T extends string ? string
+  : T extends readonly unknown[] ? { [K in keyof T]: Widen<T[K]> }
+  : T extends object ? { [K in keyof T]: Widen<T[K]> }
+  : T;
+
+const bundle: Widen<Strings> = {
+  title: 'Управление',
+  tabsLabel: 'Разделы управления',
+  tabs: {
+    models: 'Модели',
+    skills: 'Skills',
+    tools: 'Инструменты и MCP',
+    instructions: 'Инструкции',
+    context: 'Контекст и использование',
+    agents: 'Агенты/Профили',
+    approvals: 'Разрешения',
+    advanced: 'Дополнительно',
+  },
+  common: {
+    search: 'Поиск…',
+    refresh: 'Обновить',
+    open: 'Открыть',
+    openCli: 'Открыть в CLI',
+    loading: 'Загрузка…',
+    none: 'нет',
+    estimado: 'оценочно',
+    source: 'Источник',
+    empty: 'Нет данных для отображения.',
+    restricted: 'Рабочее пространство в ограниченном режиме: панель только читает, ничего не меняет.',
+  },
+  models: {
+    onlyFavorites: 'Только избранное',
+    favorites: 'Избранное',
+    recent: 'Недавно использованные',
+    active: 'активна',
+    setActive: 'Сделать активной',
+    star: 'В избранное',
+    unstar: 'Убрать из избранного',
+    count: (visible: number, total: number) => `${visible} из ${total}`,
+    emptyNoSession: 'Каталог приходит из `session/new` агента. Откройте диалог и вернитесь сюда.',
+    emptyFiltered: 'Ни одна модель не соответствует поиску.',
+    windowTitle: 'Окно контекста (активная модель)',
+    windowUnknown: 'неизвестно — агент сообщает окно только для активной модели и только после первого хода.',
+    windowReported: 'по данным агента',
+    switchProvider: 'Сменить провайдера / войти (CLI)',
+    source: 'session/new.models + session/set_model',
+  },
+  skills: {
+    scopeAll: 'Все области',
+    scopeUser: 'Пользователь',
+    scopeProject: 'Проект',
+    scopeHub: 'Hub',
+    rootsTitle: 'Папки skills',
+    create: 'Создать новый skill',
+    install: 'Установить из Skills Hub',
+    tags: 'tags',
+    empty: 'В этих папках не найдено ни одного skill.',
+    openFail: 'Не удалось открыть SKILL.md.',
+    source: '$HERMES_HOME/skills + .hermes/skills + .agents/skills',
+    onCreate: 'Skill создан.',
+  },
+  tools: {
+    counter: (a: number, m: number) => `${a} из ${m} toolsets активно`,
+    newSession: 'Смена toolsets действует только в СЛЕДУЮЩЕЙ сессии: агент разрешает инструменты при создании сессии.',
+    acpToolset: 'Toolset ACP (platform_toolsets.acp)',
+    acpDefault: 'не задано — действует значение Hermes по умолчанию (hermes-acp)',
+    disabled: 'Отключённые toolsets (agent.disabled_toolsets)',
+    builtin: 'Встроенные',
+    plugin: 'Плагины',
+    mcp: 'Серверы MCP',
+    mcpCols: ['Название', 'Транспорт', 'Инструменты', 'Состояние'],
+    addMcp: 'Добавить сервер MCP',
+    openConfig: 'Открыть config.yaml',
+    source: 'hermes config get · hermes tools list · hermes mcp list',
+    unavailable: 'Не удалось прочитать конфигурацию Hermes через CLI.',
+    empty: 'Hermes не вывел ни одного toolset.',
+  },
+  instructions: {
+    found: 'есть',
+    missing: 'не найдено',
+    tokens: 'токенов',
+    empty: 'Файлы инструкций не обнаружены.',
+    source: 'файловая система (рабочее пространство + профиль Hermes)',
+    workspace: 'Рабочее пространство',
+    profile: 'Профиль',
+  },
+  context: {
+    used: (used: number, size: number, pct: number) => `${used.toLocaleString('ru-RU')} из ${size.toLocaleString('ru-RU')} токенов (${pct}%)`,
+    noUsage: 'Агент ещё не сообщил окно контекста (нет usage_update).',
+    estimates: 'Разбивка (оценка на месте)',
+    note: 'Итог и использованное приходят от агента; остальное — оценка chars/4 и не относится к категориям.',
+    source: 'usage_update + Tokens.ts',
+  },
+  agents: {
+    command: 'Команда',
+    args: 'Аргументы',
+    profile: 'Профиль Hermes',
+    cwd: 'cwd',
+    model: 'Модель по умолчанию',
+    active: 'активен',
+    test: 'Проверить соединение',
+    profiles: 'Профили Hermes (hermes profile list)',
+    profilesError: 'Не удалось получить список профилей.',
+    source: 'hermes.agents (settings) + hermes profile list',
+  },
+  approvals: {
+    policy: 'Политика расширения (hermes.permissions)',
+    allowlist: 'Всегда разрешённые команды (command_allowlist)',
+    openConfig: 'Открыть config.yaml',
+    suggest: 'Предложить allowlist (hermes approvals suggest)',
+    empty: 'Allowlist пуст.',
+    source: 'settings + config.yaml + hermes approvals',
+  },
+  advanced: {
+    version: 'Версия Hermes',
+    configPath: 'Путь к config.yaml',
+    envPath: 'Путь к .env',
+    logTraffic: 'Записывать трафик JSON-RPC (лог трафика)',
+    doctor: 'Запустить диагностику (hermes doctor)',
+    check: 'Проверить ACP (hermes acp --check)',
+    source: 'hermes --version · hermes config path/env-path · hermes doctor',
+  },
+  notice: {
+    setModelOk: 'Активная модель изменена.',
+    setModelFail: 'Не удалось сменить модель (нет активной сессии?).',
+    saved: 'Сохранено в реальной конфигурации.',
+  },
+};
+
+export const ru: Strings = bundle as unknown as Strings;

@@ -37,7 +37,6 @@ export const feature: Feature = {
     ctx.subscriptions.push(
       provider,
       vscode.commands.registerCommand('hermes.manage', open),
-      vscode.commands.registerCommand('hermes.manage.open', open),
       vscode.commands.registerCommand('hermes.agents.test', openAnd('agents', ['acp', '--check'])),
       vscode.commands.registerCommand('hermes.mcp.add', openAnd('tools', ['mcp', 'add'])),
       vscode.commands.registerCommand('hermes.skill.open', () => provider.open('skills')),
