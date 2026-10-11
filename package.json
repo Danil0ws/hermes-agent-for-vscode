@@ -2,7 +2,7 @@
   "name": "hermes-agent-for-vscode",
   "displayName": "Hermes Agent for VS Code",
   "description": "Native VS Code interface for the Hermes Agent CLI (Nous Research) over ACP — chat, tools, diffs, approvals, plans, sessions and the full CLI.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "Danil0ws",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -75,16 +75,16 @@
     ],
     "commands": [
       {
-       "command": "hermes.newConversation",
-       "title": "%command.hermes.newConversation.title%",
-       "category": "Hermes",
-       "icon": "$(add)"
+        "command": "hermes.newConversation",
+        "title": "%command.hermes.newConversation.title%",
+        "category": "Hermes",
+        "icon": "$(add)"
       },
       {
-       "command": "hermes.worktree.new",
-       "title": "%command.hermes.worktree.new.title%",
-       "category": "Hermes",
-       "icon": "$(git-branch)"
+        "command": "hermes.worktree.new",
+        "title": "%command.hermes.worktree.new.title%",
+        "category": "Hermes",
+        "icon": "$(git-branch)"
       },
       {
         "command": "hermes.showSessions",
@@ -304,14 +304,14 @@
           "group": "1_open@1"
         },
         {
-         "command": "hermes.manage",
-         "when": "view == hermes.chat",
-         "group": "navigation@4"
+          "command": "hermes.manage",
+          "when": "view == hermes.chat",
+          "group": "navigation@4"
         },
         {
-         "command": "hermes.worktree.new",
-         "when": "view == hermes.chat",
-         "group": "navigation@5"
+          "command": "hermes.worktree.new",
+          "when": "view == hermes.chat",
+          "group": "navigation@5"
         },
         {
           "command": "hermes.openCli",
