@@ -263,7 +263,7 @@ export class ManageViewProvider implements vscode.Disposable {
     const nonce = Array.from({ length: 24 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
     const base = w.asWebviewUri(this.assetsRoot());
     return /* html */ `<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="${vscode.env.language}">
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy"

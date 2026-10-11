@@ -29,7 +29,16 @@ body {
 .spacer { flex: 1; }
 .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .hint { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin: 4px 0 0; }
-.ic { color: var(--vscode-descriptionForeground); font-style: normal; }
+.ic {
+  color: var(--vscode-descriptionForeground);
+  font-style: normal;
+  /* o .codicon vem com font 16px/1; sem fixar tamanho e base, o glifo flutua fora da linha
+     de base do texto ao lado (visível na captura: "check" e a duração desalinhados). */
+  font-size: 1em;
+  line-height: 1;
+  vertical-align: -0.125em;
+}
+.status.codicon, .tool .status.codicon { vertical-align: -0.125em; }
 
 /* ─────────── transcript ─────────── */
 .transcript { flex: 1; overflow-y: auto; padding: var(--hermes-gap); scrollbar-gutter: stable; }

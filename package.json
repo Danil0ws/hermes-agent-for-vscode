@@ -5,7 +5,10 @@
   "version": "0.1.0",
   "publisher": "hermes-agent",
   "license": "MIT",
-  "private": true,
+  "author": {
+    "name": "Danilo Rodrigues",
+    "email": "mydanilows@gmail.com"
+  },
   "engines": {
     "vscode": "^1.100.0",
     "node": ">=18"
@@ -31,7 +34,7 @@
         {
           "id": "hermes",
           "title": "%viewContainer.hermes.title%",
-          "icon": "media/hermes.svg"
+          "icon": "media/hermes-agent-light-vscode.svg"
         }
       ]
     },

@@ -94,7 +94,7 @@ function ToolItem({ tool }: { tool: ToolView }) {
       <summary aria-label={`${label}: ${tool.title} — ${S.status[tool.status] ?? tool.status}`}>
         <KindIcon kind={kind} label={label} />
         <span class="tool-title">{tool.title || S.tool.titleFallback}</span>
-        <span class={`status ${tool.status}`}>{S.statusGlyph[tool.status] ?? tool.status}</span>
+        <Icon name={S.statusGlyph[tool.status] ?? 'circle-outline'} cls={`status ${tool.status}`} />
         {dur && <span class="muted">{dur}</span>}
       </summary>
       {tool.input && <><div class="io-label">{S.tool.input}</div><pre>{tool.input}</pre></>}

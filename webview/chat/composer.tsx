@@ -35,21 +35,32 @@ function Permission() {
   }, [req?.id, req?.expiresAt]);
   if (!req) return null;
   const remaining = req.expiresAt ? Math.max(0, Math.round((req.expiresAt - Date.now()) / 1000)) : null;
+  const firstAllow = req.options.find((o) => !o.kind.startsWith('reject'))?.optionId;
   return (
     <div class="permission" role="alertdialog" aria-label={req.title || S.permission.label}>
       <strong>{req.title || S.permission.label}</strong>
       {req.detail && <pre class="detail">{req.detail}</pre>}
       {req.cwd && <div class="muted">{S.permission.cwdPrefix} {req.cwd}</div>}
       {remaining !== null && <div class="muted">{S.permission.remaining(remaining)}</div>}
-      {/* as opções são EXATAMENTE as que o agente mandou — nada inventado */}
+      {/* As opções são EXATAMENTE as que o agente mandou — nada inventado. O que a UI decide é
+          o PESO: a primeira opção de permissão (allow_once) é a primária; conceder mais amplo
+          (sessão/sempre) e negar ficam secundárias. Tornar `allow_always` o botão azul mais
+          chamativo empurraria o usuário para a concessão permanente sem ele perceber. */}
       <div class="row">
         {req.options.map((o) => (
-          <button key={o.optionId} class={o.kind.startsWith('reject') ? 'secondary' : ''}
-            onClick={() => send({ type: 'permission/answer', id: req.id, optionId: o.optionId })}>
+          <button
+            key={o.optionId}
+            class={o.optionId === firstAllow ? '' : 'secondary'}
+            title={S.permissionHint[o.kind] ?? undefined}
+            onClick={() => send({ type: 'permission/answer', id: req.id, optionId: o.optionId })}
+          >
             {o.name}
           </button>
         ))}
       </div>
+      {req.options.some((o) => o.kind === 'allow_always') && (
+        <div class="muted">{S.allowAlwaysNote}</div>
+      )}
     </div>
   );
 }

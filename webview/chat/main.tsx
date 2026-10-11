@@ -69,7 +69,12 @@ function applyHost(m: HostToWebview): void {
           thoughtStartedAt: last.thoughtStartedAt ?? Date.now(),
         }];
       } else {
-        turns.value = [...list, { id: `t${Date.now()}`, role: 'agent', text: '', thought: m.text, streaming: true, startedAt: Date.now(), thoughtStartedAt: Date.now() }];
+        // O turno nasce com o `messageId` do chunk: o `agent_message_chunk` seguinte, com o mesmo
+        // id, aterrissa DENTRO dele — raciocínio e resposta ficam no mesmo balão (um só rótulo).
+        turns.value = [...list, {
+          id: m.messageId, role: 'agent', text: '', thought: m.text, streaming: true,
+          startedAt: Date.now(), thoughtStartedAt: Date.now(),
+        }];
       }
       break;
     }

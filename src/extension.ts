@@ -6,12 +6,9 @@ import { CliRunner } from './cli/CliRunner';
 import { activeAgent, onSettingsChanged, settings } from './config/Settings';
 import { FEATURES } from './features';
 
-let diagnostics: vscode.DiagnosticCollection;
-
 export function activate(ctx: vscode.ExtensionContext): void {
   const log = vscode.window.createOutputChannel('Hermes', { log: true });
   const traffic = vscode.window.createOutputChannel('Hermes Traffic');
-  diagnostics = vscode.languages.createDiagnosticCollection('hermes');
 
   const trafficLog = (direction: 'in' | 'out', message: unknown) => {
     if (!settings().logTraffic) return;
@@ -27,7 +24,7 @@ export function activate(ctx: vscode.ExtensionContext): void {
   const restricted = () => !vscode.workspace.isTrusted;
 
   ctx.subscriptions.push(
-    log, traffic, diagnostics,
+    log, traffic,
     vscode.window.registerWebviewViewProvider(ChatViewProvider.viewType, provider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
@@ -94,7 +91,9 @@ export function activate(ctx: vscode.ExtensionContext): void {
   log.info(`Hermes Agent for VS Code ativo · agente padrão: ${activeAgent(settings()).name}`);
 }
 
-export function deactivate(): void { diagnostics?.dispose(); }
+// Nada a desmontar: a feature de diagnóstico é dona da sua DiagnosticCollection e o
+// AgentManager encerra o processo do Hermes no dispose da assinatura.
+export function deactivate(): void { /* ver comentário acima */ }
 
 async function askAboutSelection(provider: ChatViewProvider, prefix = 'Pergunta sobre esta seleção: '): Promise<void> {
   const editor = vscode.window.activeTextEditor;
