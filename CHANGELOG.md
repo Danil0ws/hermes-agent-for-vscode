@@ -35,6 +35,10 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Corrigido
 
+- **Renomear aba disparava o comando duas vezes**: `Enter` commitava e o input saía da árvore, então o
+  browser disparava `blur` — que commitava DE NOVO (medido no harness: dois `renameTab` por renomeação).
+  Agora só o primeiro commit da edição vale (`once` no `RenameInput`). Medido depois: `Enter` = 1 post,
+  `Escape` = 0 (e fecha o input), `blur` sozinho = 1, valor só com espaços = 0 e o título não some.
 - **Dois botões de "nova conversa" na tela**: a barra de abas tinha `+` e worktree próprios, e o título
   da view já tinha o `+` de nova conversa. Agora a barra de abas **só** mostra as abas, e os dois
   atalhos vivem no título: `+` (nova conversa = aba nova) e o ícone de branch

@@ -32,6 +32,10 @@ function RenameInput({ value, onCommit, onCancel }: {
   value: string; onCommit: (v: string) => void; onCancel: () => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+  // Enter commita e o input sai da árvore — o browser então dispara `blur`, que commitava DE NOVO
+  // (medido no harness: dois `renameTab` por renomeação). Um commit por edição, só o primeiro vale.
+  const done = useRef(false);
+  const once = (fn: () => void) => { if (done.current) return; done.current = true; fn(); };
   useEffect(() => { ref.current?.focus(); ref.current?.select(); }, []);
   return (
     <input
@@ -39,10 +43,10 @@ function RenameInput({ value, onCommit, onCancel }: {
       class="tab-rename"
       value={value}
       onClick={(e) => e.stopPropagation()}
-      onBlur={(e) => onCommit((e.target as HTMLInputElement).value)}
+      onBlur={(e) => once(() => onCommit((e.target as HTMLInputElement).value))}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') onCommit((e.target as HTMLInputElement).value);
-        else if (e.key === 'Escape') onCancel();
+        if (e.key === 'Enter') once(() => onCommit((e.target as HTMLInputElement).value));
+        else if (e.key === 'Escape') once(onCancel);
       }}
     />
   );
