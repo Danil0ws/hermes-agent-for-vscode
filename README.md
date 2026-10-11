@@ -224,5 +224,8 @@ they never pretend to pass. Test and command counts are deliberately absent here
 
 - `docs/ARCHITECTURE.md` — transport, capability→UI map, turn flow, security, milestones and the
   **verified gaps** (modes, queue, skills, MCP, effort, cost, checkpoints). (pt-BR)
+- `docs/ROADMAP.md` — what to do about each verified gap: ordered by value over cost, with the proof
+  that closes it, who owns it (this repo × a human at the editor × upstream) and the items
+  deliberately left undone, with the reason. (pt-BR)
 - `docs/UX.md` — wireframes for the composer, pickers, context meter, Manage panel and sessions,
   each element mapped to its data source, plus the degraded states. (pt-BR)

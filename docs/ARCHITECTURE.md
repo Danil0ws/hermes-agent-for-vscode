@@ -425,10 +425,16 @@ Gates no estado atual: `tsc --noEmit` limpo · `npm run build` OK · `npm test` 
 M9 é a única parte que **não** pode ser fechada por execução de linha de comando: exige abrir o
 Extension Development Host, alternar Dark+ → Light+ → High Contrast → um tema de terceiros, e
 passar por teclado/leitor de tela em cada superfície. Registrado como pendência, não como feito.
+O caminho para fechar — o que já dá para medir no harness, o que exige humano e a ordem das fases —
+está em `docs/ROADMAP.md`.
 
 ---
 
 ## 11. Lacunas conhecidas (não escondidas)
+
+O que **fazer** com cada uma — ordem por valor/custo, evidência de pronto, dono (este repo × humano
+no editor × upstream) e o que foi decidido **não** fazer, com o comando que prova o bloqueio — está
+em `docs/ROADMAP.md`. Aqui fica só o diagnóstico.
 
 1. **Não existem os modos Ask/Plan/Agent no Hermes.** Os 3 modos do ACP são política de aprovação de
    edição (`default`, `accept_edits`, `dont_ask`). O picker de modo lista o que o agente anunciar;
@@ -465,9 +471,12 @@ passar por teclado/leitor de tela em cada superfície. Registrado como pendênci
 13. **`session/list` precisa de conexão viva**: `listSessions` no cliente devolve `[]` sem sessão
     aberta (o `session/list` só existe dentro de uma conexão ACP ativa). A view de sessões mostra
     vazio com explicação nesse caso.
-14. **Pendências por sessão não existem**: as notificações de `session/update` não trazem
-    `sessionId` no nosso nível de roteamento, então o contador de pendências é atribuído à sessão
-    ativa. Um `sessionId` por notificação resolveria.
+14. **Atividade por sessão é só de aprovação**: as notificações de `session/update` que emitimos não
+    carregam `sessionId` no nível `HostToWebview`, então a única coisa atribuível por sessão é o que
+    passa pelo mapa de aprovações pendentes (`src/features/sessions.ts`); o "ocupado" de uma sessão
+    em background não aparece na tree (o `list()` do cliente preenche `pending: 0`). Taguear as
+    mensagens emitidas pela própria sessão — ela sabe quem é — resolve; é o item 1.1 do
+    `docs/ROADMAP.md`.
 15. **Codicons**: resolvido — as webviews usam `@vscode/codicons` (classe + fonte) e o extension host
     usa `ThemeIcon`. Pegadinha registrada: o Vite precisa de `base: './'`, senão o `@font-face` do
     `codicon.css` referencia `/codicon.ttf`, que na webview resolve para a raiz do `vscode-webview` e

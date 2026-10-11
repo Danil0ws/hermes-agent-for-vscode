@@ -6,6 +6,16 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Adicionado
 
+- **`docs/ROADMAP.md`**: as lacunas verificadas de `ARCHITECTURE.md` §11 e o M9 parcial viram
+  trabalho executável — cada item com a lacuna de origem, a ação, o **sinal que fecha** (ex.: gate
+  verde + medida no harness), o custo e o dono (este repo × humano no editor × upstream). Três fases
+  de código/prova, uma de upstream e uma de "decidido não fazer, com o motivo". Conferido no
+  fechamento: `hermes sessions --help` tem `delete/archive/rename` (o escape hatch já implementado em
+  `src/features/sessions.ts` cobre §11.3) e `grep -rn 'rollback\|checkpoint'
+  ~/.hermes/hermes-agent/acp_adapter/*.py` **não acha nada** — a lacuna de checkpoint é upstream, não
+  deste repo. Duas afirmações do §11 (§11.14 e §11.5) ficaram desatualizadas e o roadmap registra o
+  estado real (o contador por sessão é de aprovação pendente; a janela por modelo não tem fonte
+  local) — o diagnóstico do §11.14 foi corrigido na mesma entrega.
 - **Publicação: `repository`, `bugs` e `homepage` no manifesto** (`github.com/Danil0ws/hermes-agent-vscode`)
   e a arte do Hermes de volta na primeira linha do README. Era o único aviso que o `vsce` emitia — e
   o campo é o que dá URL base para o `vsce` resolver imagem local: com ele, `vsce package` passa com
