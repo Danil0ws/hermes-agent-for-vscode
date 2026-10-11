@@ -127,8 +127,6 @@ export const ptBR = {
     model: 'Modelo',
     modelTip: 'Modelo',
     noModels: 'sem modelos',
-    tools: 'Ferramentas',
-    toolsTip: 'Configurar ferramentas (Gerenciar)',
     start: 'Iniciar',
     starting: 'Iniciando…',
     startTip: 'Criar a sessão e carregar modos, modelos e comandos',

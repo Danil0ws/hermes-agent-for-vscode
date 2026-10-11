@@ -22,7 +22,7 @@ body {
 /* ─────────── acessibilidade ─────────── */
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
 }
 :focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 1px; }
 .muted { color: var(--vscode-descriptionForeground); }
@@ -171,7 +171,7 @@ details.thought pre { white-space: pre-wrap; margin: 4px 0 0; font-family: var(-
 .input-wrap { position: relative; }
 textarea.input {
   display: block; width: 100%; resize: none; min-height: 44px; max-height: 240px;
-  padding: 6px 8px; overflow-y: auto; line-height: 1.4;
+  padding: 6px 32px 6px 8px; overflow-y: auto; line-height: 1.4;
   color: var(--vscode-input-foreground);
   background: var(--vscode-input-background);
   border: 1px solid var(--vscode-input-border, transparent);
@@ -180,6 +180,17 @@ textarea.input {
 }
 textarea.input::placeholder { color: var(--vscode-input-placeholderForeground, var(--vscode-descriptionForeground)); }
 textarea.input:focus { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+
+/* Enviar/fila DENTRO do campo: botão-fantasma ancorado no canto inferior direito — SEM fundo nem
+   borda, só o glifo. O clique abre o MENU do envio (enviar / pôr na fila / dirigir / interromper);
+   o Enter do campo continua enviando. O `padding-right` acima abre o espaço para o texto não passar
+   sob ele. O `background/border: none` sobrescreve o `button` global, que pinta e contorna. */
+.input-send {
+  position: absolute; right: 6px; bottom: 6px;
+  background: none; border: none; padding: 2px 4px;
+  color: var(--vscode-descriptionForeground); cursor: pointer; line-height: 1;
+}
+.input-send:hover, .input-send:focus-visible { background: none; color: var(--vscode-foreground); }
 
 /* popovers */
 .popover {
@@ -214,8 +225,8 @@ textarea.input:focus { outline: 1px solid var(--vscode-focusBorder); outline-off
 .menu .opt:hover, .menu .opt:focus-visible { background: var(--vscode-list-hoverBackground); }
 
 /* barra inferior em DUAS METADES, nunca botão a botão:
-   - `.toolbar-line`  = '+' | Modo | Modelo | engrenagem (o que se configura)
-   - `.toolbar-actions` = medidor | primário, alinhados à DIREITA
+   - `.toolbar-line`  = '+' | Modo | Modelo (o que se configura; a engrenagem subiu para o título da view)
+   - `.toolbar-actions` = medidor | primário "Iniciar" (só sem sessão), alinhados à DIREITA
    A quebra acontece só ENTRE os grupos. Em painel largo tudo cabe numa linha e os selects absorvem
    a sobra (o de modelo com o dobro: os ids são longos). Em painel estreito os dois selects ficam com
    o piso de `min-width` (~30px antes — o rótulo sumia por completo) e as ações descem para a linha
@@ -297,9 +308,7 @@ select {
 
 /* envio */
 .send { display: inline-flex; align-items: stretch; }
-.send .primary:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-.send-menu-wrap { display: inline-flex; }  /* idem: containing block do menu e o .composer */
-.send .caret { border-top-left-radius: 0; border-bottom-left-radius: 0; padding: 3px 6px; border-left: 1px solid var(--vscode-button-separator, transparent); }
+/* O par primário + caret ▾ saiu: o enviar/fila agora vive DENTRO do campo (`.input-send`). */
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }

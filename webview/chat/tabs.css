@@ -1,4 +1,79 @@
 /*
  * Estilos da barra de abas e do indicador de lane ativa.
- * Arquivo desta lane: `styles.css` é do composer — não escreva lá.
+ * Arquivo desta lane: `styles.css` é do composer — não escreva lá. A base de `.empty` vem de lá;
+ * aqui só acrescentamos o empilhamento centrado do bloco "Iniciar" (`.start-block`).
  */
+
+/* ─────────── barra de abas ─────────── */
+.tabbar {
+  display: flex; align-items: stretch; gap: 2px;
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--vscode-panel-border, transparent);
+  min-width: 0;
+}
+
+/* Rola na horizontal quando as abas não couberem (painel estreito ~200px não quebra o layout). */
+.tabbar-strip {
+  display: flex; align-items: stretch; gap: 2px;
+  flex: 1 1 auto; min-width: 0;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.tab-add {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; width: 22px; height: 22px; align-self: center;
+  background: none; border: 0; padding: 0;
+  color: var(--vscode-icon-foreground, var(--vscode-foreground));
+  cursor: pointer; border-radius: 4px;
+}
+.tab-add:hover { background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground)); }
+.tab-add:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+
+.tab {
+  display: inline-flex; align-items: center; gap: 4px;
+  flex: 0 0 auto; max-width: 200px; min-width: 56px;
+  padding: 3px 4px 3px 8px; border-radius: 4px 4px 0 0;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap; cursor: pointer;
+}
+.tab:hover { background: var(--vscode-list-hoverBackground); }
+.tab.active {
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+.tab:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+
+.tab-label { overflow: hidden; text-overflow: ellipsis; }
+.tab-state { flex: 0 0 auto; }
+.tab-state.warn { color: var(--vscode-editorWarning-foreground); }
+
+.tab-x {
+  flex: 0 0 auto; background: none; border: 0; padding: 0 2px;
+  color: inherit; opacity: 0.7; cursor: pointer; line-height: 1; border-radius: 3px;
+}
+.tab-x:hover { opacity: 1; background: var(--vscode-toolbar-hoverBackground, transparent); }
+
+.tab-rename {
+  font: inherit; color: var(--vscode-input-foreground);
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-focusBorder); border-radius: 3px;
+  padding: 0 3px; min-width: 40px; width: 96px;
+}
+
+/* ─────────── estado vazio sem sessão (bloco "Iniciar" centrado) ─────────── */
+.start-block {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 8px; margin: 0 auto;
+}
+.start-title { margin: 0; font-size: 1.15em; font-weight: 600; }
+.start-body { margin: 0; max-width: 46ch; }
+.start-block .primary {
+  display: inline-flex; align-items: center; gap: 6px;
+  align-self: center; text-align: center;
+}
+.start-actions {
+  list-style: none; padding: 0; margin: 4px 0 0;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
+}
+.start-actions button { text-align: center; }

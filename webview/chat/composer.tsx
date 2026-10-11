@@ -1,6 +1,6 @@
 /**
- * Composer: chips de contexto, fila, campo de texto (auto-resize, histórico, popovers `/` e `#`),
- * barra inferior (+, Modo, Modelo, Ferramentas, medidor, Enviar ▾) e a barra de aprovação inline.
+ * Composer: chips de contexto, fila, campo de texto (auto-resize, histórico, popovers `/` e `#`) com o
+ * enviar/fila DENTRO dele, barra inferior (+, Modo, Modelo, medidor) e a barra de aprovação inline.
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { send } from '../shared/bridge';
@@ -91,15 +91,21 @@ function Meter() {
     <div class="meter-wrap"
       onMouseEnter={() => { openPopover.value = 'meter'; }} onMouseLeave={closeMeter}
       onFocusIn={() => setFocusWithin(true)} onFocusOut={() => setFocusWithin(false)}>
-      <button class={`meter ${level}`} aria-label={S.meter.label} aria-expanded={show}
-        aria-haspopup="dialog"
+      <button class={`meter ${level}`} aria-label={b.pct === null ? S.meter.noWindow : S.meter.label}
+        aria-expanded={show} aria-haspopup="dialog"
         title={b.pct === null ? S.meter.noWindow : S.meter.reported(num(b.used), num(b.size), String(b.pct))}
         onClick={() => { openPopover.value = show ? null : 'meter'; }}>
         <span class="ring" aria-hidden="true" />
         <span class="meter-pct">{b.pct === null ? '—' : `${b.pct}%`}</span>
-        <span class="sr-only" role="meter" aria-valuenow={b.pct ?? undefined} aria-valuemin={0} aria-valuemax={100}>
-          {b.pct === null ? S.meter.noWindow : `${b.used} / ${b.size}`}
-        </span>
+        {/* Sem usage reportado o corpo é SÓ o placeholder ('—'): o texto longo fica no `title` e no
+            `aria-label`. Antes ele ia num `.sr-only` DENTRO do botão de ~39px — que no harness do
+            usuário vazou como texto picado ("—O agente ainda não…"). O valor usado/janela continua
+            no `.sr-only` quando há janela (aí o `role=meter` tem o que anunciar). */}
+        {b.pct !== null && (
+          <span class="sr-only" role="meter" aria-valuenow={b.pct} aria-valuemin={0} aria-valuemax={100}>
+            {`${b.used} / ${b.size}`}
+          </span>
+        )}
       </button>
 
       {show && (
@@ -279,15 +285,31 @@ function Listbox({ id, label, items, active, onPick, listRef }: {
   );
 }
 
-/* ─────────── menu de envio ─────────── */
+/* ─────────── enviar/fila DENTRO do campo ─────────── */
 
-function SendButton({ onSubmit }: { onSubmit: (a: 'send' | 'queue' | 'steer' | 'interrupt') => void }) {
-  const busy = state.value.busy;
+/** Sem sessão: o primário "Iniciar" fica na toolbar — é o mesmo `start` do bloco central. */
+function StartButton() {
   const starting = state.value.starting;
-  const started = state.value.sessionId !== null;
+  return (
+    <span class="send">
+      <button class="primary" disabled={starting} title={S.composer.startTip}
+        onClick={() => send({ type: 'start' })}>
+        <Icon name={starting ? 'loading' : 'play'} spin={starting} cls="btn-ic" />
+        {starting ? S.composer.starting : S.composer.start}
+      </button>
+    </span>
+  );
+}
+
+/**
+ * Botão-fantasma no canto inferior direito do `textarea` (sem fundo nem borda). O clique abre o
+ * MESMO menu do envio (enviar / pôr na fila / dirigir / interromper) — nenhuma ação some; o Enter do
+ * campo continua enviando direto. Sem fila habilitada o menu não faria sentido: o clique envia.
+ */
+function SendInline({ onSubmit }: { onSubmit: (a: 'send' | 'queue' | 'steer' | 'interrupt') => void }) {
+  const busy = state.value.busy;
   const qEnabled = state.value.queueEnabled;
-  // popover exclusivo do composer: abrir o menu do envio fecha o do medidor (e vice-versa), porque
-  // os dois ancoram no mesmo canto inferior direito
+  // exclusivo do composer: abrir o menu do envio fecha o do medidor (os dois ancoram no canto direito)
   const open = openPopover.value === 'send';
   const setOpen = (v: boolean) => { openPopover.value = v ? 'send' : null; };
   const menuRef = useRef<HTMLDivElement>(null);
@@ -310,42 +332,28 @@ function SendButton({ onSubmit }: { onSubmit: (a: 'send' | 'queue' | 'steer' | '
     // Enter/Espaço: o próprio <button> ativa — sem handler manual (evita duplo disparo).
   };
 
-  // Sem sessão o botão primário é "Iniciar": é esse clique que faz o handshake ANUNCIAR modos,
-  // modelos e comandos. Antes dele os dois seletores ficam vazios ("sem modos"/"sem modelos"), que
-  // é o que fazia o painel parecer carregado pela metade. Depois de iniciada, volta a ser Enviar.
-  if (!started) {
+  if (!qEnabled) {
     return (
-      <span class="send">
-        <button class="primary" disabled={starting} title={S.composer.startTip}
-          onClick={() => send({ type: 'start' })}>
-          <Icon name={starting ? 'loading' : 'play'} spin={starting} cls="btn-ic" />
-          {starting ? S.composer.starting : S.composer.start}
-        </button>
-      </span>
+      <button class="input-send" title={busy ? S.send.stopTip : S.send.sendTip}
+        aria-label={busy ? S.send.stop : S.send.send}
+        onClick={() => (busy ? send({ type: 'cancel' }) : onSubmit('send'))}>➤</button>
     );
   }
 
   return (
-    <span class="send">
-      <button class="primary" title={busy ? S.send.stopTip : S.send.sendTip}
-        onClick={() => (busy ? send({ type: 'cancel' }) : onSubmit('send'))}>
-        {busy ? `■ ${S.send.stop}` : S.send.send}
-      </button>
-      {qEnabled && (
-        <div class="send-menu-wrap">
-          <button class="primary caret" aria-haspopup="menu" aria-expanded={open}
-            aria-label={S.send.menuLabel} onClick={() => setOpen(!open)}>▾</button>
-          {open && (
-            <div class="popover menu" role="menu" aria-label={S.send.menuLabel} ref={menuRef} onKeyDown={onKey}>
-              {items.map((a) => (
-                <button key={a} class="opt" role="menuitem"
-                  onClick={() => { setOpen(false); onSubmit(a); }}>{label(a)}</button>
-              ))}
-            </div>
-          )}
+    <>
+      <button class="input-send" aria-haspopup="menu" aria-expanded={open}
+        aria-label={S.send.menuLabel} title={S.send.menuLabel}
+        onClick={() => setOpen(!open)}>➤</button>
+      {open && (
+        <div class="popover menu" role="menu" aria-label={S.send.menuLabel} ref={menuRef} onKeyDown={onKey}>
+          {items.map((a) => (
+            <button key={a} class="opt" role="menuitem"
+              onClick={() => { setOpen(false); onSubmit(a); }}>{label(a)}</button>
+          ))}
         </div>
       )}
-    </span>
+    </>
   );
 }
 
@@ -354,6 +362,7 @@ function SendButton({ onSubmit }: { onSubmit: (a: 'send' | 'queue' | 'steer' | '
 export function Composer() {
   const box = useRef<HTMLTextAreaElement>(null);
   const busy = state.value.busy;
+  const started = state.value.sessionId !== null;
   const [menu, setMenu] = useState<{ tok: TriggerToken; items: Item[] } | null>(null);
   const [active, setActive] = useState(0);
   const [histIdx, setHistIdx] = useState(-1);
@@ -481,15 +490,15 @@ export function Composer() {
           onClick={(e) => { const el = e.target as HTMLTextAreaElement; syncMenu(el.value, el.selectionStart); }}
           onKeyDown={onKey}
         />
+        {started && <SendInline onSubmit={submit} />}
         {menu && (
           <Listbox id="composer-pop" label={menu.tok.type === 'slash' ? S.slash.title : S.hash.title}
             items={menu.items} active={active} onPick={pick} />
         )}
       </div>
-      {/* Duas METADES: os controles de contexto (linha própria, que encolhe) e as ações (medidor +
-          primário, alinhadas à direita). A quebra acontece entre os grupos, nunca entre os botões:
-          em painel estreito os selects ganham uma linha inteira em vez de colapsarem a ~30px, e o
-          primário continua no mesmo canto. */}
+      {/* Duas METADES: os controles de contexto (linha própria, que encolhe) e as ações (medidor) à
+          direita. O primário "Iniciar" só aparece SEM sessão; com sessão o enviar/fila vive dentro do
+          campo. A quebra acontece entre os grupos, nunca entre os botões. */}
       <div class="toolbar">
         <div class="toolbar-line">
           <button class="icon-btn" title={S.composer.addContextTip} aria-label={S.composer.addContext}
@@ -512,12 +521,10 @@ export function Composer() {
               {models.value.map((m) => <option key={m.modelId} value={m.modelId} title={m.description}>{m.name}</option>)}
             </select>
           </label>
-          <button class="icon-btn" title={S.composer.toolsTip} aria-label={S.composer.tools}
-            onClick={() => send({ type: 'openManage', manageTab: 'tools' })}><Icon name="gear" /></button>
         </div>
         <div class="toolbar-actions">
           <Meter />
-          <SendButton onSubmit={submit} />
+          {!started && <StartButton />}
         </div>
       </div>
     </div>

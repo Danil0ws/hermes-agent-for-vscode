@@ -128,8 +128,6 @@ export const en: Strings = {
     model: 'Model',
     modelTip: 'Model',
     noModels: 'no models',
-    tools: 'Tools',
-    toolsTip: 'Configure tools (Manage)',
     start: 'Start',
     starting: 'Starting…',
     startTip: 'Create the session and load modes, models and commands',

@@ -178,6 +178,7 @@ test('i18n: rótulos reais de status e opções de aprovação vêm do agente', 
 // caminho pelo cwd do runner (o bundle roda a partir da raiz do repo): `import.meta.url` aponta
 // para dist-test/ e o `..` sai do projeto
 const css = readFileSync(join(process.cwd(), 'webview', 'chat', 'styles.css'), 'utf8');
+const tabsCss = readFileSync(join(process.cwd(), 'webview', 'chat', 'tabs.css'), 'utf8');
 const rule = (sel: string): string => {
   const m = css.match(new RegExp('\\' + sel + '\\s*\\{[^}]*\\}'));
   assert.ok(m, `regra ${sel} não encontrada em styles.css`);
@@ -227,4 +228,25 @@ test('css: a barra inferior quebra só ENTRE os grupos, e o primário fica à di
   assert.match(css, /\.transcript > \* \{[^}]*max-width:\s*min\(100%,\s*\d+ch\)/, 'sem teto de medida de leitura');
   assert.doesNotMatch(css, /\dvw/, 'unidade de viewport no CSS do chat (resolve contra a janela, não contra o painel)');
   assert.match(rule('.bubble'), /font-family:\s*inherit/, 'prosa do balão fora da fonte da UI (vira bloco de código)');
+});
+
+/* ─────────── CSS: barra de abas (tabs.css) ─────────── */
+
+test('css: a barra de abas rola na horizontal e encolhe num painel de 200px', () => {
+  // o defeito real: sem `overflow-x` as abas estouram a largura e empurram o composer; sem
+  // `min-width: 0` o flex não encolhe (o `1 1 auto` do strip ficaria no tamanho do conteúdo).
+  const strip = tabsCss.match(/\.tabbar-strip\s*\{[^}]*\}/)?.[0] ?? '';
+  assert.match(strip, /overflow-x:\s*auto/, 'a barra de abas precisa rolar na horizontal');
+  assert.match(strip, /min-width:\s*0/, 'sem min-width:0 os itens não encolhem e estouram o painel');
+  assert.doesNotMatch(tabsCss, /\dvw/, 'unidade de viewport no CSS das abas (resolve contra a janela)');
+  // o rótulo da aba tem de truncar (ids/cwd longos), como os selects do composer
+  assert.match(tabsCss, /\.tab-label\s*\{[^}]*text-overflow:\s*ellipsis/);
+  // o estado da lane precisa de cor de aviso (aprovação pendente)
+  assert.match(tabsCss, /\.tab-state\.warn\s*\{[^}]*editorWarning-foreground/);
+});
+
+test('css: o vazio sem sessão (bloco Iniciar) empilha e centra', () => {
+  const block = tabsCss.match(/\.start-block\s*\{[^}]*\}/)?.[0] ?? '';
+  assert.match(block, /flex-direction:\s*column/, 'o bloco Iniciar precisa empilhar');
+  assert.match(block, /align-items:\s*center/, 'o bloco Iniciar precisa centrar o conteúdo');
 });

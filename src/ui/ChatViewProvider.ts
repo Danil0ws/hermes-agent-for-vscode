@@ -8,10 +8,11 @@
 import * as vscode from 'vscode';
 import { basename } from 'node:path';
 import { AgentManager } from '../core/AgentManager';
+import type { HermesSession } from '../core/HermesSession';
 import { QueueManager } from '../core/QueueManager';
 import { activeAgent, settings, workingDirectory } from '../config/Settings';
 import { estimateTokens } from '../utils/Tokens';
-import type { ChatState, ContextChip, HostToWebview, WebviewToHost } from '../core/types';
+import type { ChatState, ContextChip, HostToWebview, TabInfo, WebviewToHost } from '../core/types';
 import { tr } from '../l10n';
 
 export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disposable {
@@ -20,10 +21,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
 
   private view?: vscode.WebviewView | vscode.WebviewPanel;
   private queue: QueueManager;
-  private running = false;
   private chips: ContextChip[] = [];
   private last: HostToWebview[] = [];
   private starting = false;
+  /** abas abertas (uma conversa = uma sessão) e qual está ativa. Vive só aqui — a sessão não sabe. */
+  private tabs: TabInfo[] = [];
+  private activeTabId = '';
+  private tabSeq = 0;
 
   constructor(
     private readonly ctx: vscode.ExtensionContext,
@@ -31,7 +35,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     private readonly log: (level: 'info' | 'warn' | 'error', text: string) => void,
   ) {
     this.queue = new QueueManager(ctx.workspaceState);
-    this.agents.onEvent((m) => this.post(m));
+    this.agents.onEvent((m) => this.onAgentEvent(m));
     this.agents.onAuthRequired(() => void this.runAuthTerminal());
   }
 
@@ -75,19 +79,35 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           for (const m of this.last) this.post(m);
           return;
         case 'start':
-          await this.start();
+          await this.start(msg.tab);
           return;
         case 'prompt':
-          await this.send(msg.text, msg.chips, msg.action);
+          await this.send(msg.text, msg.chips, msg.action, msg.tab);
           return;
         case 'cancel':
-          await this.agents.session?.cancel();
+          await this.sessionFor(msg.tab)?.cancel();
           return;
         case 'setMode':
-          await this.agents.session?.setMode(msg.modeId);
+          await this.sessionFor(msg.tab)?.setMode(msg.modeId);
           return;
         case 'setModel':
-          await this.agents.session?.setModel(msg.modelId);
+          await this.sessionFor(msg.tab)?.setModel(msg.modelId);
+          return;
+        /* ── abas ── */
+        case 'activateTab':
+          this.activateTab(msg.tab);
+          return;
+        case 'closeTab':
+          this.closeTab(msg.tab);
+          return;
+        case 'renameTab':
+          this.renameTab(msg.tab, msg.title);
+          return;
+        case 'newTab':
+          // com `worktree`, quem cria o worktree é a feature (que chama `newTab(caminho)` de volta);
+          // sem ele, `newTab` abre uma aba no cwd atual.
+          if (msg.worktree) await vscode.commands.executeCommand('hermes.worktree.new', msg.worktree);
+          else await this.newTab(msg.cwd);
           return;
         case 'permission/answer':
           this.agents.answerPermission(msg.id, msg.optionId);
@@ -100,7 +120,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           this.queue.clear(); this.post({ type: 'queue', items: this.queue.all }); return;
         case 'queue/sendNow': {
           const item = this.queue.take(msg.id);
-          if (item) { await this.agents.session?.cancel(); await this.send(item.text, item.chips, 'send'); }
+          if (item) { await this.sessionFor(msg.tab)?.cancel(); await this.send(item.text, item.chips, 'send', msg.tab); }
           this.post({ type: 'queue', items: this.queue.all });
           return;
         }
@@ -108,7 +128,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           await this.newConversation();
           return;
         case 'compact':
-          await this.send('/compress', [], 'send');
+          await this.send('/compress', [], 'send', msg.tab);
           return;
         case 'openFile': {
           const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(msg.path));
@@ -162,25 +182,29 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     }
   }
 
-  private async send(text: string, chips: ContextChip[], action: 'send' | 'queue' | 'steer' | 'interrupt'): Promise<void> {
+  private async send(text: string, chips: ContextChip[], action: 'send' | 'queue' | 'steer' | 'interrupt', tab?: string): Promise<void> {
     const s = settings();
     if (!text.trim() && chips.length === 0) return;
 
-    if (this.running && s.queueEnabled && action === 'queue') {
+    const t = this.tabs.find((x) => x.id === (tab ?? this.activeTabId)) ?? this.ensureTab();
+    let session = this.sessionFor(t.id);
+    const busy = session?.busy ?? false;
+
+    if (busy && s.queueEnabled && action === 'queue') {
       this.queue.add(text, chips);
       this.post({ type: 'queue', items: this.queue.all });
       return;
     }
-    if (this.running && action === 'interrupt') await this.agents.session?.cancel();
+    if (busy && action === 'interrupt') await session?.cancel();
 
-    let session = this.agents.session;
-    if (!session) session = await this.agents.newSession(activeAgent(s).cfg, workingDirectory(s), activeAgent(s).name);
+    if (!session) {
+      session = await this.agents.newSession(activeAgent(s).cfg, t.cwd, activeAgent(s).name, t.id);
+      t.sessionId = session.sessionId;
+    }
 
     this.chips = chips;
-    this.running = true;
-    this.post({ type: 'user/message', text, chips });
+    this.post({ type: 'user/message', text, chips, tab: t.id });
     const stop = await session.prompt(text, chips);
-    this.running = false;
     this.log('info', `turno terminou: ${stop}`);
 
     if (s.queueEnabled) {
@@ -198,38 +222,76 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
    * vazio, e os seletores só se enchem no primeiro envio (o usuário vê "sem modos"/"sem modelos").
    * Idempotente: clique duplo não abre duas sessões.
    */
-  async start(): Promise<void> {
-    // `existing` numa const: ler `this.agents.session` dentro do guard faz o TS estreitar a
-    // propriedade (aliasing) e a leitura seguinte virar `never`.
-    const existing = this.agents.session;
-    if (this.starting || existing) return;
+  async start(tab?: string): Promise<void> {
+    const t = this.tabs.find((x) => x.id === (tab ?? this.activeTabId)) ?? this.ensureTab();
+    if (this.starting || t.sessionId) return;
     this.starting = true;
-    this.post({ type: 'init', state: this.initialState() });
+    t.starting = true;
+    this.announce();
     try {
       const s = settings();
-      // a sessão devolvida pelo `newSession` é a que vale — não reler `this.agents.session`
-      const session = await this.agents.newSession(activeAgent(s).cfg, workingDirectory(s), activeAgent(s).name);
-      this.post({ type: 'session', sessionId: session.sessionId });
-      this.log('info', `sessão iniciada: ${session.sessionId}`);
+      // a sessão devolvida pelo `newSession` é a que vale — não reler por sessionId
+      const session = await this.agents.newSession(activeAgent(s).cfg, t.cwd, activeAgent(s).name, t.id);
+      t.sessionId = session.sessionId;
+      this.post({ type: 'session', sessionId: session.sessionId, tab: t.id });
+      this.log('info', `sessão iniciada (aba ${t.id}): ${session.sessionId}`);
     } catch (err) {
       this.log('error', `falha ao iniciar a sessão: ${String(err)}`);
-      this.post({ type: 'error', text: String(err) });
+      this.post({ type: 'error', text: String(err), tab: t.id });
     } finally {
       this.starting = false;
-      this.post({ type: 'init', state: this.initialState() });
+      t.starting = false;
+      this.announce();
     }
   }
 
+  /** Nova conversa: troca a sessão DENTRO da aba ativa (o histórico antigo continua em `hermes sessions`). */
   async newConversation(): Promise<void> {
-    this.running = false;
+    const t = this.ensureTab();
     this.chips = [];
     this.last = [];
+    t.sessionId = null;
+    t.busy = false;
+    t.waiting = false;
     const s = settings();
-    await this.agents.newSession(activeAgent(s).cfg, workingDirectory(s), activeAgent(s).name);
-    const sess = this.agents.session;
-    if (sess) this.post({ type: 'session', sessionId: sess.sessionId });
-    this.post({ type: 'init', state: this.initialState() });
-    this.log('info', `nova sessão: ${sess?.sessionId ?? '?'}`);
+    const session = await this.agents.newSession(activeAgent(s).cfg, t.cwd, activeAgent(s).name, t.id);
+    t.sessionId = session.sessionId;
+    this.post({ type: 'session', sessionId: session.sessionId, tab: t.id });
+    this.announce();
+    this.log('info', `nova sessão (aba ${t.id}): ${session.sessionId}`);
+  }
+
+  /**
+   * Abre uma aba nova (uma sessão nova). `cwd` escolhe a pasta de trabalho da sessão — é por aqui
+   * que a lane do worktree entra.
+   */
+  async newTab(cwd?: string): Promise<void> {
+    const s = settings();
+    const dir = cwd || workingDirectory(s);
+    const id = `tab-${++this.tabSeq}`;
+    const tab: TabInfo = {
+      id,
+      title: `${tr('Conversa')} ${this.tabs.length + 1}`,
+      sessionId: null,
+      cwd: dir,
+      agent: activeAgent(s).name,
+      busy: false,
+      starting: true,
+    };
+    this.tabs = [...this.tabs, tab];
+    this.activeTabId = id;
+    this.announce();
+    try {
+      const session = await this.agents.newSession(activeAgent(s).cfg, dir, activeAgent(s).name, id);
+      tab.sessionId = session.sessionId;
+      this.log('info', `aba ${id} → sessão ${session.sessionId} (cwd ${dir})`);
+    } catch (err) {
+      this.log('error', `newTab: falha ao criar a sessão — ${String(err)}`);
+      this.post({ type: 'error', text: String(err), tab: id });
+    } finally {
+      tab.starting = false;
+      this.announce();
+    }
   }
 
   /** chip de arquivo (menu do explorer / "Enviar arquivo atual"). */
@@ -279,26 +341,92 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     await editor.edit((b) => b.insert(editor.selection.active, text));
   }
 
+  /* ─────────── abas ─────────── */
+
+  private activeTab(): TabInfo | undefined { return this.tabs.find((t) => t.id === this.activeTabId); }
+
+  /** Sessão viva da aba (por `sessionId`); sem aba, a ativa. */
+  private sessionFor(tab?: string): HermesSession | undefined {
+    const t = this.tabs.find((x) => x.id === (tab ?? this.activeTabId));
+    const sid = t?.sessionId;
+    return sid ? this.agents.allSessions.find((s) => s.sessionId === sid) : undefined;
+  }
+
+  /** Garante ao menos uma aba: a view nunca fica sem `activeTab` (o estado sem sessão mora numa aba). */
+  private ensureTab(): TabInfo {
+    if (this.tabs.length === 0) {
+      const s = settings();
+      const t: TabInfo = {
+        id: `tab-${++this.tabSeq}`, title: `${tr('Conversa')} 1`, sessionId: null,
+        cwd: workingDirectory(s), agent: activeAgent(s).name, busy: false,
+      };
+      this.tabs = [t];
+      this.activeTabId = t.id;
+    }
+    return this.activeTab() ?? this.tabs[0];
+  }
+
+  /** Anuncia as abas e o estado da aba ativa (o estado das OUTRAS vive na webview). */
+  private announce(): void {
+    const state = this.initialState();
+    this.post({ type: 'tabs', tabs: state.tabs, active: state.activeTab });
+    this.post({ type: 'init', state });
+  }
+
+  private activateTab(tab: string): void {
+    if (!this.tabs.some((t) => t.id === tab)) return;
+    this.activeTabId = tab;
+    this.announce();
+  }
+
+  /** Fechar a aba NÃO apaga a sessão: o histórico continua em `hermes sessions`. */
+  private closeTab(tab: string): void {
+    const i = this.tabs.findIndex((t) => t.id === tab);
+    if (i < 0) return;
+    this.tabs = this.tabs.filter((t) => t.id !== tab);
+    if (this.activeTabId === tab) this.activeTabId = this.tabs[Math.min(i, this.tabs.length - 1)]?.id ?? '';
+    this.ensureTab();
+    this.announce();
+  }
+
+  private renameTab(tab: string, title: string): void {
+    const t = this.tabs.find((x) => x.id === tab);
+    if (!t) return;
+    t.title = title.trim() || t.title;
+    this.announce();
+  }
+
   /**
-   * Abre uma aba nova (uma sessão nova). `cwd` escolhe a pasta de trabalho da sessão — é por aqui
-   * que a lane do worktree entra.
-   * STUB(lane A): o corpo real (criar a aba, subir a sessão com esse cwd, ativá-la) é da lane A.
+   * Indicadores de lane (o `busy`/`waiting` de cada aba é o que a barra mostra): a sessão emite
+   * com a aba selada, então aqui só espelhamos no `TabInfo` e reanunciamos quando muda.
    */
-  async newTab(_cwd?: string): Promise<void> {
-    this.log('info', 'newTab: stub');
+  private onAgentEvent(m: HostToWebview): void {
+    const tab = (m as { tab?: string }).tab;
+    if (tab) {
+      const t = this.tabs.find((x) => x.id === tab);
+      if (t) {
+        let dirty = false;
+        if (m.type === 'busy' && t.busy !== m.value) { t.busy = m.value; dirty = true; }
+        if (m.type === 'permission/ask' && !t.waiting) { t.waiting = true; dirty = true; }
+        if (m.type === 'permission/resolve' && t.waiting) { t.waiting = false; dirty = true; }
+        if (m.type === 'session' && m.sessionId && t.sessionId !== m.sessionId) { t.sessionId = m.sessionId; dirty = true; }
+        if (dirty) this.post({ type: 'tabs', tabs: this.tabs, active: this.activeTabId });
+      }
+    }
+    this.post(m);
   }
 
   private initialState(): ChatState {
     const s = settings();
-    const sess = this.agents.session;
+    const tab = this.ensureTab();
+    const sess = this.sessionFor(tab.id);
     return {
       sessionId: sess?.sessionId ?? null,
-      agent: activeAgent(s).name,
-      busy: this.running,
-      starting: this.starting,
-      // STUB(lane A): as abas são desta camada — a lane A troca por `this.tabList()`/`this.activeTabId`
-      tabs: [],
-      activeTab: '',
+      agent: tab.agent || activeAgent(s).name,
+      busy: tab.busy,
+      starting: tab.starting,
+      tabs: this.tabs.map((t) => ({ ...t })),
+      activeTab: this.activeTabId,
       modes: sess?.snapshot.modes ?? [],
       currentMode: sess?.snapshot.currentMode,
       models: sess?.snapshot.models ?? [],
@@ -318,7 +446,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
   }
 
   private post(m: HostToWebview): void {
-    if (m.type !== 'init' && m.type !== 'busy') {
+    // `tabs` é anúncio próprio (não deve obrigar a webview a reprocessar o estado) e não entra no
+    // replay; `init`/`busy` também não (o `init` já é reconstruído no attach/ready).
+    if (m.type !== 'init' && m.type !== 'busy' && m.type !== 'tabs') {
       this.last.push(m);
       if (this.last.length > 200) this.last.shift();
     }

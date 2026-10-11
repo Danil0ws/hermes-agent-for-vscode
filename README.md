@@ -47,15 +47,23 @@ code --install-extension hermes-agent-vscode-0.1.0.vsix
 1. Click the Hermes icon in the Activity Bar → the **Chat** view.
 2. **Start** creates the session and loads modes, models and commands — until a session exists it is
    the primary button (with a spinner); afterwards it goes back to **Send**.
-3. Type and send (`Enter`; `Shift+Enter` for a newline; `Esc` cancels the turn).
-4. Native menus in the view title bar: new conversation, history, restart session, open in editor,
-   Manage, and a "…" menu with **Open Full CLI**, **Run CLI Command…**, diagnostics, log and traffic.
+3. Type and send (`Enter`; `Shift+Enter` for a newline; `Esc` cancels the turn). The send button sits
+   **inside** the field (bottom right, text only); it opens the same menu — send, queue, steer,
+   interrupt.
+4. **Tabs**: each tab is one conversation (its own session), and the tab strip is the lane indicator —
+   a spinner while that tab's turn runs, a warning dot when it is waiting for approval. Closing a tab
+   does not delete the session (history keeps it). `+` opens a tab, the branch icon opens one in a
+   git worktree ([Commands](#commands)).
+5. Native menus in the view title bar: new conversation, history, restart session, open in editor,
+   Manage (the gear), and a "…" menu with **Open Full CLI**, **Run CLI Command…**, diagnostics, log
+   and traffic.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
 | `Hermes: New Conversation` | `session/new` on the active agent |
+| `Hermes: New Worktree and Session` | `git worktree add` and a new tab **in that folder** — one working directory per lane. Empty `hermes.worktreeRoot` = sibling `<repo>-worktrees` |
 | `Hermes: Session History` | native quick pick (Today/Yesterday/Earlier), resumes with `session/load` |
 | `Hermes: View Plan` / `Implement Plan` | plan view; implement sends the plan as a prompt |
 | `Hermes: Manage` | panel with 8 tabs (Models, Skills, Tools and MCP, Instructions, Context and usage, Agents/Profiles, Approvals, Advanced) |
@@ -89,6 +97,7 @@ The Command Palette holds the full list — the table above is the day-to-day su
 | `hermes.queue.enabled` | `true` | composer prompt queue |
 | `hermes.queue.defaultAction` | `queue` | send action during an active turn: `queue` \| `steer` |
 | `hermes.context.warnAt` | `80` | warn when context usage passes this percentage |
+| `hermes.worktreeRoot` | empty | where `Hermes: New Worktree and Session` creates git worktrees; empty = sibling `<repo>-worktrees` |
 | `hermes.notifications` | `windowNotFocused` | when to notify about background session events |
 | `hermes.logTraffic` | `false` | raw JSON-RPC in the `Hermes Traffic` channel (secrets redacted) |
 

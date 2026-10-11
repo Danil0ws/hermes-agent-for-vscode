@@ -129,8 +129,6 @@ export const zhCN: Strings = {
     model: '模型',
     modelTip: '模型',
     noModels: '无模型',
-    tools: '工具',
-    toolsTip: '配置工具（管理）',
     start: '启动',
     starting: '正在启动…',
     startTip: '创建会话并加载模式、模型和命令',

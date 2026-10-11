@@ -637,3 +637,47 @@ Duas abas = duas sessões = dois processos `hermes acp`, já suportados pelo `Ag
 (`sessions: Map`). O que faltava era (a) o id da aba nas mensagens — a lacuna 11.14, que deixou de ser
 lacuna e virou pré-requisito — e (b) um dono para o estado por aba. Nenhum dos dois exige mudança no
 adaptador ACP: `newTab(cwd)` é só um `AgentManager.newSession({ cwd })` a mais.
+
+### 12.3 Como ficou (implementado, em duas lanes paralelas)
+
+- **A aba é selada na fonte**: `AgentManager.newSession(cfg, cwd, agent, tab?)` fecha o `emit` com o id
+  da aba (`{ ...m, tab }`) e `deps(tab?)` faz o mesmo em `permission/ask`, que nasce fora do emit da
+  sessão. `HermesSession` **não** precisou saber que abas existem — a lacuna 11.14 foi fechada no
+  `AgentManager`, não na sessão.
+- **Provider**: `tabs`/`activeTabId`/`tabSeq`, `newTab(cwd?)`, `ensureTab()` (nunca menos de uma aba),
+  `announce()` (posta `tabs` + `init`), `activateTab`/`closeTab`/`renameTab`; `onAgentEvent` espelha
+  `busy`/`waiting`/`sessionId` no `TabInfo` e reanuncia; `initialState()` deriva da aba ativa; `post()`
+  deixa `tabs` fora do replay (o anúncio é próprio).
+- **Webview**: `webview/chat/router.ts` (novo) concentra o reducer e o `applyHost` que roteia por `tab`
+  — extraído do `main.tsx` para ser testável sem DOM; `store.ts` guarda um `Snapshot` por aba
+  (`captureActive`/`applySnapshot`/`routeBackground`/`switchTab`/`restoreTranscript`), então a aba de
+  fundo continua acumulando turnos sem aparecer.
+- **Composer**: o envio saiu da toolbar para **dentro** do campo (`SendInline` no `.input-wrap`, canto
+  inferior direito, `background:none; border:none`), mantendo o mesmo menu (enviar/fila/dirigir/
+  interromper); o primário da toolbar vira `Iniciar` só enquanto não há sessão; a engrenagem saiu do
+  composer porque o comando subiu para `navigation@4` no título da view. O medidor no estado
+  desconhecido passou a ter corpo compacto (`—`) com o texto longo só em `title`/`aria-label` —
+  antes ele renderizava 49 caracteres espremidos num botão de 37px, em **toda** largura.
+- **Decidido deixar de fora, de propósito**: `chips` e `queue` continuam **globais** no host (por aba
+  ficaram transcript, medidor, plano, permissão e working set); as 4 sugestões do estado vazio
+  continuam dentro do bloco central; fechar aba não fecha nem apaga sessão.
+
+### 12.4 O defeito que só o render pegou (`init` morto por `batch`)
+
+A lane A escreveu `applyInit` com as escritas dentro de `batch()`, importado de `@preact/signals` —
+pacote que **não** é dependência declarada do projeto (vem hoisted do `@preact/preset-vite`) e, na
+versão instalada, não exporta `batch`. No bundle empacotado isso significa: `batch(fn)` lança
+`TypeError: e is not a function` dentro do listener de mensagem e o `init` do host é **inteiramente
+ignorado** — zero abas, `sessionId` nulo, medidor parado — **sem nada no console** que alguém fosse
+ver. O painel abria sem estado nenhum e sem erro visível.
+
+O que **não** pegou: `tsc` (o import existe nos tipos), `npm test` 72/72 (nenhum teste postava um
+`init` que devesse fazer efeito) e `vsce package`. O que pegou: renderizar o **bundle construído** num
+navegador real (harness da §29) e instrumentar o minificado — `applyHost`/`applyInit`/`applyTabs`
+receberam um `window.__hit`, que mostrou `applyHost:init → applyInit` e nenhum efeito no estado.
+
+Correção: escritas soltas (sem `batch`), o import removido e duas guardas em `src/test/tabs.test.ts` —
+uma de comportamento (o `init` tem de aplicar estado, abas e `usage`) e uma de fonte (nenhum `batch(`
+dentro de `applyInit`, fora de comentários). Medido depois no harness: o mesmo `init` renderiza 3 abas
+com `loading`/`bell-dot`, o `input-send` aparece e o medidor mostra `50%`; a aba de fundo continua
+acumulando sem vazar na ativa, e trocar de aba restaura o transcript dela.

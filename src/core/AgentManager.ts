@@ -62,10 +62,14 @@ export class AgentManager implements acp.Client {
 
   /* ─────────── sessões ─────────── */
 
-  async newSession(cfg: AgentConfig, cwd: string, agentName: string): Promise<HermesSession> {
+  async newSession(cfg: AgentConfig, cwd: string, agentName: string, tab?: string): Promise<HermesSession> {
     if (!this.connected) await this.connect(cfg, cwd);
-    const deps = this.deps();
-    const session = await HermesSession.create(this.conn!.connection, cwd, deps, (m) => this.notify(m), agentName);
+    const deps = this.deps(tab);
+    // O id da aba é SELADO aqui, no emit: a sessão não sabe que existe barra de abas, mas toda
+    // mensagem que ela emite sai com a aba dela. É o que permite uma lane em background continuar
+    // acumulando turnos sem aparecer na aba ativa (o `tab` ausente = aba ativa).
+    const emit = (m: HostToWebview): void => this.notify(tab ? ({ ...m, tab } as HostToWebview) : m);
+    const session = await HermesSession.create(this.conn!.connection, cwd, deps, emit, agentName);
     this.sessions.set(session.sessionId, session);
     return session;
   }
@@ -138,7 +142,7 @@ export class AgentManager implements acp.Client {
     return known?.optionId ?? null;
   }
 
-  private deps(): SessionDeps {
+  private deps(tab?: string): SessionDeps {
     return {
       isPathAllowed: (p, write) => this.isPathAllowed(p, write),
       readFile: async (p) => {
@@ -158,7 +162,9 @@ export class AgentManager implements acp.Client {
         }
         this.pendingPerms.set(req.id, resolve);
         this.pendingPermReq.set(req.id, req);
-        this.notify({ type: 'permission/ask', req });
+        // A aprovação nasce fora do `emit` da sessão, então selamos a aba aqui: sem isso a barra de
+        // aprovação de uma lane de fundo apareceria na aba ativa (o pedido não sabe de quem é).
+        this.notify(tab ? { type: 'permission/ask', tab, req } : { type: 'permission/ask', req });
       },
       log: this.log,
     };

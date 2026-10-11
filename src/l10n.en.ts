@@ -106,4 +106,10 @@ export const en: Record<string, string> = {
   "O Hermes está instalado, mas `hermes acp --check` não respondeu. O chat precisa do suporte a ACP.": "Hermes is installed, but `hermes acp --check` did not answer. The chat needs ACP support.",
   "Ver diagnóstico": "Run diagnostics",
   "hermes.permissions = allowAll: o Hermes não pede permissão. Clique para desligar.": "hermes.permissions = allowAll: Hermes never asks for permission. Click to turn off.",
+  "Git não encontrado no PATH — instale o git para criar lanes (worktrees).": "Git not found on PATH — install git to create lanes (worktrees).",
+  "Esta pasta não é um repositório git — abra a pasta do repositório para criar uma lane.": "This folder is not a git repository — open the repository folder to create a lane.",
+  "Nova lane (worktree)": "New lane (worktree)",
+  "Nome da branch: um worktree em pasta separada para esta lane trabalhar sem pisar nas outras.": "Branch name: a worktree in a separate folder so this lane works without stepping on the others.",
+  "Nome de branch inválido — sem espaços, sem \"..\", sem terminar em \"/\" ou \".lock\".": "Invalid branch name — no spaces, no \"..\", no trailing \"/\" or \".lock\".",
+  "Não foi possível criar a lane": "Could not create the lane",
 };

@@ -15,6 +15,39 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Adicionado
 
+- **Abas no chat: uma conversa por aba.** Cada aba é uma sessão própria (não uma troca de contexto na
+  mesma sessão), e a barra de abas **é** o indicador de lane ativa: girando enquanto o turno daquela
+  aba corre, ponto de aviso quando ela espera aprovação, `title` com agente · cwd · branch. Fechar aba
+  não apaga a sessão (o histórico continua em `hermes sessions`); as abas de fundo continuam acumulando
+  turnos. O id da aba passou a acompanhar todo evento de sessão — a lacuna 11.14 virou pré-requisito e
+  foi fechada no `AgentManager` (`newSession(..., tab?)` e `deps(tab?)`), sem tocar a sessão.
+- **Enviar/fila dentro do campo de texto**: botão-fantasma (`➤`) no canto inferior direito do
+  `textarea`, sem fundo e sem borda, que abre o mesmo menu de antes (enviar / pôr na fila / dirigir /
+  interromper). A engrenagem **saiu** do composer: `Hermes: Manage` subiu para o título da view
+  (`navigation@4`), ao lado do histórico.
+- **`Hermes: New Worktree and Session` (lane em worktree)**: cria `git worktree add <root>/<branch> -b
+  <branch>` (raiz de `hermes.worktreeRoot`; vazio = pasta irmã `<repo>-worktrees`), sugere `lane/<n>` a
+  partir do `git worktree list`, valida o nome da branch antes de rodar qualquer coisa e abre a conversa
+  **no diretório do worktree**. Erros (sem git, pasta não é repositório, nome inválido, falha do git)
+  aparecem como mensagem, com o stderr do git na última.
+- **Bloco "Iniciar" centrado**: sem sessão, o vazio mostra título, uma linha explicando o que o clique
+  faz e o primário centralizado — antes disso o único caminho era o botão da toolbar.
+
+### Corrigido
+
+- **`init` do host era ignorado no bundle empacotado** — e o `init` é o primeiro estado que chega ao
+  painel (abas, `sessionId`, `usage`, config da fila). `applyInit` escrevia dentro de `batch()` do
+  `@preact/signals`, pacote que não é dependência declarada do projeto (vem hoisted) e que, na versão
+  instalada, não exporta `batch`: no bundle o handler morria com `TypeError` e o painel abria **sem
+  abas, sem sessão e com o medidor parado, sem nada no console**. Passavam `tsc`, os 72 testes e o
+  `vsce package`; o que pegou foi renderizar o bundle construído no harness e instrumentar o
+  minificado. Guardas novas em `src/test/tabs.test.ts` (comportamento do `init` + fonte, proibindo
+  `batch(` dentro de `applyInit`).
+- **Medidor de contexto no estado desconhecido**: renderizava o texto longo ("O agente ainda não
+  reportou…", 49 caracteres) **dentro** de um botão de 37px, com reticências, em qualquer largura de
+  painel. Medido no harness antes da correção (200/250/310/420/560/1440px). O corpo virou `—` e o texto
+  longo ficou no `title`/`aria-label`; o `.sr-only` ganhou `clip-path: inset(50%)`.
+
 - **`docs/ROADMAP.md`**: as lacunas verificadas de `ARCHITECTURE.md` §11 e o M9 parcial viram
   trabalho executável — cada item com a lacuna de origem, a ação, o **sinal que fecha** (ex.: gate
   verde + medida no harness), o custo e o dono (este repo × humano no editor × upstream). Três fases

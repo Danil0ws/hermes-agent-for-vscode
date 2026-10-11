@@ -109,4 +109,10 @@ export const zhCN: Record<string, string> = {
   "O Hermes está instalado, mas `hermes acp --check` não respondeu. O chat precisa do suporte a ACP.": "Hermes 已安装，但 `hermes acp --check` 无响应。聊天需要 ACP 支持。",
   "Ver diagnóstico": "运行诊断",
   "hermes.permissions = allowAll: o Hermes não pede permissão. Clique para desligar.": "hermes.permissions = allowAll：Hermes 不再请求权限。点击可关闭。",
+  "Git não encontrado no PATH — instale o git para criar lanes (worktrees).": "PATH 中找不到 git — 请安装 git 以创建 lane（worktree）。",
+  "Esta pasta não é um repositório git — abra a pasta do repositório para criar uma lane.": "此文件夹不是 git 仓库 — 请打开仓库文件夹以创建 lane。",
+  "Nova lane (worktree)": "新建 lane（worktree）",
+  "Nome da branch: um worktree em pasta separada para esta lane trabalhar sem pisar nas outras.": "分支名称：在独立文件夹中的 worktree，让此 lane 不影响其他 lane。",
+  "Nome de branch inválido — sem espaços, sem \"..\", sem terminar em \"/\" ou \".lock\".": "分支名称无效 — 不能有空格，不能有 \"..\"，不能以 \"/\" 或 \".lock\" 结尾。",
+  "Não foi possível criar a lane": "无法创建 lane",
 };
