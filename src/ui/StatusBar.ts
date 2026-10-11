@@ -4,6 +4,7 @@
  * A cor de erro vem só de token de tema (`ThemeColor`), nunca de um literal.
  */
 import * as vscode from 'vscode';
+import { tr } from '../l10n';
 import { STATE_LABEL, type SessionState } from './SessionTreeProvider';
 
 export class StatusBar implements vscode.Disposable {
@@ -23,8 +24,10 @@ export class StatusBar implements vscode.Disposable {
     const label = STATE_LABEL[state];
     this.item.text = `$(sparkle) Hermes · ${model} · ${label}`;
     this.item.color = state === 'error' ? new vscode.ThemeColor('statusBarItem.errorForeground') : undefined;
-    this.item.tooltip = `Hermes · ${model} · ${label}\nClique para abrir o histórico de sessões.`;
-    this.item.accessibilityInformation = { label: `Hermes, modelo ${model}, ${label}` };
+    this.item.tooltip = `Hermes · ${model} · ${label}\n${tr('Clique para abrir o histórico de sessões.')}`;
+    // Chave dinâmica: o dicionário do host traduz por texto pt-BR literal, então esta linha cai no
+    // pt-BR por construção (ver ARCHITECTURE §13.1). Fica dentro de `tr()` para a guarda de literais.
+    this.item.accessibilityInformation = { label: tr(`Hermes, modelo ${model}, ${label}`) };
   }
 
   dispose(): void { this.item.dispose(); }

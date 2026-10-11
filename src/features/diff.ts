@@ -25,7 +25,7 @@ export const feature: Feature = {
 
       const diffs = deps.agents.session?.diffsFor(path) ?? [];
       if (!diffs.length) {
-        void vscode.window.showInformationMessage(`Sem diff registrado para ${basename(path)} nesta sessão.`);
+        void vscode.window.showInformationMessage(tr(`Sem diff registrado para ${basename(path)} nesta sessão.`));
         return;
       }
 
