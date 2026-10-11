@@ -11,6 +11,7 @@ test('fila: ordem, mover, remover, drain e "enviar agora"', () => {
   const a = q.add('primeiro');
   const b = q.add('segundo');
   const c = q.add('terceiro');
+  assert.equal(a.id.startsWith('q'), true, 'id da fila tem prefixo q');
   assert.equal(q.size, 3);
   assert.deepEqual(q.all.map((i) => i.text), ['primeiro', 'segundo', 'terceiro']);
 
