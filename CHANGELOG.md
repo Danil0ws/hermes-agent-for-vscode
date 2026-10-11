@@ -50,6 +50,16 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
   lugar; nome conferido como livre no Marketplace. Falta apenas `repository` (URL do código) e o
   `publisher`/token da sua conta.
 
+### Corrigido
+
+- **Seletores de modo e modelo ficavam vazios na conversa.** O `session/new` devolve 3 modos e o
+  catálogo de modelos (222 nesta máquina) e o estado os guardava — mas a sessão só os **anunciava**
+  em eventos de mudança. Como o `send()` cria a sessão sob demanda no primeiro prompt, o `init` que a
+  webview tinha em mãos fora montado sem sessão (`modes: []`) e nada mais chegava: os seletores
+  ficavam vazios a conversa inteira. A sessão passa a anunciar o escopo ao nascer (cobre primeiro
+  prompt, nova conversa e abrir do histórico de uma vez). O teste de integração agora exige a
+  emissão — verificado que falha sem ela.
+
 ### Corrigido (fluxo de desenvolvimento)
 
 - **`Cannot find module .../dist/extension.js` ao ativar.** O `build` começava com `clean`

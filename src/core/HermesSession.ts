@@ -98,7 +98,23 @@ export class HermesSession {
       queueEnabled: true,
       queueDefaultAction: 'queue',
     };
-    return new HermesSession(conn, res.sessionId ?? '', deps, emit, state);
+    const session = new HermesSession(conn, res.sessionId ?? '', deps, emit, state);
+    session.emitScope();
+    return session;
+  }
+
+  /**
+   * Anuncia o escopo da sessão (modos e catálogo de modelos) para quem estiver ouvindo.
+   *
+   * `session/new` já traz os dois, mas a sessão só emitia em EVENTOS de mudança — então a sessão
+   * criada sob demanda dentro do `send()` ficava com os seletores vazios a conversa inteira: o
+   * `init` que a webview recebeu foi montado quando ainda não havia sessão (`modes: []`). Emitir
+   * no nascimento cobre TODOS os caminhos que criam sessão (primeiro prompt, nova conversa, abrir
+   * do histórico) num lugar só, em vez de depender de cada chamador lembrar de reenviar o estado.
+   */
+  private emitScope(): void {
+    this.emit({ type: 'modes', modes: this.state.modes, current: this.state.currentMode });
+    this.emit({ type: 'models', models: this.state.models, current: this.state.currentModel });
   }
 
   static async load(
@@ -114,6 +130,7 @@ export class HermesSession {
       showReasoning: 'collapsed', contextWarnAt: 80, queueEnabled: true, queueDefaultAction: 'queue',
     });
     // o agente replaya o histórico como session/update antes de responder: o roteador já cuidou.
+    session.emitScope();
     return session;
   }
 

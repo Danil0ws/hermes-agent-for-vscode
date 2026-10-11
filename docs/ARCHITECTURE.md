@@ -569,3 +569,20 @@ passar por teclado/leitor de tela em cada superfície. Registrado como pendênci
     correção acima devolveu exatamente os números antigos (x=-149) e quase me fez "consertar" um
     código que já estava certo: o navegador servia o `chat.css` em cache. `Network.setCacheDisabled`
     (ou um cache-bust na URL) antes de medir. O mesmo cuidado vale para o bundle JS.
+30. **Estado guardado não é estado ANUNCIADO.** O `session/new` já devolve `modes` (3) e o catálogo
+    `models` (222 nesta máquina) e o `ChatState` os guardava corretamente — mas a sessão só emitia
+    `modes`/`models` em **eventos de mudança**. Quem cria a sessão sob demanda (o `send()` do
+    composer, no primeiro prompt) nunca recebia o anúncio: o `init` que a webview tinha em mãos foi
+    montado quando ainda não havia sessão (`modes: []`), e os seletores ficavam vazios a conversa
+    inteira. O caminho "Nova conversa" funcionava (ele reenvia `init` depois de criar), o que tornava
+    o defeito intermitente e fácil de não ver. Correção **na fonte**: a sessão anuncia o escopo ao
+    nascer (`emitScope()` em `create` e em `load`), cobrindo primeiro prompt, nova conversa e abrir
+    do histórico num lugar só — em vez de depender de cada chamador lembrar de reenviar o estado.
+    Guarda: o teste de integração passou a exigir que a sessão **emita** `modes` e `models` ao ser
+    criada (afirmava só que o snapshot os continha, que era verdade e não pegava nada). Verificado
+    que o teste falha sem a emissão: `AssertionError: sessão não emitiu 'modes' ao ser criada`.
+31. **View aberta sem sessão continua sem modos/modelos.** Não há o que anunciar antes de existir
+    sessão (o catálogo é por sessão no ACP, não global). Os seletores mostram o estado vazio até o
+    primeiro prompt ou "Nova conversa" criarem a sessão. Criar sessão ao abrir a view resolveria,
+    mas custa um processo do `hermes acp` para quem só olhou o painel — decisão: manter preguiçoso e
+    deixar o vazio explícito.

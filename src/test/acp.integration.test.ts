@@ -61,6 +61,17 @@ test('ACP real: initialize negocia protocolo 1 e as capabilities do Hermes', { s
     assert.deepEqual(session.snapshot.modes.map((m) => m.id), ['default', 'accept_edits', 'dont_ask']);
     assert.ok(session.snapshot.models.length > 0, 'catálogo de modelos vem em session/new');
 
+    // E a sessão tem de ANUNCIAR esse escopo ao nascer. Sem isto, quem cria a sessão sob demanda
+    // (o `send()` do composer, quando o usuário manda o primeiro prompt) fica com os seletores de
+    // modo/modelo vazios a conversa inteira: os dados existiam no snapshot, mas nenhuma mensagem
+    // chegava à webview — o `init` dela foi montado quando ainda não havia sessão.
+    const modesMsg = events.find((e) => e.type === 'modes') as { modes: unknown[] } | undefined;
+    assert.ok(modesMsg, 'sessão não emitiu `modes` ao ser criada');
+    assert.equal(modesMsg.modes.length, session.snapshot.modes.length);
+    const modelsMsg = events.find((e) => e.type === 'models') as { models: unknown[] } | undefined;
+    assert.ok(modelsMsg, 'sessão não emitiu `models` ao ser criada');
+    assert.equal(modelsMsg.models.length, session.snapshot.models.length);
+
     // prompt curto: o streaming tem de produzir texto e um stop reason
     const stop = await session.prompt('Responda apenas: ok');
     assert.equal(stop, 'end_turn', `stop_reason inesperado: ${stop}`);
