@@ -112,15 +112,11 @@ descartado e as views caem em `Explorer`. Uma cor só, então ela precisa passar
 
 ### Imagem no topo do README
 
-Com o campo `repository` preenchido, `vsce` resolve caminhos relativos sozinho e esta linha pode
-voltar a ser a primeira do `README.md`:
-
-```md
-<img src="media/icon.png" width="110" align="right" alt="Ícone do Hermes Agent">
-```
-
-Sem `repository`, `vsce package` falha nessa imagem — e ele casa por texto, não por markdown, então
-nem dentro de um bloco de código o exemplo passa. Por isso o README não tem imagens hoje.
+A primeira linha do `README.md` aponta para a arte local (`media/icon.png`, 110px, alinhada à
+direita). Isso **depende** de `repository` no `package.json`: sem o campo, `vsce package` falha nessa
+imagem (não é aviso) porque não tem URL base para resolvê-la. O `vsce` casa por **texto**, não por
+markdown — por isso só o `README` carrega uma tag de imagem com caminho relativo; um exemplo desses
+em outro `.md` que ele varra quebra o pacote mesmo dentro de um bloco de código.
 
 ## Licença
 

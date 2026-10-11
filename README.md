@@ -1,3 +1,5 @@
+<img src="media/icon.png" width="110" align="right" alt="Ícone do Hermes Agent">
+
 # Hermes Agent for VS Code
 
 Interface nativa do [Hermes Agent](https://hermes-agent.nousresearch.com/docs) (Nous Research) no
@@ -120,28 +122,28 @@ Para regerar o PNG: exporte `media/icon-source.svg` em **128×128, RGBA, fundo t
 ## Publicar na loja
 
 ```bash
-npx vsce package                  # gera o .vsix (hoje sem avisos, exceto 'repository' ausente)
+npx vsce package                  # gera o .vsix (sem avisos)
 npx vsce publish                  # exige publisher + PAT (ou Entra ID)
 ```
 
 O que ainda depende de você:
 
-1. **`repository` no `package.json`** — único aviso que o `vsce` emite hoje. Sem ele, `vsce package`
-   passa com `--allow-missing-repository`, mas a página da loja fica sem link para o código.
-2. **`publisher`** — hoje é `hermes-agent`; tem de ser exatamente o id do seu publisher no
+1. **`publisher`** — hoje é `hermes-agent`; tem de ser exatamente o id do seu publisher no
    Marketplace.
-3. **Token** — PAT do Azure DevOps com escopo *Marketplace → Manage*, ou autenticação por Entra ID
+2. **Token** — PAT do Azure DevOps com escopo *Marketplace → Manage*, ou autenticação por Entra ID
    (`vsce publish --azure-credential`). Os PATs globais do Azure DevOps são aposentados em
    01/12/2026, então o caminho por Entra ID é o recomendado pela própria Microsoft.
+
+O `repository` já está no manifesto (`github.com/Danil0ws/hermes-agent-vscode`), e é ele que faz o
+`vsce` resolver a arte local do README: com o campo preenchido, `vsce package` passa com a imagem no
+topo; sem ele, **falha** (não é aviso). O `icon` da loja vem de `package.json > icon`
+(`media/icon.png`) e independe disso.
 
 Checado agora: `hermes-agent.hermes-agent-vscode` **está livre** no Marketplace (nome e display name
 têm de ser únicos; se já existisse, o publish falharia com "already exists").
 
-Nota sobre o README: **nenhuma imagem local** por enquanto. Sem `repository` o `vsce package`
-**falha** (não é aviso) porque não tem URL base para resolver imagens locais — e ele varre o texto do
-README, então nem um exemplo em bloco de código escapa. O ícone da página da loja vem de
-`package.json > icon` (`media/icon.png`) e independe disso; ao criar o repositório, veja
-`CONTRIBUTING.md › Ícone` para recolocar a imagem no topo.
+O ícone da página da loja vem de `package.json > icon` (`media/icon.png`), e o `repository` já está
+no manifesto — é ele que permite a imagem local no topo do README (ver `CONTRIBUTING.md › Ícone`).
 
 ## Aprovação automática (YOLO)
 

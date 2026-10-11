@@ -6,6 +6,10 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Adicionado
 
+- **Publicação: `repository`, `bugs` e `homepage` no manifesto** (`github.com/Danil0ws/hermes-agent-vscode`)
+  e a arte do Hermes de volta na primeira linha do README. Era o único aviso que o `vsce` emitia — e
+  o campo é o que dá URL base para o `vsce` resolver imagem local: com ele, `vsce package` passa com
+  a imagem no topo; sem ele, falha (não avisa). `CONTRIBUTING.md` deixou de documentar o contorno.
 - **Botão Iniciar + loading no chat**: enquanto não existe sessão, o botão primário do composer é
   `Iniciar` (`WebviewToHost.start` → `ChatViewProvider.start`), com spinner e rótulo "Iniciando…".
   É o clique que faz o `session/new` **anunciar** modos, modelos e comandos — antes disso os dois
