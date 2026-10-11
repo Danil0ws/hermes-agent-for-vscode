@@ -35,6 +35,17 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Corrigido
 
+- **`Iniciar` duplicado e painel interativo antes de iniciar**: o bloco central e o primário da
+  toolbar mostravam o MESMO botão, e o resto do painel aceitava interação sem sessão (campo de texto,
+  `+`, selects em "sem modos"/"sem modelos", medidor, botões de aba/worktree). Agora o único `Iniciar`
+  é o do bloco central; sem sessão a toolbar inteira não é renderizada, o campo fica desabilitado com
+  o placeholder "Inicie o agente para escrever" e as abas/worktree ficam inertes. Medido no harness:
+  1 botão "Iniciar" e 0 selects antes; com sessão, toolbar de volta e o `➤` dentro do campo (fundo
+  transparente, borda `0px none`, `padding-right: 32px` no campo).
+- **`npm test` dependia do node do PATH**: a forma de diretório (`node --test dist-test/`) deixou de
+  resolver no node 26 e o gate falhava com "Cannot find module .../dist-test" enquanto a mesma suíte
+  passava pelo node 24 do shell de login. O script virou `node --test dist-test/*.mjs` (o shell
+  expande a lista), que funciona nas duas versões.
 - **`init` do host era ignorado no bundle empacotado** — e o `init` é o primeiro estado que chega ao
   painel (abas, `sessionId`, `usage`, config da fila). `applyInit` escrevia dentro de `batch()` do
   `@preact/signals`, pacote que não é dependência declarada do projeto (vem hoisted) e que, na versão

@@ -258,7 +258,9 @@ function Empty() {
       </div>
     );
   }
-  // SEM sessão: bloco centrado com título + descrição + primário. É o mesmo `start` da toolbar.
+  // SEM sessão: bloco centrado com título + descrição + primário. É o ÚNICO caminho de interação —
+  // o resto do painel fica inerte (o composer sem toolbar e com o campo desabilitado), então as
+  // sugestões não aparecem aqui: elas só existem depois de iniciar.
   if (state.value.sessionId === null) {
     return (
       <div class="empty start-block">
@@ -267,16 +269,6 @@ function Empty() {
         <button class="primary" title={S.composer.startTip} onClick={() => send({ type: 'start' })}>
           <Icon name="play" cls="btn-ic" /> {S.composer.start}
         </button>
-        <p class="hint">{S.empty.startHint}</p>
-        <ul class="start-actions">
-          {S.empty.actions.map(([label, text]) => (
-            <li key={label}>
-              <button class="secondary" onClick={() => send({ type: 'prompt', text, chips: chips.value, action: 'send' })}>
-                {label}
-              </button>
-            </li>
-          ))}
-        </ul>
       </div>
     );
   }

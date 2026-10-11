@@ -90,3 +90,32 @@ test('worktree: próximo lane/<n> livre e leitura dos worktrees existentes', () 
   ].join('\n');
   assert.deepEqual(laneBranches(list), ['lane/1']);
 });
+
+/* ─────────── sem sessão: UM caminho só (o "Iniciar" do bloco central) ─────────── */
+
+test('sem sessão: um só "Iniciar", campo desabilitado e toolbar inexistente', () => {
+  const transcript = readFileSync(join(root, 'webview', 'chat', 'transcript.tsx'), 'utf8');
+  const tabbar = readFileSync(join(root, 'webview', 'chat', 'tabbar.tsx'), 'utf8');
+  const tabsCss = readFileSync(join(root, 'webview', 'chat', 'tabs.css'), 'utf8');
+
+  // o primário da toolbar duplicava o botão do bloco central (visto na tela: dois "Iniciar")
+  assert.doesNotMatch(composer, /function StartButton/,
+    'o "Iniciar" da toolbar voltou: duplica o do bloco central');
+  assert.match(composer, /\{started && \(\s*<div class="toolbar">/,
+    'a toolbar (+, selects, medidor) tem de existir só COM sessão');
+
+  // nada de interação antes de iniciar
+  assert.match(composer, /disabled=\{!started\}/, 'o campo tem de ficar desabilitado sem sessão');
+  assert.match(composer, /!started \? S\.composer\.locked/, 'sem sessão o placeholder tem de mandar iniciar');
+  assert.match(tabbar, /disabled=\{locked\}/, 'abrir aba/worktree tem de ficar inerte sem sessão');
+  assert.match(tabsCss, /\.tab-add:disabled/, 'falta o estilo do botão de aba desabilitado');
+  assert.match(css, /textarea\.input:disabled/, 'falta o estilo do campo desabilitado');
+
+  // o bloco central sem sessão: título + descrição + botão, e mais nada clicável
+  const ini = transcript.indexOf('state.value.sessionId === null');
+  const bloco = transcript.slice(ini, transcript.indexOf('S.empty.greeting', ini));
+  assert.ok(ini > 0 && bloco.length > 0, 'não achei o ramo sem sessão do estado vazio');
+  assert.doesNotMatch(bloco, /start-actions|S\.empty\.startHint/,
+    'sem sessão só o botão de iniciar pode estar ativo (nem sugestões, nem dica)');
+  assert.match(bloco, /send\(\{ type: 'start' \}\)/, 'o bloco central tem de continuar mandando `start`');
+});

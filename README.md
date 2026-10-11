@@ -45,11 +45,13 @@ code --install-extension hermes-agent-vscode-0.1.0.vsix
 ## Usage
 
 1. Click the Hermes icon in the Activity Bar → the **Chat** view.
-2. **Start** creates the session and loads modes, models and commands — until a session exists it is
-   the primary button (with a spinner); afterwards it goes back to **Send**.
-3. Type and send (`Enter`; `Shift+Enter` for a newline; `Esc` cancels the turn). The send button sits
-   **inside** the field (bottom right, text only); it opens the same menu — send, queue, steer,
-   interrupt.
+2. **Start** is the single control until a session exists: the centred block in the middle of the
+   panel (title, one line on what the click does, and the button with a spinner while it runs).
+   Before that nothing else in the panel is interactive — no toolbar, the field is disabled and says
+   so, and the tab strip's `+`/worktree buttons are inert.
+3. Once started the toolbar appears (`+` for context, mode and model) and typing works (`Enter`;
+   `Shift+Enter` for a newline; `Esc` cancels the turn). The send button sits **inside** the field
+   (bottom right, text only); it opens the same menu — send, queue, steer, interrupt.
 4. **Tabs**: each tab is one conversation (its own session), and the tab strip is the lane indicator —
    a spinner while that tab's turn runs, a warning dot when it is waiting for approval. Closing a tab
    does not delete the session (history keeps it). `+` opens a tab, the branch icon opens one in a

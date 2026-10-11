@@ -169,6 +169,11 @@ details.thought pre { white-space: pre-wrap; margin: 4px 0 0; font-family: var(-
 
 /* campo */
 .input-wrap { position: relative; }
+/* Sem sessão o campo é só um aviso: o clique é do "Iniciar" do bloco central. */
+textarea.input:disabled {
+  color: var(--vscode-disabledForeground, var(--vscode-descriptionForeground));
+  cursor: default;
+}
 textarea.input {
   display: block; width: 100%; resize: none; min-height: 44px; max-height: 240px;
   padding: 6px 32px 6px 8px; overflow-y: auto; line-height: 1.4;

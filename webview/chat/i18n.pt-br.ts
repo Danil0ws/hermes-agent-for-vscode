@@ -115,6 +115,7 @@ export const ptBR = {
   /* ───── composer ───── */
   composer: {
     placeholderIdle: 'Pergunte ao Hermes, # para contexto, / para comandos',
+    locked: "Inicie o agente para escrever",
     placeholderBusy: 'Enfileirar ou dar direção ao turno em andamento',
     placeholderChips: (n: number) =>
       n === 1 ? 'Pergunte sobre o item anexado' : `Pergunte sobre os ${n} itens anexados`,

@@ -654,13 +654,16 @@ adaptador ACP: `newTab(cwd)` é só um `AgentManager.newSession({ cwd })` a mais
   fundo continua acumulando turnos sem aparecer.
 - **Composer**: o envio saiu da toolbar para **dentro** do campo (`SendInline` no `.input-wrap`, canto
   inferior direito, `background:none; border:none`), mantendo o mesmo menu (enviar/fila/dirigir/
-  interromper); o primário da toolbar vira `Iniciar` só enquanto não há sessão; a engrenagem saiu do
+  interromper). **Sem sessão o painel não oferece outra interação**: a toolbar inteira (`+`, selects,
+  medidor) não é renderizada, o campo fica `disabled` com o placeholder "Inicie o agente para
+  escrever", os botões de aba/worktree ficam inertes e o único `Iniciar` é o do bloco central — o
+  primário duplicado da toolbar foi removido (os dois apareciam juntos na tela). A engrenagem saiu do
   composer porque o comando subiu para `navigation@4` no título da view. O medidor no estado
-  desconhecido passou a ter corpo compacto (`—`) com o texto longo só em `title`/`aria-label` —
-  antes ele renderizava 49 caracteres espremidos num botão de 37px, em **toda** largura.
+  desconhecido passou a ter corpo compacto (`—`) com o texto longo só em `title`/`aria-label` — antes
+  ele renderizava 49 caracteres espremidos num botão de 37px, em **toda** largura.
 - **Decidido deixar de fora, de propósito**: `chips` e `queue` continuam **globais** no host (por aba
-  ficaram transcript, medidor, plano, permissão e working set); as 4 sugestões do estado vazio
-  continuam dentro do bloco central; fechar aba não fecha nem apaga sessão.
+  ficaram transcript, medidor, plano, permissão e working set); as 4 sugestões do vazio só aparecem
+  **depois** de iniciar (sem sessão o painel é inerte); fechar aba não fecha nem apaga sessão.
 
 ### 12.4 O defeito que só o render pegou (`init` morto por `batch`)
 

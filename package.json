@@ -547,7 +547,7 @@
     "clean": "rm -rf dist dist-test",
     "build": "npm run compile && npm run clean && npm run build:extension && npm run build:webview",
     "watch": "node scripts/build-extension.mjs --watch",
-    "test": "node scripts/build-tests.mjs && node --test dist-test/",
+    "test": "node scripts/build-tests.mjs && node --test dist-test/*.mjs",
     "package": "npm run build && vsce package --no-dependencies"
   },
   "devDependencies": {

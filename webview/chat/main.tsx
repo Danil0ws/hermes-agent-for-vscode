@@ -30,6 +30,7 @@ function App() {
       <TabBar
         tabs={state.value.tabs}
         active={state.value.activeTab}
+        locked={state.value.sessionId === null}
         onActivate={(id) => send({ type: 'activateTab', tab: id })}
         onClose={(id) => send({ type: 'closeTab', tab: id })}
         onRename={(id, title) => send({ type: 'renameTab', tab: id, title })}

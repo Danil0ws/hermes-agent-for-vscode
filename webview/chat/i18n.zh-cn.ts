@@ -117,6 +117,7 @@ export const zhCN: Strings = {
   /* ───── composer ───── */
   composer: {
     placeholderIdle: '向 Hermes 提问，# 引用上下文，/ 使用命令',
+    locked: "启动代理后才能输入",
     placeholderBusy: '加入队列，或为进行中的回合提供指引',
     placeholderChips: (n: number) =>
       n === 1 ? '针对已附加的这一项提问' : `针对已附加的 ${n} 项提问`,

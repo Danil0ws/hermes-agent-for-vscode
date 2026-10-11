@@ -116,6 +116,7 @@ export const en: Strings = {
   /* ───── composer ───── */
   composer: {
     placeholderIdle: 'Ask Hermes, # for context, / for commands',
+    locked: "Start the agent to type",
     placeholderBusy: 'Queue or steer the turn in progress',
     placeholderChips: (n: number) =>
       n === 1 ? 'Ask about the attached item' : `Ask about the ${n} attached items`,

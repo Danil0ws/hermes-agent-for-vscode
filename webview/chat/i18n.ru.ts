@@ -119,6 +119,7 @@ export const ru: Strings = {
   /* ───── composer ───── */
   composer: {
     placeholderIdle: 'Спросите Hermes, # — контекст, / — команды',
+    locked: "Запустите агента, чтобы писать",
     placeholderBusy: 'Поставить в очередь или задать направление текущему ходу',
     placeholderChips: (n: number) =>
       n === 1 ? 'Спросите о прикреплённом элементе' : `Спросите о ${n} прикреплённых элементах`,

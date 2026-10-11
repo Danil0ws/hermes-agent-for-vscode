@@ -506,8 +506,12 @@ Regras que fecham o pedido:
   `title` com agente · cwd · branch. Fechar aba não apaga sessão.
 - **Config no título**: `hermes.manage` saiu de `1_open@2` e foi para `navigation@4`, ao lado do
   histórico; o botão de engrenagem **sai** da toolbar do composer (não fica nos dois lugares).
-- **Iniciar centrado**: sem sessão, o vazio mostra título + descrição de uma linha + primário
-  centralizado. O primário da toolbar continua existindo (é o mesmo `start`), porque o dedo já está lá.
+- **Iniciar centrado, e único**: sem sessão o vazio mostra título + descrição + primário centralizado,
+  e é o ÚNICO caminho de interação — a toolbar não existe (sem `+`, sem selects mostrando
+  "sem modos"/"sem modelos", sem medidor), o campo fica desabilitado com o placeholder
+  "Inicie o agente para escrever" e os botões de aba/worktree ficam inertes. O primário da toolbar
+  foi removido: ele duplicava este botão (visto na tela, dois "Iniciar"). Depois de iniciar, a
+  toolbar volta e o envio/fila vive dentro do campo.
 - **Enviar dentro do campo**: botão-fantasma ancorado no canto inferior direito do `textarea`
   (sem fundo, sem borda, `--vscode-descriptionForeground`, hover → `--vscode-foreground`), com
   `aria-label` e foco visível; clicar abre o mesmo menu (enviar / pôr na fila / dirigir / interromper),

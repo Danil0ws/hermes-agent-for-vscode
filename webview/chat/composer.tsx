@@ -287,20 +287,6 @@ function Listbox({ id, label, items, active, onPick, listRef }: {
 
 /* ─────────── enviar/fila DENTRO do campo ─────────── */
 
-/** Sem sessão: o primário "Iniciar" fica na toolbar — é o mesmo `start` do bloco central. */
-function StartButton() {
-  const starting = state.value.starting;
-  return (
-    <span class="send">
-      <button class="primary" disabled={starting} title={S.composer.startTip}
-        onClick={() => send({ type: 'start' })}>
-        <Icon name={starting ? 'loading' : 'play'} spin={starting} cls="btn-ic" />
-        {starting ? S.composer.starting : S.composer.start}
-      </button>
-    </span>
-  );
-}
-
 /**
  * Botão-fantasma no canto inferior direito do `textarea` (sem fundo nem borda). O clique abre o
  * MESMO menu do envio (enviar / pôr na fila / dirigir / interromper) — nenhuma ação some; o Enter do
@@ -448,9 +434,10 @@ export function Composer() {
     }
   };
 
-  const placeholder = busy ? S.composer.placeholderBusy
-    : chips.value.length > 0 ? S.composer.placeholderChips(chips.value.length)
-      : S.composer.placeholderIdle;
+  const placeholder = !started ? S.composer.locked
+    : busy ? S.composer.placeholderBusy
+      : chips.value.length > 0 ? S.composer.placeholderChips(chips.value.length)
+        : S.composer.placeholderIdle;
 
   const onDrop = (e: DragEvent) => {
     if (e.dataTransfer?.types.includes('application/x-hermes-queue')) return;
@@ -479,6 +466,8 @@ export function Composer() {
           class="input"
           value={txt}
           rows={1}
+          // SEM sessão o campo não aceita nada: o único caminho é o "Iniciar" do bloco central.
+          disabled={!started}
           placeholder={placeholder}
           aria-label={S.composer.inputLabel}
           role={menu ? 'combobox' : undefined}
@@ -496,37 +485,38 @@ export function Composer() {
             items={menu.items} active={active} onPick={pick} />
         )}
       </div>
-      {/* Duas METADES: os controles de contexto (linha própria, que encolhe) e as ações (medidor) à
-          direita. O primário "Iniciar" só aparece SEM sessão; com sessão o enviar/fila vive dentro do
-          campo. A quebra acontece entre os grupos, nunca entre os botões. */}
-      <div class="toolbar">
-        <div class="toolbar-line">
-          <button class="icon-btn" title={S.composer.addContextTip} aria-label={S.composer.addContext}
-            onClick={() => send({ type: 'addContext' })}>+</button>
-          <label class="sel">
-            <span class="sr-only">{S.composer.mode}</span>
-            <select title={S.composer.modeTip} aria-label={S.composer.mode}
-              value={state.value.currentMode ?? ''}
-              onChange={(e) => send({ type: 'setMode', modeId: (e.target as HTMLSelectElement).value })}>
-              {modes.value.length === 0 && <option value="">{state.value.starting ? S.composer.loading : S.composer.noModes}</option>}
-              {modes.value.map((m) => <option key={m.id} value={m.id} title={m.description}>{m.name}</option>)}
-            </select>
-          </label>
-          <label class="sel sel-model">
-            <span class="sr-only">{S.composer.model}</span>
-            <select title={S.composer.modelTip} aria-label={S.composer.model}
-              value={state.value.currentModel ?? ''}
-              onChange={(e) => send({ type: 'setModel', modelId: (e.target as HTMLSelectElement).value })}>
-              {models.value.length === 0 && <option value="">{state.value.starting ? S.composer.loading : S.composer.noModels}</option>}
-              {models.value.map((m) => <option key={m.modelId} value={m.modelId} title={m.description}>{m.name}</option>)}
-            </select>
-          </label>
+      {/* A toolbar inteira só existe COM sessão: sem sessão o painel não oferece interação nenhuma
+          além do "Iniciar" do bloco central (o `+`, os selects e o medidor não têm o que fazer, e o
+          primário duplicado confundia). Com sessão o enviar/fila vive dentro do campo. */}
+      {started && (
+        <div class="toolbar">
+          <div class="toolbar-line">
+            <button class="icon-btn" title={S.composer.addContextTip} aria-label={S.composer.addContext}
+              onClick={() => send({ type: 'addContext' })}>+</button>
+            <label class="sel">
+              <span class="sr-only">{S.composer.mode}</span>
+              <select title={S.composer.modeTip} aria-label={S.composer.mode}
+                value={state.value.currentMode ?? ''}
+                onChange={(e) => send({ type: 'setMode', modeId: (e.target as HTMLSelectElement).value })}>
+                {modes.value.length === 0 && <option value="">{state.value.starting ? S.composer.loading : S.composer.noModes}</option>}
+                {modes.value.map((m) => <option key={m.id} value={m.id} title={m.description}>{m.name}</option>)}
+              </select>
+            </label>
+            <label class="sel sel-model">
+              <span class="sr-only">{S.composer.model}</span>
+              <select title={S.composer.modelTip} aria-label={S.composer.model}
+                value={state.value.currentModel ?? ''}
+                onChange={(e) => send({ type: 'setModel', modelId: (e.target as HTMLSelectElement).value })}>
+                {models.value.length === 0 && <option value="">{state.value.starting ? S.composer.loading : S.composer.noModels}</option>}
+                {models.value.map((m) => <option key={m.modelId} value={m.modelId} title={m.description}>{m.name}</option>)}
+              </select>
+            </label>
+          </div>
+          <div class="toolbar-actions">
+            <Meter />
+          </div>
         </div>
-        <div class="toolbar-actions">
-          <Meter />
-          {!started && <StartButton />}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
