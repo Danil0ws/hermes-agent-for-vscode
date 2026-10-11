@@ -114,4 +114,6 @@ export const ru: Record<string, string> = {
   "Nome da branch: um worktree em pasta separada para esta lane trabalhar sem pisar nas outras.": "Имя ветки: worktree в отдельной папке, чтобы эта lane работала, не задевая остальные.",
   "Nome de branch inválido — sem espaços, sem \"..\", sem terminar em \"/\" ou \".lock\".": "Недопустимое имя ветки — без пробелов, без \"..\", не заканчивается на \"/\" или \".lock\".",
   "Não foi possível criar a lane": "Не удалось создать lane",
+  "Conversa": "Диалог",
+  "Sem pasta de workspace — abra a pasta do repositório git para criar uma lane.": "Нет папки workspace — откройте папку git-репозитория, чтобы создать lane.",
 };

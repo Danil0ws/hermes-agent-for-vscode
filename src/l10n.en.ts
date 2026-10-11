@@ -112,4 +112,6 @@ export const en: Record<string, string> = {
   "Nome da branch: um worktree em pasta separada para esta lane trabalhar sem pisar nas outras.": "Branch name: a worktree in a separate folder so this lane works without stepping on the others.",
   "Nome de branch inválido — sem espaços, sem \"..\", sem terminar em \"/\" ou \".lock\".": "Invalid branch name — no spaces, no \"..\", no trailing \"/\" or \".lock\".",
   "Não foi possível criar a lane": "Could not create the lane",
+  "Conversa": "Conversation",
+  "Sem pasta de workspace — abra a pasta do repositório git para criar uma lane.": "No workspace folder — open the git repository folder to create a lane.",
 };

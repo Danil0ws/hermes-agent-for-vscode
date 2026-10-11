@@ -115,4 +115,6 @@ export const zhCN: Record<string, string> = {
   "Nome da branch: um worktree em pasta separada para esta lane trabalhar sem pisar nas outras.": "分支名称：在独立文件夹中的 worktree，让此 lane 不影响其他 lane。",
   "Nome de branch inválido — sem espaços, sem \"..\", sem terminar em \"/\" ou \".lock\".": "分支名称无效 — 不能有空格，不能有 \"..\"，不能以 \"/\" 或 \".lock\" 结尾。",
   "Não foi possível criar a lane": "无法创建 lane",
+  "Conversa": "对话",
+  "Sem pasta de workspace — abra a pasta do repositório git para criar uma lane.": "没有工作区文件夹 — 请打开 git 仓库文件夹以创建 lane。",
 };
