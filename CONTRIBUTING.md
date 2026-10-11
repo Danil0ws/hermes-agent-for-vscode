@@ -88,6 +88,18 @@ Toda entrega atualiza, na mesma mudança: `README.md` (instalação/configuraç�
 `docs/` (`ARCHITECTURE.md` com o mapa capability→UI e a seção de **lacunas verificadas**;
 `UX.md` com os wireframes) e `CHANGELOG.md`. Lacuna conhecida se documenta, não se esconde.
 
+## Ordem do build (invariante)
+
+```
+npm run build  =  compile (tsc)  ->  clean (rm -rf dist)  ->  esbuild + vite
+```
+
+O `clean` é **destrutivo** e por isso vem DEPOIS do typecheck: se o `tsc` acusar erro, o `dist/`
+anterior continua intacto. Invertido (clean primeiro), qualquer erro de tipo apagava o
+`dist/extension.js` e o F5 morria com `Cannot find module .../dist/extension.js` — sem relação
+aparente com o erro real. `.vscode/launch.json` declara `preLaunchTask: npm: build` para o F5 nunca
+subir contra um `dist/` velho ou ausente.
+
 ## Ícone
 
 `media/icon.png` (128×128, RGBA, transparente) é exportado de `media/icon-source.svg` — que é a arte

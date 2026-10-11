@@ -50,6 +50,16 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
   lugar; nome conferido como livre no Marketplace. Falta apenas `repository` (URL do código) e o
   `publisher`/token da sua conta.
 
+### Corrigido (fluxo de desenvolvimento)
+
+- **`Cannot find module .../dist/extension.js` ao ativar.** O `build` começava com `clean`
+  (`rm -rf dist`), então qualquer build que falhasse — ou estivesse em voo — deixava o `dist/` vazio,
+  e o Extension Development Host subia sem nada. O build agora roda o **typecheck antes do `clean`**:
+  erro de tipo aborta sem destruir o `dist/` anterior. Verificado: com um erro de tipo proposital, o
+  build falha e o `dist/extension.js` continua lá (antes desaparecia).
+- **`.vscode/launch.json` e `.vscode/tasks.json`** (não existiam): o F5 agora tem
+  `preLaunchTask: npm: build`, então nunca sobe contra um `dist/` velho ou ausente.
+
 ### Corrigido (defeitos encontrados na sidebar estreita, com medida)
 
 - **Menu de envio e popover do medidor saíam do painel.** O menu media 240px ancorado no próprio

@@ -202,6 +202,7 @@ nunca fingem passar.
 | Modo/picker vazio | o agente não anunciou modos | normal em versões antigas; a UI degrada em vez de inventar |
 | Windows | Hermes não roda nativo | use WSL2 e `hermes.cliPath = "wsl hermes"` |
 | `npm install` não instala nada | `NODE_ENV=production` no shell pula devDeps | `export NODE_ENV=development` |
+| `Cannot find module .../dist/extension.js` | o `dist/` estava vazio: o build começa limpando e um build que falhou (ou ficou em voo) deixou nada lá | rode `npm run build`; no F5 o `preLaunchTask` builda antes. O typecheck roda **antes** do `clean`, então erro de tipo não apaga mais o `dist/` |
 | UI em português e eu quero inglês | o idioma segue o VS Code | *Configure Display Language* → English → recarregar a janela |
 | Tradução faltando numa string | string nova sem entrada no dicionário | cai no pt-BR de propósito; adicione a entrada em `src/l10n.<locale>.ts` ou `webview/*/i18n.<locale>.ts` |
 | `command 'hermes.x' not found` | comando declarado no manifesto que ninguém registrou (normalmente um registro duplicado lançando e sendo engolido) | o canal `Hermes` diz `comandos: N/M registrados` na ativação; `npm test` tem a invariante do manifesto |

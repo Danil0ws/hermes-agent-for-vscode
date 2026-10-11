@@ -529,7 +529,7 @@
     "build:extension": "node scripts/build-extension.mjs",
     "build:webview": "vite build",
     "clean": "rm -rf dist dist-test",
-    "build": "npm run clean && npm run compile && npm run build:extension && npm run build:webview",
+    "build": "npm run compile && npm run clean && npm run build:extension && npm run build:webview",
     "watch": "node scripts/build-extension.mjs --watch",
     "test": "node scripts/build-tests.mjs && node --test dist-test/",
     "package": "npm run build && vsce package --no-dependencies"

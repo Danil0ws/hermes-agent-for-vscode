@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Executar Extensão",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+      // sem preLaunchTask o host sobe com o dist/ que estiver em disco — e como `build` comeca
+      // com `clean`, um build falho/interrompido deixava o dist/ vazio e o F5 morria com
+      // "Cannot find module .../dist/extension.js"
+      "preLaunchTask": "npm: build",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "sourceMaps": true
+    }
+  ]
+}
