@@ -1,0 +1,398 @@
+{
+  "name": "hermes-agent-vscode",
+  "displayName": "Hermes Agent for VS Code",
+  "description": "Native VS Code interface for the Hermes Agent CLI (Nous Research) over ACP — chat, tools, diffs, approvals, plans, sessions and the full CLI.",
+  "version": "0.1.0",
+  "publisher": "hermes-agent",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "vscode": "^1.100.0",
+    "node": ">=18"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Other"
+  ],
+  "keywords": [
+    "hermes",
+    "acp",
+    "agent",
+    "ai",
+    "nous",
+    "chat"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "hermes",
+          "title": "Hermes Agent",
+          "icon": "media/hermes.svg"
+        }
+      ]
+    },
+    "views": {
+      "hermes": [
+        {
+          "id": "hermes.chat",
+          "name": "Chat",
+          "type": "webview"
+        },
+        {
+          "id": "hermes.sessions",
+          "name": "Sessions",
+          "type": "tree"
+        },
+        {
+          "id": "hermes.plan",
+          "name": "Plan",
+          "type": "webview",
+          "visibility": "collapsed"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "hermes.chat",
+        "contents": "Nenhum agente conectado.\n[Iniciar conversa](command:hermes.newConversation)\nConfigure agentes em [Gerenciar](command:hermes.manage)."
+      }
+    ],
+    "commands": [
+      {
+        "command": "hermes.newConversation",
+        "title": "Nova conversa",
+        "category": "Hermes",
+        "icon": "$(add)"
+      },
+      {
+        "command": "hermes.showSessions",
+        "title": "Histórico de sessões",
+        "category": "Hermes",
+        "icon": "$(history)"
+      },
+      {
+        "command": "hermes.openInEditor",
+        "title": "Abrir em editor",
+        "category": "Hermes",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "hermes.manage",
+        "title": "Gerenciar",
+        "category": "Hermes",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "hermes.openCli",
+        "title": "Abrir CLI completa",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.runCliCommand",
+        "title": "Executar comando da CLI…",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.diagnostics",
+        "title": "Diagnóstico",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.showLog",
+        "title": "Mostrar log",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.showTraffic",
+        "title": "Mostrar tráfego",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.exportConversation",
+        "title": "Exportar conversa",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.askAboutSelection",
+        "title": "Perguntar ao Hermes sobre a seleção",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.explainSelection",
+        "title": "Explicar com o Hermes",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.fixProblem",
+        "title": "Corrigir problema com o Hermes",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.sendFileToHermes",
+        "title": "Enviar arquivo atual ao Hermes",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.restartSession",
+        "title": "Reiniciar sessão",
+        "category": "Hermes",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "hermes.showPlan",
+        "title": "Ver plano",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.showContext",
+        "title": "Ver contexto e uso",
+        "category": "Hermes"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "hermes.newConversation",
+          "when": "view == hermes.chat",
+          "group": "navigation@1"
+        },
+        {
+          "command": "hermes.showSessions",
+          "when": "view == hermes.chat",
+          "group": "navigation@2"
+        },
+        {
+          "command": "hermes.restartSession",
+          "when": "view == hermes.chat && hermes.sessionActive",
+          "group": "navigation@3"
+        },
+        {
+          "command": "hermes.openInEditor",
+          "when": "view == hermes.chat",
+          "group": "1_open@1"
+        },
+        {
+          "command": "hermes.manage",
+          "when": "view == hermes.chat",
+          "group": "1_open@2"
+        },
+        {
+          "command": "hermes.openCli",
+          "when": "view == hermes.chat",
+          "group": "2_advanced@1"
+        },
+        {
+          "command": "hermes.runCliCommand",
+          "when": "view == hermes.chat",
+          "group": "2_advanced@2"
+        },
+        {
+          "command": "hermes.diagnostics",
+          "when": "view == hermes.chat",
+          "group": "2_advanced@3"
+        },
+        {
+          "command": "hermes.showLog",
+          "when": "view == hermes.chat",
+          "group": "2_advanced@4"
+        },
+        {
+          "command": "hermes.showTraffic",
+          "when": "view == hermes.chat",
+          "group": "2_advanced@5"
+        },
+        {
+          "command": "hermes.exportConversation",
+          "when": "view == hermes.chat",
+          "group": "2_advanced@6"
+        },
+        {
+          "command": "hermes.showPlan",
+          "when": "view == hermes.plan"
+        },
+        {
+          "command": "hermes.showContext",
+          "when": "view == hermes.sessions",
+          "group": "navigation@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "hermes.askAboutSelection",
+          "when": "editorHasSelection",
+          "group": "hermes@1"
+        },
+        {
+          "command": "hermes.explainSelection",
+          "when": "editorHasSelection",
+          "group": "hermes@2"
+        },
+        {
+          "command": "hermes.sendFileToHermes",
+          "group": "hermes@3"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "hermes.sendFileToHermes",
+          "group": "hermes@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "hermes.showPlan",
+          "when": "false"
+        },
+        {
+          "command": "hermes.fixProblem",
+          "when": "false"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "hermes.newConversation",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n"
+      },
+      {
+        "command": "hermes.askAboutSelection",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a",
+        "when": "editorHasSelection"
+      }
+    ],
+    "configuration": {
+      "title": "Hermes Agent",
+      "properties": {
+        "hermes.cliPath": {
+          "type": "string",
+          "default": "hermes",
+          "markdownDescription": "Executável do Hermes. Aceita prefixo de ambiente, ex.: `wsl hermes`.",
+          "scope": "machine-overridable"
+        },
+        "hermes.agents": {
+          "type": "object",
+          "default": {
+            "Hermes": {
+              "command": "hermes",
+              "args": [
+                "acp"
+              ],
+              "profile": "",
+              "cwd": "",
+              "env": {}
+            }
+          },
+          "markdownDescription": "Agentes ACP disponíveis. Cada agente: `command`, `args`, `profile` (--profile do Hermes), `cwd`, `env`, `model` padrão.",
+          "scope": "machine-overridable"
+        },
+        "hermes.defaultAgent": {
+          "type": "string",
+          "default": "Hermes",
+          "description": "Agente ativo ao abrir a view.",
+          "scope": "machine-overridable"
+        },
+        "hermes.defaultWorkingDirectory": {
+          "type": "string",
+          "default": "",
+          "description": "cwd das sessões. Vazio = pasta do workspace.",
+          "scope": "machine-overridable"
+        },
+        "hermes.skipConfiguredMcp": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Exporta `HERMES_ACP_SKIP_CONFIGURED_MCP=1` no processo ACP (evita atrasar `initialize` com os MCP globais).",
+          "scope": "machine-overridable"
+        },
+        "hermes.permissions": {
+          "type": "string",
+          "enum": [
+            "ask",
+            "allowSession",
+            "allowAll"
+          ],
+          "default": "ask",
+          "enumDescriptions": [
+            "Perguntar sempre",
+            "Permitir na sessão o que você aprovar uma vez",
+            "Permitir tudo automaticamente (inseguro)"
+          ],
+          "description": "Política padrão das respostas de aprovação."
+        },
+        "hermes.showReasoning": {
+          "type": "string",
+          "enum": [
+            "always",
+            "collapsed",
+            "hidden"
+          ],
+          "default": "collapsed",
+          "description": "Como exibir o bloco de raciocínio."
+        },
+        "hermes.queue.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Habilitar a fila de prompts do composer."
+        },
+        "hermes.queue.defaultAction": {
+          "type": "string",
+          "enum": [
+            "queue",
+            "steer"
+          ],
+          "default": "queue",
+          "description": "Ação padrão do botão de envio durante um turno ativo."
+        },
+        "hermes.context.warnAt": {
+          "type": "number",
+          "default": 80,
+          "minimum": 10,
+          "maximum": 99,
+          "description": "Avisar quando o contexto passar deste percentual."
+        },
+        "hermes.notifications": {
+          "type": "string",
+          "enum": [
+            "off",
+            "windowNotFocused",
+            "always"
+          ],
+          "default": "windowNotFocused",
+          "description": "Quando notificar sobre eventos de sessão em background."
+        },
+        "hermes.logTraffic": {
+          "type": "boolean",
+          "default": false,
+          "description": "Registrar o JSON-RPC bruto no canal de saída \"Hermes Traffic\"."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p tsconfig.json --noEmit",
+    "build:extension": "node scripts/build-extension.mjs",
+    "build:webview": "vite build",
+    "build": "npm run compile && npm run build:extension && npm run build:webview",
+    "watch": "node scripts/build-extension.mjs --watch",
+    "test": "node scripts/build-tests.mjs && node --test dist-test/",
+    "package": "npm run build && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@agentclientprotocol/sdk": "^0.21.1",
+    "@preact/preset-vite": "^2.10.1",
+    "@preact/signals": "^2.0.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.17.0",
+    "@types/vscode": "^1.100.0",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.25.0",
+    "preact": "^10.25.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  }
+}

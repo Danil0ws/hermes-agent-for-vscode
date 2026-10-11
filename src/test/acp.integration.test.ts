@@ -1,0 +1,95 @@
+/**
+ * Integração real: spawna `hermes acp` de verdade e exercita o caminho do M1
+ * (initialize -> session/new -> prompt com streaming -> cancel).
+ *
+ * Requer o Hermes instalado. Sem ele, o teste é marcado como skip — nunca finge passar.
+ */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import * as acp from '@agentclientprotocol/sdk';
+import { Connection } from '../core/Connection.ts';
+import { HermesSession, type SessionDeps } from '../core/HermesSession.ts';
+import type { HostToWebview, PermissionRequest } from '../core/types.ts';
+
+function hermesAvailable(): string | undefined {
+  try { return execFileSync('command', ['-v', 'hermes'], { shell: true, encoding: 'utf8' }).trim() || undefined; }
+  catch { return undefined; }
+}
+
+const HERMES = hermesAvailable();
+const SKIP = HERMES ? false : 'hermes não está no PATH';
+
+function makeDeps(events: HostToWebview[]): SessionDeps {
+  return {
+    isPathAllowed: () => true,
+    readFile: async () => 'conteúdo',
+    writeFile: async () => {},
+    askPermission: (_req: PermissionRequest, resolve) => resolve(null), // nega: teste não deve executar nada
+    log: () => {},
+  };
+}
+
+test('ACP real: initialize negocia protocolo 1 e as capabilities do Hermes', { skip: SKIP }, async () => {
+  const cwd = mkdtempSync(join(tmpdir(), 'hermes-acp-test-'));
+  const events: HostToWebview[] = [];
+  // o roteador do AgentManager: session/update -> sessão. Sem isto os updates se perdem,
+  // que é exatamente a falha que este teste existe para pegar.
+  let current: HermesSession | undefined;
+  const client: acp.Client = {
+    sessionUpdate: async (p: acp.SessionNotification) => { current?.handleUpdate(p.update); },
+    requestPermission: async () => ({ outcome: { outcome: 'cancelled' } as acp.RequestPermissionOutcome }),
+    readTextFile: async () => ({ content: '' }),
+    writeTextFile: async () => ({}),
+  };
+  const conn = new Connection({ command: 'hermes', args: ['acp'] });
+  try {
+    const init = await conn.start(cwd, client);
+    assert.equal(init.protocolVersion, acp.PROTOCOL_VERSION, 'protocolo negociado tem de ser 1');
+    assert.equal(init.agentInfo?.name, 'hermes-agent');
+    assert.equal(init.agentCapabilities?.loadSession, true);
+    assert.equal(init.agentCapabilities?.promptCapabilities?.image, true);
+    assert.ok(init.agentCapabilities?.sessionCapabilities, 'sessionCapabilities anunciadas');
+
+    const session = await HermesSession.create(conn.connection, cwd, makeDeps(events), (m) => events.push(m), 'Hermes');
+    current = session;
+    assert.ok(session.sessionId.length > 8, `sessionId recebido: ${session.sessionId}`);
+    assert.ok(session.snapshot.modes.length >= 3, 'o Hermes anuncia 3 modos (política de edição)');
+    assert.deepEqual(session.snapshot.modes.map((m) => m.id), ['default', 'accept_edits', 'dont_ask']);
+    assert.ok(session.snapshot.models.length > 0, 'catálogo de modelos vem em session/new');
+
+    // prompt curto: o streaming tem de produzir texto e um stop reason
+    const stop = await session.prompt('Responda apenas: ok');
+    assert.equal(stop, 'end_turn', `stop_reason inesperado: ${stop}`);
+    const text = events.filter((e) => e.type === 'agent/chunk').map((e) => (e as { text: string }).text).join('');
+    assert.ok(text.trim().length > 0, `nenhum agent_message_chunk recebido (eventos: ${events.map((e) => e.type).join(',')})`);
+
+    // cancel: dispara um turno e cancela antes de terminar
+    const pending = session.prompt('Conte de 1 até 200, um número por linha.');
+    await new Promise((r) => setTimeout(r, 1500));
+    await session.cancel();
+    const cancelled = await pending;
+    assert.ok(['cancelled', 'end_turn'].includes(cancelled), `stop_reason após cancel: ${cancelled}`);
+  } finally {
+    conn.stop();
+  }
+});
+
+test('ACP real: connection.stop não deixa processo órfão', { skip: SKIP }, async () => {
+  const cwd = mkdtempSync(join(tmpdir(), 'hermes-acp-test-'));
+  const client: acp.Client = {
+    sessionUpdate: async () => {},
+    requestPermission: async () => ({ outcome: { outcome: 'cancelled' } as acp.RequestPermissionOutcome }),
+    readTextFile: async () => ({ content: '' }),
+    writeTextFile: async () => ({}),
+  };
+  const conn = new Connection({ command: 'hermes', args: ['acp'] });
+  await conn.start(cwd, client);
+  assert.equal(conn.alive, true);
+  conn.stop();
+  await new Promise((r) => setTimeout(r, 3500));
+  assert.equal(conn.alive, false, 'processo continuou vivo depois do stop()');
+});

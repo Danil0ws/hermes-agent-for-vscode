@@ -1,0 +1,48 @@
+:root { --hermes-gap: 8px; --hermes-radius: 4px; }
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}
+.manage { display: flex; height: 100%; }
+.tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 190px;
+  padding: var(--hermes-gap);
+  border-right: 1px solid var(--vscode-panel-border, transparent);
+  background: var(--vscode-sideBar-background);
+}
+button.tab {
+  text-align: left;
+  color: var(--vscode-foreground);
+  background: none;
+  border: none;
+  border-radius: var(--hermes-radius);
+  padding: 4px 8px;
+  cursor: pointer;
+  font: inherit;
+}
+button.tab:hover { background: var(--vscode-list-hoverBackground); }
+button.tab.active { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); }
+button.tab:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+.panel { padding: 16px; overflow: auto; flex: 1; }
+.panel h2 { margin-top: 0; font-size: 1.1em; font-weight: 600; }
+.panel p { color: var(--vscode-foreground); max-width: 70ch; }
+.panel .hint { color: var(--vscode-descriptionForeground); font-size: 0.9em; }
+button.secondary {
+  color: var(--vscode-button-secondaryForeground);
+  background: var(--vscode-button-secondaryBackground);
+  border: none;
+  border-radius: var(--hermes-radius);
+  padding: 3px 10px;
+  cursor: pointer;
+  font: inherit;
+}
+button.secondary:hover { background: var(--vscode-button-secondaryHoverBackground); }
+.row { display: flex; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

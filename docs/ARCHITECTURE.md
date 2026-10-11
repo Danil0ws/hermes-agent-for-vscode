@@ -128,9 +128,16 @@ exportar `HERMES_ACP_SKIP_CONFIGURED_MCP=1` no subprocesso.
 - Conjunto completo de variantes em `session/update` na v1: user/agent/thought chunks, tool_call,
   tool_call_update, plan, available_commands_update, current_mode_update, config_option_update,
   session_info_update, usage_update, notice, compaction_update, compaction_summary_chunk.
-- SDK TypeScript oficial: **`@agentclientprotocol/sdk`** (ex-`@zed-industries/agent-client-protocol`).
-  O cliente de referência usa `^0.21.1`. **A confirmar no M1**: a versão do SDK ↔ `protocolVersion: 1`
-  (não assumir que o minor do SDK é o major do protocolo).
+- SDK TypeScript oficial: **`@agentclientprotocol/sdk`** (ex-`@zed-industries/agent-client-protocol`),
+  `PROTOCOL_VERSION = 1` — verificado em **0.21.1** e **1.8.0**, os dois compatíveis com o Hermes.
+  **Descoberto no M1 (e corrigido):** nenhum dos dois tipa o que o Hermes realmente implementa —
+  não há `models` na resposta de `session/new`, nem `setSessionModel`, nem `forkSession` (em 1.8.0
+  o estado de modelo saiu do schema; em 0.21.1 nunca existiu). Decisão: manter o SDK para o
+  transporte e o subconjunto tipado (`initialize`, `newSession`, `prompt`, `cancel`,
+  `setSessionMode`, `sessionUpdate`, `requestPermission`, `fs/*`), **pinado em `^1.8.0`**, e falar
+  `session/set_model` e `session/fork` por **`extMethod`** com tipos locais
+  (`SessionResponseLite`) — ver `src/core/HermesSession.ts`. Foi o que evitou inventar um
+  subconjunto do protocolo.
 - SDK Python do agente: `agent-client-protocol==0.9.0` (extra `acp` do pyproject).
 
 ### 2.5 UX de referência — VS Code 1.141 (documentação atual, não memória)
@@ -445,5 +452,6 @@ Notas de implementação:
     `promptCapabilities.image` (verdadeiro hoje).
 11. **Recursos só da TUI** (`/skin`, status bar da TUI, widgets) não são duplicados: viram
     "Executar na CLI".
-12. **Versão do SDK TS ↔ `protocolVersion: 1`** precisa ser confirmada no M1; se o SDK exigir uma
-    major diferente, o fallback é o `AcpClient` falando JSON-RPC cru (o protocolo é pequeno).
+12. **SDK TS ↔ agente — resolvido no M1**: `PROTOCOL_VERSION = 1` em 0.21.1 e 1.8.0. O SDK não tipa
+    `models`/`session/set_model`/`session/fork`, que o Hermes implementa → `extMethod` + tipos locais.
+    Se uma versão futura do SDK tipar isso, o wrapper some.
