@@ -1,18 +1,11 @@
 /**
  * Strings de UI do painel "Gerenciar" (en) — tradução do pt-BR (idioma de ORIGEM).
  *
- * O pt-BR fixa os valores como literais (`as const`); `Widen` preserva a paridade de
- * chaves (chave faltando ou a mais quebra o `tsc`) trocando só os valores por texto.
+ * Tipagem: `Strings` (o shape do bundle pt-BR) — o compilador garante paridade de chaves.
  */
 import { type Strings } from './i18n.pt-br';
 
-type Widen<T> =
-  T extends string ? string :
-  T extends (...args: infer A) => unknown ? (...args: A) => string :
-  T extends object ? { [K in keyof T]: Widen<T[K]> } :
-  T;
-
-export const en: Widen<Strings> = {
+export const en: Strings = {
   title: 'Manage',
   tabsLabel: 'Management sections',
   tabs: {

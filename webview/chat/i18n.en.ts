@@ -1,19 +1,11 @@
 /**
  * Bundle en da webview do chat (tradução do pt-BR — o idioma de ORIGEM).
  *
- * O pt-BR fixa os valores como literais (`as const`), então um bundle traduzido não
- * satisfaz `Strings` direto. `Widen` preserva a paridade de chaves — chave faltando ou a
- * mais quebra o `tsc` — trocando só os valores literais por texto.
+ * Tipagem: `Strings` (o shape do bundle pt-BR) — o compilador garante paridade de chaves.
  */
 import { type Strings } from './i18n.pt-br';
 
-type Widen<T> =
-  T extends string ? string :
-  T extends (...args: infer A) => unknown ? (...args: A) => string :
-  T extends object ? { [K in keyof T]: Widen<T[K]> } :
-  T;
-
-export const en: Widen<Strings> = {
+export const en: Strings = {
   /* ───── empty / welcome ───── */
   empty: {
     greeting: 'Hermes runs on your machine, with your skills, memory and tools.',

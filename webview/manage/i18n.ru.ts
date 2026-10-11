@@ -1,18 +1,12 @@
 /**
  * Bundle ru do painel Gerenciar (tradução do pt-BR).
  *
- * `Strings` vem de um objeto `as const` no pt-BR, então os valores são tipos literais.
- * `Widen` troca literal → string mantendo as chaves: o `tsc` continua pegando chave
- * faltando ou sobrando, mas aceita os textos traduzidos.
+ * Tipagem: `Strings` (o shape do bundle pt-BR) — o compilador garante paridade de chaves.
  */
 import { type Strings } from './i18n.pt-br';
 
-type Widen<T> = T extends string ? string
-  : T extends readonly unknown[] ? { [K in keyof T]: Widen<T[K]> }
-  : T extends object ? { [K in keyof T]: Widen<T[K]> }
-  : T;
 
-const bundle: Widen<Strings> = {
+export const ru: Strings = {
   title: 'Управление',
   tabsLabel: 'Разделы управления',
   tabs: {
@@ -136,4 +130,3 @@ const bundle: Widen<Strings> = {
   },
 };
 
-export const ru: Strings = bundle as unknown as Strings;

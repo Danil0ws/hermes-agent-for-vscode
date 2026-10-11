@@ -7,12 +7,8 @@ import { type Strings } from './i18n.pt-br';
 
 /** `Strings` tem literais aninhados (`empty.actions` é `as const`): Widen troca literal →
  *  string mantendo as chaves, então o `tsc` ainda pega chave faltando ou sobrando. */
-type Widen<T> = T extends string ? string
-  : T extends readonly unknown[] ? { [K in keyof T]: Widen<T[K]> }
-  : T extends object ? { [K in keyof T]: Widen<T[K]> }
-  : T;
 
-const bundle: Widen<Strings> = {
+export const ru: Strings = {
   /* ───── vazio / boas-vindas ───── */
   empty: {
     greeting: 'Hermes работает на вашем компьютере — с вашими skills, памятью и инструментами.',
@@ -225,4 +221,3 @@ const bundle: Widen<Strings> = {
   } as Record<string, string>,
 };
 
-export const ru: Strings = bundle as unknown as Strings;

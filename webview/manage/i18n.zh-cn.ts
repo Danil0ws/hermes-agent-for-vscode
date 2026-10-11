@@ -1,19 +1,12 @@
 /**
  * Bundle zh-cn do painel Gerenciar.
  *
- * Tradução do pt-BR (o idioma de ORIGEM). `Strings` é o contrato: chave faltando ou sobrando
- * quebra o `tsc`. `Texts<>` apenas alarga os literais do shape (`as const` do pt-BR) para
- * `string` — o texto muda de idioma, a estrutura continua sendo conferida intacta.
+ * Tipagem: `Strings` (o shape do bundle pt-BR) — o compilador garante paridade de chaves.
  */
 import type { Strings } from './i18n.pt-br';
 
-type Texts<T> = T extends string ? string
-  : T extends (...args: never[]) => unknown ? T
-  : T extends readonly unknown[] ? { -readonly [K in keyof T]: Texts<T[K]> }
-  : T extends object ? { -readonly [K in keyof T]: Texts<T[K]> }
-  : T;
 
-const bundle: Texts<Strings> = {
+export const zhCN: Strings = {
   title: '管理',
   tabsLabel: '管理分区',
   tabs: {
@@ -137,4 +130,3 @@ const bundle: Texts<Strings> = {
   },
 };
 
-export const zhCN: Strings = bundle as Strings;
