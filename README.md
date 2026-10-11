@@ -84,13 +84,15 @@ code --install-extension hermes-agent-vscode-0.1.0.vsix
 
 ## Ícone
 
-A arte do Hermes (`media/hermes-agent-light-vscode.svg` e `media/hermes-agent-vscode.svg`) é o
-ícone da extensão, nos dois temas:
+A arte do Hermes é **um** arquivo, `media/hermes-agent-vscode.svg`, usado nos dois temas:
 
-- **Activity Bar**: o manifesto declara o par light/dark
-  (`contributes.viewsContainers.activitybar[0].icon`). O par é **obrigatório**, não preferência: o
-  VS Code não recolore o ícone de view container, a cor vem do arquivo.
-- **Loja**: `media/icon.png`, 128×128 RGBA com fundo transparente, gerado a partir da mesma arte.
+- **Activity Bar**: o manifesto aponta para ele em
+  `contributes.viewsContainers.activitybar[0].icon`. O schema do VS Code exige `icon` do tipo
+  **string** (o par `{light, dark}` **não** é aceito: o container é descartado inteiro e as views
+  caem em `Explorer`). O VS Code também não recolore o ícone de view container — a cor vem do
+  arquivo, então uma cor só precisa servir aos dois fundos.
+- **Loja**: `media/icon.png`, 128×128 RGBA com fundo transparente, gerado a partir de
+  `media/icon-source.svg`.
   O `vsce` **recusa publicar com `icon` em SVG** ("the icon provided in `package.json` may not be an
   SVG"), por isso o PNG — o SVG continua valendo para a Activity Bar, que é manifesto.
 
@@ -98,12 +100,13 @@ Contraste medido (WCAG para elemento não-textual, mínimo 3:1):
 
 | Arquivo | Cor | Onde | Contraste |
 |---|---|---|---|
-| `hermes-agent-light-vscode.svg` | `#007ACC` | Activity Bar em tema claro | 4,51:1 sobre branco |
-| `hermes-agent-vscode.svg` | `#3B9EFF` | Activity Bar em tema escuro | 4,52:1 sobre `#333` |
+| `hermes-agent-vscode.svg` | `#2B8AD9` | Activity Bar, tema claro e escuro | 3,66:1 sobre branco · 3,45:1 sobre `#333` · 4,51:1 sobre `#1F1F1F` |
 | `icon.png` (`icon-source.svg`) | `#1E88E5` | card da loja, nos dois temas | 3,68:1 claro · 3,43:1 escuro |
 
-O azul original do par era `#0066B8` no tema escuro: **2,16:1** sobre a Activity Bar escura, abaixo do
-mínimo — e a barra ainda reduz a opacidade do item inativo. Daí o `#3B9EFF`, mesma família de cor.
+O azul original do par (`#007ACC` no claro, `#3B9EFF` no escuro) não sobrevive ao schema: uma cor só
+tem de servir aos dois fundos, e o `#007ACC` dava **2,80:1** sobre a Activity Bar `#333`. Daí o
+`#2B8AD9`, mesma família, acima de 3:1 nos dois — e 4,5:1 no fundo mais escuro, já que a barra reduz
+a opacidade do item inativo.
 
 Nota honesta sobre tamanho: a arte tem detalhe fino e, no tamanho real da Activity Bar (16–24px),
 os traços internos ficam em ~0,2px e ela lê como silhueta. É uma escolha de marca legítima; se

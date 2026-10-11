@@ -104,9 +104,11 @@ subir contra um `dist/` velho ou ausente.
 
 `media/icon.png` (128×128, RGBA, transparente) é exportado de `media/icon-source.svg` — que é a arte
 com o azul `#1E88E5`, escolhido por passar de 3:1 nos dois fundos do card da loja. Ao mexer na arte,
-regere o PNG **e** reconfira o contraste das duas variantes da Activity Bar: o VS Code não recolore
-o ícone de view container, então cada tema usa o arquivo do seu par
-(`contributes.viewsContainers.activitybar[0].icon`).
+regere o PNG **e** reconfira o contraste de `media/hermes-agent-vscode.svg`: o VS Code não recolore
+o ícone de view container (a cor vem do arquivo) e o schema exige `icon` **string** em
+`contributes.viewsContainers.activitybar[0].icon` — com o par `{light, dark}` o container é
+descartado e as views caem em `Explorer`. Uma cor só, então ela precisa passar de 3:1 no branco e no
+`#333`.
 
 ### Imagem no topo do README
 

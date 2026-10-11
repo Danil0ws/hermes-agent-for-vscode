@@ -21,6 +21,15 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Corrigido
 
+- **O container `hermes` não registrava na Activity Bar** (achado no log do editor, não em teste):
+  `contributes.viewsContainers.activitybar[0].icon` declarava o par `{light, dark}` e o schema do
+  VS Code exige `icon` **string** — o container inteiro é descartado, com apenas duas linhas no log
+  (`a propriedade icon é obrigatória e deve ser do tipo string` e `O contêiner de modo de exibição
+  'hermes' não existe`), e todas as views caem em `Explorer`. Agora o ícone é um arquivo só,
+  `media/hermes-agent-vscode.svg` com `#2B8AD9` (3,66:1 sobre branco, 3,45:1 sobre `#333`, medido)
+  — o `#007ACC` da variante clara dava 2,80:1 no fundo escuro e o par nem era aceito. Dois testes
+  novos no manifesto cobram `icon` string (com o arquivo existindo em disco) e todo
+  `contributes.views` apontando para um container declarado.
 - **Peso das opções de aprovação** (achado ao renderizar a UI, não em teste): `Permitir sempre` — a
   concessão gravada na allowlist permanente — era o botão primário azul e `Negar` o secundário, ou
   seja, a UI empurrava o usuário para a permissão mais ampla. Agora a primeira opção de permissão é

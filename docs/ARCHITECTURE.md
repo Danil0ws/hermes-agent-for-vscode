@@ -539,16 +539,18 @@ passar por teclado/leitor de tela em cada superfície. Registrado como pendênci
     `texto pt-BR → tradução`, o que não expressa `tr(\`... ${x} ...\`)`. Essas duas strings ficam em
     pt-BR em todos os idiomas. O caminho de correção é partir em chave + parâmetros (como as
     funções do bundle da webview já fazem), não manter o texto composto.
-26. **Ícone: par light/dark é obrigatório, PNG é obrigatório para a loja**: o VS Code não recolore
-    o ícone de view container (a cor vem do arquivo), então `viewsContainers.activitybar[].icon`
-    declara o par light/dark. Para a loja, o `vsce` **recusa** `icon` em SVG por segurança — daí o
-    `media/icon.png` 128×128 derivado da mesma arte. Ressalva medida: no tamanho real da Activity
-    Bar (16–24px) os traços internos da arte caem para ~0,2px e ela lê como silhueta; a verificação
-    foi feita renderizando os SVG em 16/24/32px nos dois fundos (o ambiente não tem permissão de
-    acessibilidade para capturar a janela do editor). Contraste **medido**, não estimado: o azul
-    original do par falhava no tema escuro (`#0066B8` = 2,16:1 sobre a Activity Bar `#333`, mínimo
-    3:1), então a variante escura passou a `#3B9EFF` (4,52:1) e o PNG da loja usa `#1E88E5`, que
-    passa nos dois fundos (3,68:1 claro, 3,43:1 escuro).
+26. **Ícone: `icon` do view container é string e o PNG é obrigatório para a loja**: o schema do VS
+    Code (build 1.141) pede `id`/`title`/`icon` e **`icon: string`** em
+    `contributes.viewsContainers.<local>[].icon`. O par `{light, dark}` que estava lá **não** é
+    aceito: o container não registra, o log só diz `a propriedade icon é obrigatória e deve ser do
+    tipo string` + `O contêiner 'hermes' não existe`, e as views caem no `Explorer` — os dois
+    primeiros testes de `src/test/manifest.test.ts` agora cobram isso. Sem par, uma cor só precisa
+    servir aos dois fundos (o VS Code não recolore o ícone de view container), daí `#2B8AD9`
+    (3,66:1 sobre branco, 3,45:1 sobre `#333`). Para a loja, o `vsce` **recusa** `icon` em SVG por
+    segurança — daí o `media/icon.png` 128×128 derivado de `media/icon-source.svg` (`#1E88E5`).
+    Ressalva medida: no tamanho real da Activity Bar (16–24px) os traços internos da arte caem para
+    ~0,2px e ela lê como silhueta; a verificação foi feita renderizando os SVG em 16/24/32px nos
+    dois fundos (o ambiente não tem permissão de acessibilidade para capturar a janela do editor).
 27. **Popover de webview se clampa ao PAINEL, nunca à viewport.** O menu do envio era
     `position:absolute; right:0; min-width:240px; max-width:min(420px,90vw)` e o containing block era
     o wrapper do próprio botão (`~30px`), então numa sidebar de 310px o menu media 240px e começava em

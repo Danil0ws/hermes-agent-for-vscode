@@ -35,10 +35,7 @@
         {
           "id": "hermes",
           "title": "%viewContainer.hermes.title%",
-          "icon": {
-            "light": "media/hermes-agent-light-vscode.svg",
-            "dark": "media/hermes-agent-vscode.svg"
-          }
+          "icon": "media/hermes-agent-vscode.svg"
         }
       ]
     },

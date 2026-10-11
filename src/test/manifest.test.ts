@@ -106,6 +106,28 @@ test('manifesto: títulos usam chaves de tradução (nada de texto solto)', () =
   assert.deepEqual(soltos.map((c) => c.command), []);
 });
 
+test('manifesto: ícone de view container é STRING (objeto faz o VS Code descartar o container)', () => {
+  // Schema real do VS Code (viewsContainers.<local>.items, lido do build 1.141):
+  // required: ["id","title","icon"] e icon: { type: "string" }. Com `{light, dark}` o container
+  // NÃO registra (o log só diz "a propriedade `icon` é obrigatória e deve ser do tipo `string`") e
+  // todas as views dele caem em "Explorer".
+  type Container = { id: string; icon?: unknown };
+  const containers = (pkg.contributes as { viewsContainers?: Record<string, Container[]> }).viewsContainers ?? {};
+  for (const [local, list] of Object.entries(containers)) {
+    for (const c of list) {
+      assert.equal(typeof c.icon, 'string', `${local}.${c.id}: icon precisa ser string`);
+      assert.ok(existsSync(join(root, c.icon as string)), `${local}.${c.id}: arquivo de ícone não existe (${c.icon})`);
+    }
+  }
+});
+
+test('manifesto: toda chave de contributes.views aponta para um container declarado', () => {
+  const containers = (pkg.contributes as { viewsContainers?: Record<string, { id: string }[]> }).viewsContainers ?? {};
+  const ids = new Set(Object.values(containers).flat().map((c) => c.id));
+  const orfas = Object.keys((pkg.contributes as { views?: Record<string, unknown> }).views ?? {}).filter((k) => !ids.has(k));
+  assert.deepEqual(orfas, [], `views num container inexistente (vão para o Explorer): ${orfas.join(', ')}`);
+});
+
 test('manifesto: as 4 localidades cobrem as mesmas chaves do nls padrão', () => {
   const base = JSON.parse(readFileSync(join(root, 'package.nls.json'), 'utf8')) as Record<string, string>;
   const keys = Object.keys(base).sort();
