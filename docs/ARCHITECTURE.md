@@ -1,0 +1,428 @@
+# Hermes Agent for VS Code — Arquitetura
+
+Status: **Fase 0 concluída (pesquisa + desenho)**. Nada de código de extensão foi escrito ainda.
+Alvo: VS Code ≥ 1.100 (máquina de referência: **1.141.0**), Node ≥ 18 (máquina: v26.8.1).
+Hermes de referência: **v0.21.6+556.g6a2662a**, install via git, Python 3.14.7.
+
+---
+
+## 1. Escopo
+
+Entregar uma extensão que é uma **interface nativa** para o Hermes Agent CLI instalado na máquina.
+Não reimplementa o agente: fala **ACP (JSON-RPC 2.0 sobre stdio)** com `hermes acp`, que usa o mesmo
+`AIAgent`, a mesma `~/.hermes`, os mesmos providers, skills, MCP, memória e toolsets da CLI.
+
+Invariante de produto: **nada que a CLI faz pode ficar inacessível.** O que o ACP não expõe vira
+terminal integrado (CLI/TUI) ou leitura/escrita da configuração real.
+
+Não-objetivos: substituir o agente, reimplementar skill/approval/toolset fora do Hermes, manter
+estado paralelo à config real do Hermes.
+
+---
+
+## 2. Evidências da Fase 0 (verificado nesta máquina)
+
+Tudo abaixo foi obtido por execução real, não por documentação ou memória. Comandos entre parênteses.
+
+### 2.1 CLI instalada
+
+```
+$ hermes --version
+Hermes Agent v0.21.6+556.g6a2662a (2026.9.24) · stable · local 6a2662a4aaad
+Install directory: /Users/danilo/.hermes/hermes-agent     Install method: git     Python: 3.14.7
+
+$ hermes acp --check     → Hermes ACP check OK
+$ hermes acp --version   → 0.21.6+556.g6a2662a
+$ hermes acp --help      → --accept-hooks | --version | --check | --setup | --setup-browser | --yes
+```
+
+`hermes acp` loga em **stderr**; **stdout é exclusivamente transporte JSON-RPC**.
+Também existem os launchers `hermes-acp` e `python -m acp_adapter`.
+
+### 2.2 Handshake real (probe próprio, `initialize` + `session/new`, sem prompts)
+
+`initialize` (client enviando `protocolVersion: 1`, fs read/write, terminal, auth.terminal):
+
+```json
+{"result":{
+  "protocolVersion": 1,
+  "agentInfo": {"name":"hermes-agent","version":"0.21.6"},
+  "agentCapabilities": {
+    "loadSession": true,
+    "promptCapabilities": {"image": true},
+    "sessionCapabilities": {"fork":{},"list":{},"resume":{}}
+  },
+  "authMethods": [
+    {"id":"opencode-go","name":"opencode-go runtime credentials",
+     "description":"Authenticate Hermes using the currently configured opencode-go runtime credentials."},
+    {"id":"hermes-setup","type":"terminal","name":"Configure Hermes provider","args":["--setup"],
+     "description":"Open Hermes' interactive model/provider setup in a terminal. ..."}
+  ]}}
+```
+
+`session/new` respondeu com **três** chaves: `sessionId`, `models`, `modes`.
+
+```json
+{"result":{
+  "sessionId":"8ae1aeb8-44f2-4a86-8969-ff107575113d",
+  "models":{"currentModelId":"opencode-go:deepseek-v4.1-flash",
+            "availableModels":[{"modelId":"nous:anthropic/claude-fable-5.1",
+                                "name":"Nous Portal · anthropic/claude-fable-5.1",
+                                "description":"Provider: Nous Portal"}, ... 222 linhas]},
+  "modes":{"currentModeId":"default","availableModes":[
+    {"id":"default","name":"Default","description":"Ask before edits."},
+    {"id":"accept_edits","name":"Accept Edits","description":"Auto-allow workspace and temp-dir edits; still asks for sensitive paths."},
+    {"id":"dont_ask","name":"Don't Ask","description":"Auto-allow file edits for this session except sensitive paths."}]}}}
+```
+
+Distribuição real das 222 linhas de modelo: CommandCode 87 · Nous Portal 61 · OpenCode Go 44 ·
+GitHub Copilot ACP 17 · CommandCode (Anthropic) 11 · Mixture of Agents 1 · OpenCode Go(current) 1.
+Formato do id: `provider:model`, ou `custom:<nome>:<modelo>` para endpoints nomeados em `config.yaml`.
+Cap interno por provider: `ACP_MAX_MODELS_PER_PROVIDER = 200`.
+
+### 2.3 O que o adaptador realmente emite (leitura de `~/.hermes/hermes-agent/acp_adapter/`)
+
+`session/update` variantes **emitidas**: `user_message_chunk`, `agent_message_chunk`,
+`agent_thought_chunk`, `tool_call`, `tool_call_update`, `plan`, `available_commands_update`,
+`usage_update`, `session_info_update`.
+
+**Não emitidas**: `notice`, `compaction_update`, `compaction_summary_chunk`. O pós-compactação é
+sinalizado só como `_meta.hermes.containsCompactionSummary` no `agent_message_chunk`.
+
+Slash commands anunciados por `available_commands_update` (9):
+`/help` `/model` `/tools` `/context` `/reset` `/compress` `/steer` `/queue` `/version`.
+Bloqueados durante turno ativo: `reset`, `compress`, `model` (devolvem "⏳ Session is busy…").
+
+Métodos implementados em `acp_adapter/server.py`: `initialize`, `authenticate`, `new_session`,
+`load_session`, `resume_session`, `cancel`, `fork_session`, `list_sessions`, `prompt`,
+`set_session_model`, `set_session_mode`, `set_config_option`. **Não existe** `session/delete`.
+
+`usage_update` = `{size, used}` onde `size` = `agent.context_compressor.context_length` e `used` =
+estimativa (`estimate_request_tokens_rough(history + system prompt + tool schemas)`). **Sem custo.**
+Já a resposta de `session/prompt` traz `usage` com `input/output/total/thought/cached_read tokens`.
+
+Fila **existe no servidor** (`_claim_turn_or_queue`): prompt com turno ativo → tenta
+`agent.redirect()` (steer) quando o runtime suporta; senão enfileira em `queued_prompts` e devolve
+como mensagem de agente `"Queued for the next turn. (N queued)"` com `stop_reason: end_turn`.
+`_drain_queued_prompts` executa depois. **Não há API para listar/remover/reordenar a fila.**
+
+`session/cancel` → `cancel_event` + `request_hard_interrupt` + `interrupt_for_session` →
+`stop_reason: "cancelled"`. `session/list` é paginado por cursor (`next_cursor` = último
+`session_id` da página) e devolve `SessionInfo{sessionId, cwd, title, updatedAt}`.
+`session/load` **replaya** o histórico como `session/update`; `session/resume` **não** replaya;
+`session/fork` copia o histórico em profundidade.
+
+Aprovações: `session/request_permission` com `allow_once` | `allow_session` | `allow_always` | `deny`.
+Edições também passam por aprovação (`acp_adapter/edit_approval.py`), com política derivada do **modo**:
+`default→ask`, `accept_edits→workspace_session`, `dont_ask→session`. Timeout = `approvals.timeout`
+(padrão 300 s) e **timeout nega**.
+
+Toolsets: `platform_toolsets.acp` (padrão `hermes-acp`) + `agent.disabled_toolsets`; o client pode
+pedir MCP por sessão em `session/new.mcpServers` e, para não pagar o startup global,
+exportar `HERMES_ACP_SKIP_CONFIGURED_MCP=1` no subprocesso.
+
+### 2.4 Protocolo e SDK
+
+- Spec lida: `agentclientprotocol.com` (overview, initialization, session-setup, prompt-turn, schema).
+  `protocolVersion` é um inteiro de major; o Hermes fala **1**.
+- Conjunto completo de variantes em `session/update` na v1: user/agent/thought chunks, tool_call,
+  tool_call_update, plan, available_commands_update, current_mode_update, config_option_update,
+  session_info_update, usage_update, notice, compaction_update, compaction_summary_chunk.
+- SDK TypeScript oficial: **`@agentclientprotocol/sdk`** (ex-`@zed-industries/agent-client-protocol`).
+  O cliente de referência usa `^0.21.1`. **A confirmar no M1**: a versão do SDK ↔ `protocolVersion: 1`
+  (não assumir que o minor do SDK é o major do protocolo).
+- SDK Python do agente: `agent-client-protocol==0.9.0` (extra `acp` do pyproject).
+
+### 2.5 UX de referência — VS Code 1.141 (documentação atual, não memória)
+
+O Copilot Chat foi absorvido pelo core: hoje os controles do composer são
+**Session Target · Agent · Language model · Permissions** (+ Code isolation, na janela de Agents).
+O agente **Agent** oferece os papéis Ask / Agent / Plan; o modelo tem opção **Auto**.
+
+Mecânicas confirmadas (todas a espelhar):
+- Botão **Send** vira dropdown durante um turno: **Add to Queue** · **Steer with Message** ·
+  **Stop and Send**; padrão configurável em `chat.requestQueuing.defaultAction` (`steer` | `queue`).
+- Mensagens pendentes podem ser **reordenadas por arrastar** (handle no hover).
+- Contexto por **`#`-menção** (`#file`, `#folder`, `#symbol`, `#codebase`, `#terminalSelection`,
+  ferramentas) — não `@`; imagens/visão; contexto implícito = arquivo ativo + seleção.
+- `/` para comandos, incluindo **skills**; `/compact [instruções]`; `/agents`; `/btw`; `/delegate`.
+- **Controle de janela de contexto dentro do composer**: hover mostra contagem de tokens,
+  detalhamento por categoria e créditos consumidos; clicar → **Compact Conversation**.
+- Lista de sessões agrupada por período (Today / Last Week), pin/archive/rename/delete, filtro por
+  estado, badge de atenção no ícone do app (`sessions.showApplicationBadge`).
+- Notificações: `chat.notifyWindowOnResponseReceived` / `chat.notifyWindowOnConfirmation`
+  (`off` | `windowNotFocused` | `always`).
+- Revisão de edições com checkpoints, **Accessible Diff Viewer**; export da sessão em JSON;
+  Copy / Copy All / Copy Final Response em Markdown.
+- Handoff ≠ Fork ≠ Switch surface.
+
+### 2.6 Cliente de referência (código)
+
+`formulahendry/vscode-acp` (o "ACP Client", que já traz `hermes acp` pré-configurado) —
+árvore exatamente na forma que este projeto adota:
+`src/{config,core,handlers,ui,utils}` com `core/{AcpClientImpl,AgentManager,ConnectionManager,SessionManager,SessionHistoryStore}`,
+`handlers/{FileSystem,Permission,SessionUpdate,Terminal}Handler`,
+`ui/{ChatWebviewProvider,SessionTreeProvider,StatusBarManager}`, `utils/{Logger,StreamAdapter}`.
+Deps: `@agentclientprotocol/sdk`, `marked`; build por **webpack**; sem framework de webview
+(`ChatWebviewProvider.ts` tem 2 559 linhas de DOM/SDK puro). Settings: `acp.agents`,
+`acp.autoApprovePermissions`, `acp.defaultWorkingDirectory`, `acp.logTraffic`.
+`cashew-labs/opencode-gui` — referência de separação Extension Host ↔ webview por `postMessage`,
+build por **Vite**, CSS por variáveis de tema do VS Code.
+
+**O que aproveitamos de `vscode-acp`:** a decomposição de módulos, o log de tráfego, o contrato
+`session/list` com fallback de cache local, o bloco de thinking colapsável.
+**O que não aproveitamos:** o composer (não tem chips, medidor de contexto, fila com reordenar,
+envio dividido, painel de gerenciamento), o build webpack com DOM imperativo, e a ausência de
+camada de contexto/tokens.
+
+---
+
+## 3. Decisões de arquitetura
+
+1. **Transporte**: spawn de `hermes acp` (JSON-RPC sobre stdio), via `@agentclientprotocol/sdk`.
+   Um **processo por agente ativo**, N sessões por processo.
+2. **`HERMES_ACP_SKIP_CONFIGURED_MCP=1`** por padrão no subprocesso. O startup global de MCP
+   atrasa `initialize`; se o usuário quiser os MCP globais, o flag é desligado na config do agente.
+3. **Modos**: o picker de "Modo" lista os modos **reais** do agente (`availableModes`) — que no
+   Hermes são política de aprovação de edição. Não inventamos Ask/Plan/Agent. O picker de
+   **Permissões** e o de **Modo** são o mesmo controle, apresentado uma vez.
+4. **Estados de aprovação**: `ask` | `allowSession` | `allowAll` na config da extensão apenas
+   *pré-selecionam* a resposta do cliente; a autoridade continua sendo as opções que o agente manda
+   em cada `session/request_permission`.
+5. **Fila**: implementada no cliente (lista visível, reordenável, persistida) e **com respaldo**
+   no servidor: se um prompt escapar durante um turno, o `_claim_turn_or_queue` enfileira e o
+   aviso textual aparece no chat. Nunca dependemos só do servidor porque não há API de leitura da fila.
+6. **Steer / Enviar agora**: "Steer" = enviar prompt **text-only** durante o turno (o adaptador
+   chama `agent.redirect`); "Enviar agora (interromper)" = `session/cancel` seguido de novo prompt.
+7. **Working set e reverter**: o Hermes edita arquivos **server-side** com as próprias tools; o
+   cliente **não** intercepta a escrita. O working set é derivado dos blocos de **diff** dos
+   `tool_call`/`tool_call_update` (+ `ToolCallLocation.path`). "Desfazer" = aplicar o diff inverso;
+   "Manter" = no-op (já está no disco). O rodapé do cartão diz isso explicitamente.
+8. **Contexto**: `promptCapabilities.image = true` → imagens via `ContentBlock::image`;
+   `embeddedContext = false` → **não** mandar `ContentBlock::Resource`; arquivos entram como
+   **texto** (com cabeçalho de caminho/faixa) no prompt. `ResourceLink` é baseline do protocolo mas
+   o adaptador ignora blocos não-texto na extração — verificar no M3 e, se necessário, ficar só em texto.
+9. **Medidor de contexto**: `usage_update` é a **única** fonte (tem `size` = janela do modelo ativo
+   e `used` = estimativa). Sem `usage_update` ainda → medidor honesto em "—" com tooltip
+   "tamanho da janela ainda não reportado". O detalhamento por categoria **não existe**: calculamos
+   localmente por grupo (ver §5) e rotulamos "estimado".
+10. **Custo**: não existe em ACP. Não exibimos número nenhum. O rodapé do popover mostra
+    tokens `input/output/thought/cached` do último turno (esses vêm de `PromptResponse.usage`).
+11. **Escape hatches**: terminal integrado para `hermes` (TUI), `hermes acp --setup` (fluxo de auth
+    anunciado, `type: terminal`), e um quick pick de comandos da CLI.
+12. **Native-first**: tudo que o VS Code tem nativo, usamos nativo — `view/title` (menus), QuickPick,
+    InputBox, TreeView, StatusBar, diff editor, terminal, OutputChannel. Nada disso é reconstruído
+    na webview.
+
+---
+
+## 4. Estrutura do repositório
+
+```
+hermes-for-vs-code/
+├─ package.json            engines.vscode ^1.100, activationEvents [] (lazy), contributes.*
+├─ package.nls.json / package.nls.pt-br.json
+├─ src/
+│  ├─ extension.ts                     activate/deactivate, registros de comando
+│  ├─ core/
+│  │  ├─ AcpClient.ts                  wrapper fino do SDK: initialize/handshake, backpressure, log
+│  │  ├─ ConnectionManager.ts          spawn/restart com backoff, detecção de processo morto, kill no dispose
+│  │  ├─ AgentManager.ts               agentes (comando, args, env, profile, cwd, modelo padrão)
+│  │  ├─ SessionManager.ts             sessões ACP: novo/load/resume/fork/list, estado, títulos
+│  │  ├─ QueueManager.ts               fila client-side persistida, reordenação, drain
+│  │  ├─ ContextManager.ts             chips, contagem de tokens, limites, anexos
+│  │  ├─ ModelCatalog.ts               session/new.models + cache + invalidação
+│  │  ├─ SkillCatalog.ts               ~/.hermes/skills (+ skills de projeto) — fora do ACP
+│  │  ├─ ToolCatalog.ts                config.yaml (platform_toolsets.acp, disabled_toolsets) + hermes tools
+│  │  ├─ WorkingSet.ts                 arquivos alterados por diff de tool_call, +/-, keep/revert
+│  │  └─ PlanTracker.ts                session/update plan -> tarefas
+│  ├─ handlers/
+│  │  ├─ FileSystemHandler.ts          fs/read_text_file, fs/write_text_file (confinado ao workspace)
+│  │  ├─ TerminalHandler.ts            terminal/create|output|wait_for_exit|kill|release
+│  │  ├─ PermissionHandler.ts          session/request_permission -> barra inline
+│  │  └─ SessionUpdateHandler.ts       roteia as 9 variantes para o estado
+│  ├─ ui/
+│  │  ├─ ChatViewProvider.ts           hospeda webview/chat, ponte postMessage tipada
+│  │  ├─ ManageViewProvider.ts         painel "Gerenciar" (abas verticais)
+│  │  ├─ SessionTreeProvider.ts        TreeView "Hermes Sessions" + quick pick de histórico
+│  │  ├─ StatusBar.ts                  agente · modelo · estado · badge de atenção
+│  │  ├─ DiffProvider.ts               TextDocumentContentProvider para diffs de arquivo
+│  │  ├─ ContextView.ts / PlanView.ts  views auxiliares
+│  │  └─ Pickers.ts                    modo, modelo, ferramentas, contexto, comandos da CLI
+│  ├─ cli/CliRunner.ts                 abre terminal integrado, roda comando/CLI completa
+│  ├─ config/Settings.ts               hermes.* tipado, watch, defaults
+│  └─ utils/{Logger,TrafficLog,Tokens,Dedup,Version}.ts
+└─ webview/
+   ├─ chat/     (composer, transcript, fila, chips, medidor, popovers)
+   └─ manage/   (abas: Modelos, Skills, Ferramentas/MCP, Instruções, Contexto e uso, Agentes, Aprovações, Avançado)
+```
+
+Build: `vite` para as duas webviews (bundle único, CSP com nonce, zero script remoto) + `tsc` para
+o extension host. Testes: `mocha` unitário (fakes ACP sobre stdio) + `@vscode/test-electron`.
+
+---
+
+## 5. Fluxo de um turno
+
+```
+[composer] Enter
+  └─ ContextManager monta ContentBlock[]  (texto + imagens; arquivos = texto com cabeçalho)
+  └─ QueueManager: idle? envia : enfileira
+      └─ client.session.prompt(sessionId, prompt)
+          ├─ session/update agent_thought_chunk ....... bloco "Raciocínio" (streaming + tempo)
+          ├─ session/update plan ..................... cartão de plano / PlanView
+          ├─ session/update tool_call ................ item de tool (kind -> ícone, title, status)
+          │    └─ content = diff blocks ............. WorkingSet + diff editor nativo
+          ├─ client.request_permission ◄───────────── barra inline (once/session/always/deny)
+          ├─ session/update tool_call_update ........ status/completed/failed + saída
+          ├─ session/update agent_message_chunk ..... Markdown incremental (agrupado por messageId)
+          └─ session/update usage_update ............ medidor de contexto
+      └─ resposta: PromptResponse{stop_reason, usage}
+          └─ turno encerra -> QueueManager drain -> próximo item
+```
+
+Notas de implementação:
+- Agrupamento visual por `messageId` (chunks com o mesmo id = uma mensagem); id novo = bolha nova.
+- `Esc`/Parar → `session/cancel`; marca tool calls abertas como canceladas e responde
+  `cancelled`. O cliente **deve** responder qualquer `request_permission` pendente com `cancelled`.
+- Backpressure: coalescing por frame (≤ 60 fps) e append incremental no transcript virtualizado.
+
+---
+
+## 6. Mapa capability → UI (o contrato honesto)
+
+| Elemento de UI | Fonte real | Estado |
+|---|---|---|
+| Chat com streaming | `session/update` `agent_message_chunk` (+`messageId`) | ✅ |
+| Copiar / inserir no editor / reexecutar | agregado local | ✅ |
+| Bloco de raciocínio | `agent_thought_chunk` | ✅ |
+| Tool call item (título, status, entrada/saída, duração) | `tool_call` / `tool_call_update` (kind, title, status, content, locations) | ✅ |
+| Diff no editor nativo | `content` = diff blocks em `patch`/`write_file`/`skill_manage` + `ToolCallLocation.path` | ✅ |
+| Aprovação inline | `session/request_permission` (`allow_once`/`allow_session`/`allow_always`/`deny`) | ✅ |
+| Plano | `session/update` `plan` (entradas `content`/`priority`/`status`) | ✅ |
+| Slash commands + autocomplete | `available_commands_update` (9 comandos) | ✅ |
+| Seletor de MODO | `modes.availableModes` + `session/set_mode` + `current_mode_update` | ✅ (3 modos: política de edição) |
+| Seletor de MODELO | `models.availableModels` + `session/set_model` | ✅ (id/nome/provider; sem janela, capacidade ou custo) |
+| Medidor de contexto (usado/total) | `usage_update {size, used}` | ✅ |
+| Detalhamento por categoria | ❌ protocolo → estimativa local por grupo | ⚠️ rotulado "estimado" |
+| Custo da sessão | ❌ (`usage_update` não tem `cost`) | ❌ oculto |
+| Tokens do turno | `PromptResponse.usage` (input/output/total/thought/cached) | ✅ |
+| Histórico/Sessões | `session/list` (paginado) + `session/load` (replay) + `session/resume` | ✅ |
+| Fork / duplicar | `session/fork` | ✅ |
+| Renomear sessão | `session_info_update` só **informa**; renomear = `hermes sessions rename` | ⚠️ via CLI |
+| Arquivar / excluir sessão | ❌ ACP → `hermes sessions delete` / `archive` | ⚠️ via CLI |
+| Fila de prompts | cliente-side + respaldo `_claim_turn_or_queue` / `/queue` | ✅ (sem leitura da fila do servidor) |
+| Steer (mensagem durante o turno) | `agent.redirect` disparado pelo adaptador quando o prompt é text-only | ✅ |
+| Enviar agora (interromper) | `session/cancel` + novo prompt | ✅ |
+| Anexar imagem | `promptCapabilities.image` | ✅ |
+| Anexar arquivo/pasta | `embeddedContext: false` → arquivo como **texto** | ⚠️ degradado p/ texto |
+| Compactar contexto | `/compress` (bloqueado durante turno) | ✅ |
+| Sinal de compactação | `_meta.hermes.containsCompactionSummary` | ✅ parcial |
+| Notices do agente | não emitidos pelo Hermes | ❌ |
+| Skills (listar/ativar/invocar) | ❌ ACP → `~/.hermes/skills*`, `hermes skills`; invocar por `/nome` no texto | ⚠️ fora do ACP |
+| Ferramentas / MCP | ❌ ACP (`configOptions` vazio) → `config.yaml`, `hermes tools`, `hermes mcp` | ⚠️ fora do ACP |
+| Esforço / raciocínio | ❌ ACP → `agent.reasoning_effort`, `hermes --reasoning` | ⚠️ exige restart/CLI |
+| Modelos: janela/capacidades/custo | ❌ ACP → só o `size` do modelo **ativo**, via `usage_update` | ⚠️ parcial |
+| Login / provider | `authMethods` (terminal `hermes acp --setup`) + provider atual | ✅ parcial |
+| Diagnóstico | `hermes doctor`, `hermes acp --check` (terminal) | ✅ |
+| Log de tráfego JSON-RPC | interceptação no `AcpClient` | ✅ |
+
+---
+
+## 7. Estimativa local de tokens (o que é nosso e o que é do Hermes)
+
+- **Total da janela e usado**: do `usage_update`. Nunca inventados.
+- **Antes do primeiro `usage_update`**: medidor em "—".
+- **Detalhamento por categoria**: cálculo local, sempre com o selo "estimado":
+  - *Instruções*: conteúdo dos arquivos detectados (AGENTS.md/.hermes.md/CLAUDE.md/SOUL.md) ÷ 4.
+  - *Skills*: cabeçalho das skills carregadas ÷ 4.
+  - *Ferramentas/MCP*: JSON dos schemas habilitados ÷ 4.
+  - *Arquivos/anexos*: bytes dos chips ÷ 4.
+  - *Histórico*: soma do transcript visível ÷ 4.
+  - *Raciocínio*: `thought_tokens` do último turno (esse é real, vem do `usage`).
+  - A soma é normalizada para o `used` reportado pelo agente, e a diferença vira "não atribuído".
+  - `Tokens.ts` guarda `chars/4` como heurística única e documentada em um lugar só.
+
+---
+
+## 8. Robustez, segurança, Remote
+
+- **Ativação lazy**: `onView:*`, `onCommand:*`, `onLanguageModelTool` ausente. Nenhum `hermes` roda
+  até o usuário abrir uma sessão.
+- **Ciclo de vida**: `deactivate()` mata o processo (`SIGTERM` → `SIGKILL` em 3 s) e remove o
+  handler de `dispose`. Reinício automático com backoff exponencial (1s→30s, teto) e motivo exposto
+  na UI. Detecção de processo morto por `exit` do child, não por timeout de request.
+- **Workspace Trust**: em modo restrito, apenas leitura — sem spawn do agente, sem terminal handler,
+  sem escrita. Chip visível explicando o porquê.
+- **fs/\***: confinado ao workspace por padrão (path normalizado + `startsWith` do root); escrita
+  fora do workspace exige confirmação explícita. `additionalDirectories` não usados na v1.
+- **Terminal handler**: cria `Terminal` do VS Code com cwd = workspace; env do processo do child,
+  nunca `process.env` inteiro; nenhuma variável sensível entra no log de tráfego.
+- **Log**: `TrafficLog` redige valores de chave/segredo por heurística de nome
+  (`*_API_KEY`, `*_TOKEN`, `Authorization`, `password`) antes de escrever no OutputChannel.
+- **Remote (SSH/WSL/Dev Containers/Codespaces)**: o processo nasce no **extension host do workspace**
+  (lado remoto), com `cwd` no workspace remoto. Windows sem WSL2: agente desabilitado com explicação
+  e comando configurável aceitando prefixo `wsl hermes acp` + conversão de caminho (`/mnt/c/...`).
+- **Persistência**: `globalStorage` (fila, histórico visual, cache de catálogos) e `workspaceState`
+  (agente ativo, sessão atual). **Nada** de estado paralelo em `settings.json`.
+
+---
+
+## 9. Testes
+
+- Unitários (fakes ACP sobre stdio, sem rede): `QueueManager` (ordem, drain, persistência),
+  `ContextManager` (tokens, limiares, remoção de chip), parser de `session/update` (9 variantes +
+  ids desconhecidos ignorados), `SessionManager` (load vs resume vs fork), `Tokens` (chars/4 e limiares
+  70/80/90), `WorkingSet` (diff → +/−, revert inverso).
+- Integração: `@vscode/test-electron` — comandos registrados, painel Gerenciar abrindo, tema trocando.
+- Roteiro manual com `hermes` real: streaming, cancelar, aprovação (as 4 opções), diff, plano,
+  3 sessões paralelas, fila sobrevivendo a reload, nenhum processo órfão.
+- Visual: 4 temas (Dark+, Light+, High Contrast, um de terceiros) com capturas no README.
+
+---
+
+## 10. Marcos
+
+| Marco | Entrega verificável (F5 no Extension Development Host) |
+|---|---|
+| M1 | Conexão ACP + chat com streaming + cancelar + composer básico |
+| M2 | Raciocínio, tool calls, diff nativo, aprovações |
+| M3 | Pickers de modo/modelo + medidor de contexto + chips de contexto |
+| M4 | Sessões (tree, histórico, retomar, fork, background, notificações) |
+| M5 | Fila + envio dividido (enviar / enfileirar / steer / enviar agora) |
+| M6 | Painel Gerenciar (Modelos, Skills, Ferramentas/MCP, Instruções, Contexto e uso) |
+| M7 | Plano, working set com Manter/Desfazer, checkpoints |
+| M8 | Escape hatches da CLI, diagnóstico, integração com o editor |
+| M9 | Temas, acessibilidade, Remote, polimento, `.vsix` |
+
+---
+
+## 11. Lacunas conhecidas (não escondidas)
+
+1. **Não existem os modos Ask/Plan/Agent no Hermes.** Os 3 modos do ACP são política de aprovação de
+   edição (`default`, `accept_edits`, `dont_ask`). O picker de modo lista o que o agente anunciar;
+   quando o agent listar outra coisa, a UI acompanha sem código novo.
+2. **Fila**: o servidor sabe enfileirar, mas **não** expõe listar/remover/reordenar. A fila visível é
+   nossa; se o usuário digitar por fora (outro client no mesmo processo), as duas filas coexistem.
+3. **Sessões**: `session/list` devolve o que está no `state.db` (sobrevive a restart), mas
+   **não há `session/delete`** no ACP — excluir e arquivar vão para a CLI. Renomear também.
+4. **Catálogos**: modelos vêm por sessão (222 linhas nesta máquina, cap de 200/provider); **skills,
+   ferramentas, MCP, esforço, custo e capacidades de modelo não existem no ACP**. Cada um tem fonte
+   real mapeada (`~/.hermes/skills*`, `config.yaml`, `hermes tools/mcp`, `agent.reasoning_effort`) ou
+   fica oculto. Nada é inventado.
+5. **Janela de contexto por modelo**: só é conhecida para o modelo **ativo**, depois do primeiro
+   `usage_update`. O picker não pode mostrar "200K" antes disso.
+6. **Detalhamento por categoria** é estimativa local, sempre rotulada.
+7. **Edições não são interceptáveis**: o Hermes escreve no disco com as próprias tools. "Desfazer" é
+   diff inverso, não bloqueio de escrita. Checkpoint por turno exige snapshot próprio.
+8. **`_meta` não documentado**: o adaptador usa `_meta.hermes.sessionProvenance` e
+   `_meta.hermes.containsCompactionSummary`. São extensões internas, não contrato — a UI degrada se
+   sumirem. Só lemos, nunca dependemos delas para correção.
+9. **MCP por HTTP/SSE**: o Hermes não anuncia `mcpCapabilities.http/sse` → só servidores **stdio**
+   são oferecidos pelo client até que isso mude.
+10. **Anexos não-texto**: sem `embeddedContext`, arquivos viram texto. Imagens dependem de
+    `promptCapabilities.image` (verdadeiro hoje).
+11. **Recursos só da TUI** (`/skin`, status bar da TUI, widgets) não são duplicados: viram
+    "Executar na CLI".
+12. **Versão do SDK TS ↔ `protocolVersion: 1`** precisa ser confirmada no M1; se o SDK exigir uma
+    major diferente, o fallback é o `AcpClient` falando JSON-RPC cru (o protocolo é pequeno).
