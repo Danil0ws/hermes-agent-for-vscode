@@ -39,6 +39,13 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
   falhar; a asserção foi atualizada para o contrato novo (e agora cobre pt-BR, en, ru e zh-CN), não
   silenciada. Total: **45 testes**.
 
+### Alterado
+
+- **Ícone da Activity Bar**: passou a ser o glifo `agent` do `@vscode/codicons` (MIT) em par
+  light/dark. O manifesto declarava **um** arquivo de um par de arte (retrato de 512px, `#007ACC`)
+  que, no tamanho real da Activity Bar (16–24px), vira mancha — os traços internos caem para ~0,2px.
+  A arte original fica no repositório, para README/Marketplace.
+
 ### Corrigido (defeitos encontrados RODANDO a extensão, não em teste)
 
 - **`command 'hermes.manage.open' not found`** — a causa não era o CLI. `hermes.manage` estava

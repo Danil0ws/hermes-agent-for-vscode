@@ -539,3 +539,12 @@ passar por teclado/leitor de tela em cada superfície. Registrado como pendênci
     `texto pt-BR → tradução`, o que não expressa `tr(\`... ${x} ...\`)`. Essas duas strings ficam em
     pt-BR em todos os idiomas. O caminho de correção é partir em chave + parâmetros (como as
     funções do bundle da webview já fazem), não manter o texto composto.
+26. **Ícone de Activity Bar não é arte de Marketplace**: o VS Code **não recolore** o ícone de view
+    container — a cor vem do arquivo, então um par light/dark é obrigatório (não é preferência). O
+    ícone anterior era uma única arte de 512px com `fill:#007ACC` declarada sozinha no manifesto, e
+    no tamanho real (16–24px) os traços internos ficam em ~0,2px: medido num teste de escala, vira
+    mancha. O glifo escolhido é o `agent` do `@vscode/codicons` (MIT), que já é a linguagem visual do
+    editor e foi desenhado para 16px. A arte original segue no repositório para README/Marketplace.
+    Ressalva: a renderização dentro do VS Code real não pôde ser conferida por captura (o ambiente
+    não tem permissão de acessibilidade para clicar/printar a janela) — a verificação foi feita
+    renderizando os SVG em 16/24/32px nos dois fundos, fora do editor.

@@ -82,6 +82,17 @@ code --install-extension hermes-agent-vscode-0.1.0.vsix
 | `hermes.notifications` | `windowNotFocused` | notificações de sessões em background |
 | `hermes.logTraffic` | `false` | JSON-RPC bruto no canal `Hermes Traffic` (com redação de segredos) |
 
+## Ícone
+
+A Activity Bar usa o glifo **`agent` do `@vscode/codicons`** (Microsoft, MIT) em par
+light/dark (`media/hermes-activity-bar-{light,dark}.svg`), porque o VS Code **não recolore** ícone de
+view container: a cor vem do arquivo, daí o par declarado em `contributes.viewsContainers`.
+
+A arte original (`media/hermes-agent-{light,}-vscode.svg`, retrato de 512px em azul) **continua no
+repositório** e é ótima para README/Marketplace, mas não serve na Activity Bar: medido num teste de
+escala, ela vira mancha em 16px (os traços internos caem para ~0,2px). Para voltar a usá-la ali,
+troque o `icon` em `package.json` por um dos arquivos — é uma linha.
+
 ## Aprovação automática (YOLO)
 
 Por padrão o Hermes **pergunta** antes de executar comandos e editar arquivos. A política vive em
