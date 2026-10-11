@@ -539,12 +539,13 @@ passar por teclado/leitor de tela em cada superfície. Registrado como pendênci
     `texto pt-BR → tradução`, o que não expressa `tr(\`... ${x} ...\`)`. Essas duas strings ficam em
     pt-BR em todos os idiomas. O caminho de correção é partir em chave + parâmetros (como as
     funções do bundle da webview já fazem), não manter o texto composto.
-26. **Ícone de Activity Bar não é arte de Marketplace**: o VS Code **não recolore** o ícone de view
-    container — a cor vem do arquivo, então um par light/dark é obrigatório (não é preferência). O
-    ícone anterior era uma única arte de 512px com `fill:#007ACC` declarada sozinha no manifesto, e
-    no tamanho real (16–24px) os traços internos ficam em ~0,2px: medido num teste de escala, vira
-    mancha. O glifo escolhido é o `agent` do `@vscode/codicons` (MIT), que já é a linguagem visual do
-    editor e foi desenhado para 16px. A arte original segue no repositório para README/Marketplace.
-    Ressalva: a renderização dentro do VS Code real não pôde ser conferida por captura (o ambiente
-    não tem permissão de acessibilidade para clicar/printar a janela) — a verificação foi feita
-    renderizando os SVG em 16/24/32px nos dois fundos, fora do editor.
+26. **Ícone: par light/dark é obrigatório, PNG é obrigatório para a loja**: o VS Code não recolore
+    o ícone de view container (a cor vem do arquivo), então `viewsContainers.activitybar[].icon`
+    declara o par light/dark. Para a loja, o `vsce` **recusa** `icon` em SVG por segurança — daí o
+    `media/icon.png` 128×128 derivado da mesma arte. Ressalva medida: no tamanho real da Activity
+    Bar (16–24px) os traços internos da arte caem para ~0,2px e ela lê como silhueta; a verificação
+    foi feita renderizando os SVG em 16/24/32px nos dois fundos (o ambiente não tem permissão de
+    acessibilidade para capturar a janela do editor). Contraste **medido**, não estimado: o azul
+    original do par falhava no tema escuro (`#0066B8` = 2,16:1 sobre a Activity Bar `#333`, mínimo
+    3:1), então a variante escura passou a `#3B9EFF` (4,52:1) e o PNG da loja usa `#1E88E5`, que
+    passa nos dois fundos (3,68:1 claro, 3,43:1 escuro).

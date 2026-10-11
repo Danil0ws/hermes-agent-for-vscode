@@ -41,10 +41,14 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Alterado
 
-- **Ícone da Activity Bar**: passou a ser o glifo `agent` do `@vscode/codicons` (MIT) em par
-  light/dark. O manifesto declarava **um** arquivo de um par de arte (retrato de 512px, `#007ACC`)
-  que, no tamanho real da Activity Bar (16–24px), vira mancha — os traços internos caem para ~0,2px.
-  A arte original fica no repositório, para README/Marketplace.
+- **Ícone**: a arte do Hermes é o ícone, nos dois temas. A Activity Bar passou a declarar o **par**
+  light/dark (antes só um arquivo) e a loja ganhou `media/icon.png` (128×128, RGBA, transparente)
+  gerado da mesma arte — o `vsce` recusa publicar com `icon` em SVG. **Contraste corrigido**: o azul
+  do tema escuro (`#0066B8`) dava 2,16:1 sobre a Activity Bar escura (abaixo do mínimo de 3:1 para
+  elemento não-textual) e virou `#3B9EFF` (4,52:1); o PNG usa `#1E88E5`, que passa nos dois fundos.
+- **Preparação para publicar**: `icon` (PNG), `license`, `author` e as 4 localidades do manifesto no
+  lugar; nome conferido como livre no Marketplace. Falta apenas `repository` (URL do código) e o
+  `publisher`/token da sua conta.
 
 ### Corrigido (defeitos encontrados RODANDO a extensão, não em teste)
 

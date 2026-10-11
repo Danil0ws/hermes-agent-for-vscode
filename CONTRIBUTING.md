@@ -88,6 +88,26 @@ Toda entrega atualiza, na mesma mudança: `README.md` (instalação/configuraç�
 `docs/` (`ARCHITECTURE.md` com o mapa capability→UI e a seção de **lacunas verificadas**;
 `UX.md` com os wireframes) e `CHANGELOG.md`. Lacuna conhecida se documenta, não se esconde.
 
+## Ícone
+
+`media/icon.png` (128×128, RGBA, transparente) é exportado de `media/icon-source.svg` — que é a arte
+com o azul `#1E88E5`, escolhido por passar de 3:1 nos dois fundos do card da loja. Ao mexer na arte,
+regere o PNG **e** reconfira o contraste das duas variantes da Activity Bar: o VS Code não recolore
+o ícone de view container, então cada tema usa o arquivo do seu par
+(`contributes.viewsContainers.activitybar[0].icon`).
+
+### Imagem no topo do README
+
+Com o campo `repository` preenchido, `vsce` resolve caminhos relativos sozinho e esta linha pode
+voltar a ser a primeira do `README.md`:
+
+```md
+<img src="media/icon.png" width="110" align="right" alt="Ícone do Hermes Agent">
+```
+
+Sem `repository`, `vsce package` falha nessa imagem — e ele casa por texto, não por markdown, então
+nem dentro de um bloco de código o exemplo passa. Por isso o README não tem imagens hoje.
+
 ## Licença
 
 MIT — ver `LICENSE`. Ao contribuir, você concorda em licenciar sua contribuição nos mesmos termos.

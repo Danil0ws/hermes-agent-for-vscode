@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "publisher": "hermes-agent",
   "license": "MIT",
+  "icon": "media/icon.png",
   "author": {
     "name": "Danilo Rodrigues",
     "email": "mydanilows@gmail.com"
@@ -35,8 +36,8 @@
           "id": "hermes",
           "title": "%viewContainer.hermes.title%",
           "icon": {
-            "light": "media/hermes-activity-bar-light.svg",
-            "dark": "media/hermes-activity-bar-dark.svg"
+            "light": "media/hermes-agent-light-vscode.svg",
+            "dark": "media/hermes-agent-vscode.svg"
           }
         }
       ]

@@ -84,14 +84,59 @@ code --install-extension hermes-agent-vscode-0.1.0.vsix
 
 ## Ícone
 
-A Activity Bar usa o glifo **`agent` do `@vscode/codicons`** (Microsoft, MIT) em par
-light/dark (`media/hermes-activity-bar-{light,dark}.svg`), porque o VS Code **não recolore** ícone de
-view container: a cor vem do arquivo, daí o par declarado em `contributes.viewsContainers`.
+A arte do Hermes (`media/hermes-agent-light-vscode.svg` e `media/hermes-agent-vscode.svg`) é o
+ícone da extensão, nos dois temas:
 
-A arte original (`media/hermes-agent-{light,}-vscode.svg`, retrato de 512px em azul) **continua no
-repositório** e é ótima para README/Marketplace, mas não serve na Activity Bar: medido num teste de
-escala, ela vira mancha em 16px (os traços internos caem para ~0,2px). Para voltar a usá-la ali,
-troque o `icon` em `package.json` por um dos arquivos — é uma linha.
+- **Activity Bar**: o manifesto declara o par light/dark
+  (`contributes.viewsContainers.activitybar[0].icon`). O par é **obrigatório**, não preferência: o
+  VS Code não recolore o ícone de view container, a cor vem do arquivo.
+- **Loja**: `media/icon.png`, 128×128 RGBA com fundo transparente, gerado a partir da mesma arte.
+  O `vsce` **recusa publicar com `icon` em SVG** ("the icon provided in `package.json` may not be an
+  SVG"), por isso o PNG — o SVG continua valendo para a Activity Bar, que é manifesto.
+
+Contraste medido (WCAG para elemento não-textual, mínimo 3:1):
+
+| Arquivo | Cor | Onde | Contraste |
+|---|---|---|---|
+| `hermes-agent-light-vscode.svg` | `#007ACC` | Activity Bar em tema claro | 4,51:1 sobre branco |
+| `hermes-agent-vscode.svg` | `#3B9EFF` | Activity Bar em tema escuro | 4,52:1 sobre `#333` |
+| `icon.png` (`icon-source.svg`) | `#1E88E5` | card da loja, nos dois temas | 3,68:1 claro · 3,43:1 escuro |
+
+O azul original do par era `#0066B8` no tema escuro: **2,16:1** sobre a Activity Bar escura, abaixo do
+mínimo — e a barra ainda reduz a opacidade do item inativo. Daí o `#3B9EFF`, mesma família de cor.
+
+Nota honesta sobre tamanho: a arte tem detalhe fino e, no tamanho real da Activity Bar (16–24px),
+os traços internos ficam em ~0,2px e ela lê como silhueta. É uma escolha de marca legítima; se
+preferir mais nitidez ali, o glifo `agent` do `@vscode/codicons` é a alternativa imediata.
+
+Para regerar o PNG: exporte `media/icon-source.svg` em **128×128, RGBA, fundo transparente**. O
+`vsce` recusa SVG e exige PNG no `icon`.
+
+## Publicar na loja
+
+```bash
+npx vsce package                  # gera o .vsix (hoje sem avisos, exceto 'repository' ausente)
+npx vsce publish                  # exige publisher + PAT (ou Entra ID)
+```
+
+O que ainda depende de você:
+
+1. **`repository` no `package.json`** — único aviso que o `vsce` emite hoje. Sem ele, `vsce package`
+   passa com `--allow-missing-repository`, mas a página da loja fica sem link para o código.
+2. **`publisher`** — hoje é `hermes-agent`; tem de ser exatamente o id do seu publisher no
+   Marketplace.
+3. **Token** — PAT do Azure DevOps com escopo *Marketplace → Manage*, ou autenticação por Entra ID
+   (`vsce publish --azure-credential`). Os PATs globais do Azure DevOps são aposentados em
+   01/12/2026, então o caminho por Entra ID é o recomendado pela própria Microsoft.
+
+Checado agora: `hermes-agent.hermes-agent-vscode` **está livre** no Marketplace (nome e display name
+têm de ser únicos; se já existisse, o publish falharia com "already exists").
+
+Nota sobre o README: **nenhuma imagem local** por enquanto. Sem `repository` o `vsce package`
+**falha** (não é aviso) porque não tem URL base para resolver imagens locais — e ele varre o texto do
+README, então nem um exemplo em bloco de código escapa. O ícone da página da loja vem de
+`package.json > icon` (`media/icon.png`) e independe disso; ao criar o repositório, veja
+`CONTRIBUTING.md › Ícone` para recolocar a imagem no topo.
 
 ## Aprovação automática (YOLO)
 
