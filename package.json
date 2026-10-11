@@ -30,7 +30,7 @@
       "activitybar": [
         {
           "id": "hermes",
-          "title": "Hermes Agent",
+          "title": "%viewContainer.hermes.title%",
           "icon": "media/hermes.svg"
         }
       ]
@@ -39,17 +39,17 @@
       "hermes": [
         {
           "id": "hermes.chat",
-          "name": "Chat",
+          "name": "%view.chat.name%",
           "type": "webview"
         },
         {
           "id": "hermes.sessions",
-          "name": "Sessions",
+          "name": "%view.sessions.name%",
           "type": "tree"
         },
         {
           "id": "hermes.plan",
-          "name": "Plan",
+          "name": "%view.plan.name%",
           "type": "webview",
           "visibility": "collapsed"
         }
@@ -58,111 +58,155 @@
     "viewsWelcome": [
       {
         "view": "hermes.chat",
-        "contents": "Nenhum agente conectado.\n[Iniciar conversa](command:hermes.newConversation)\nConfigure agentes em [Gerenciar](command:hermes.manage)."
+        "contents": "%viewsWelcome.chat.contents%"
       }
     ],
     "commands": [
       {
         "command": "hermes.newConversation",
-        "title": "Nova conversa",
+        "title": "%command.hermes.newConversation.title%",
         "category": "Hermes",
         "icon": "$(add)"
       },
       {
         "command": "hermes.showSessions",
-        "title": "Histórico de sessões",
+        "title": "%command.hermes.showSessions.title%",
         "category": "Hermes",
         "icon": "$(history)"
       },
       {
         "command": "hermes.openInEditor",
-        "title": "Abrir em editor",
+        "title": "%command.hermes.openInEditor.title%",
         "category": "Hermes",
         "icon": "$(open-preview)"
       },
       {
         "command": "hermes.manage",
-        "title": "Gerenciar",
+        "title": "%command.hermes.manage.title%",
         "category": "Hermes",
         "icon": "$(gear)"
       },
       {
         "command": "hermes.openCli",
-        "title": "Abrir CLI completa",
+        "title": "%command.hermes.openCli.title%",
         "category": "Hermes"
       },
       {
         "command": "hermes.runCliCommand",
-        "title": "Executar comando da CLI…",
+        "title": "%command.hermes.runCliCommand.title%",
         "category": "Hermes"
       },
       {
         "command": "hermes.diagnostics",
-        "title": "Diagnóstico",
+        "title": "%command.hermes.diagnostics.title%",
         "category": "Hermes"
       },
       {
         "command": "hermes.showLog",
-        "title": "Mostrar log",
+        "title": "%command.hermes.showLog.title%",
         "category": "Hermes"
       },
       {
         "command": "hermes.showTraffic",
-        "title": "Mostrar tráfego",
+        "title": "%command.hermes.showTraffic.title%",
         "category": "Hermes"
       },
       {
         "command": "hermes.exportConversation",
-        "title": "Exportar conversa",
+        "title": "%command.hermes.exportConversation.title%",
         "category": "Hermes"
       },
       {
         "command": "hermes.askAboutSelection",
-        "title": "Perguntar ao Hermes sobre a seleção",
+        "title": "%command.hermes.askAboutSelection.title%",
         "category": "Hermes"
       },
       {
         "command": "hermes.explainSelection",
-        "title": "Explicar com o Hermes",
+        "title": "%command.hermes.explainSelection.title%",
         "category": "Hermes"
       },
       {
         "command": "hermes.fixProblem",
-        "title": "Corrigir problema com o Hermes",
+        "title": "%command.hermes.fixProblem.title%",
         "category": "Hermes"
       },
       {
         "command": "hermes.sendFileToHermes",
-        "title": "Enviar arquivo atual ao Hermes",
+        "title": "%command.hermes.sendFileToHermes.title%",
         "category": "Hermes"
       },
       {
         "command": "hermes.restartSession",
-        "title": "Reiniciar sessão",
+        "title": "%command.hermes.restartSession.title%",
         "category": "Hermes",
         "icon": "$(debug-restart)"
       },
       {
         "command": "hermes.showPlan",
-        "title": "Ver plano",
+        "title": "%command.hermes.showPlan.title%",
         "category": "Hermes"
       },
       {
         "command": "hermes.showContext",
-        "title": "Ver contexto e uso",
+        "title": "%command.hermes.showContext.title%",
         "category": "Hermes"
       },
-      { "command": "hermes.plan.implement", "title": "Implementar plano", "category": "Hermes" },
-      { "command": "hermes.context.manage", "title": "Gerenciar contexto", "category": "Hermes" },
-      { "command": "hermes.agents.test", "title": "Testar conexão do agente", "category": "Hermes" },
-      { "command": "hermes.mcp.add", "title": "Adicionar servidor MCP", "category": "Hermes" },
-      { "command": "hermes.skill.open", "title": "Abrir SKILL.md", "category": "Hermes" },
-      { "command": "hermes.instructions.open", "title": "Abrir instruções do projeto", "category": "Hermes" },
-      { "command": "hermes.approvals.open", "title": "Abrir aprovações do Hermes", "category": "Hermes" },
-      { "command": "hermes.queue.toggle", "title": "Ligar/desligar a fila de prompts", "category": "Hermes" },
-      { "command": "hermes.keepFile", "title": "Manter arquivo", "category": "Hermes" },
-      { "command": "hermes.undoFile", "title": "Desfazer alterações do arquivo", "category": "Hermes" },
-      { "command": "hermes.copyResponse", "title": "Copiar resposta", "category": "Hermes" }
+      {
+        "command": "hermes.plan.implement",
+        "title": "%command.hermes.plan.implement.title%",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.context.manage",
+        "title": "%command.hermes.context.manage.title%",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.agents.test",
+        "title": "%command.hermes.agents.test.title%",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.mcp.add",
+        "title": "%command.hermes.mcp.add.title%",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.skill.open",
+        "title": "%command.hermes.skill.open.title%",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.instructions.open",
+        "title": "%command.hermes.instructions.open.title%",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.approvals.open",
+        "title": "%command.hermes.approvals.open.title%",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.queue.toggle",
+        "title": "%command.hermes.queue.toggle.title%",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.keepFile",
+        "title": "%command.hermes.keepFile.title%",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.undoFile",
+        "title": "%command.hermes.undoFile.title%",
+        "category": "Hermes"
+      },
+      {
+        "command": "hermes.copyResponse",
+        "title": "%command.hermes.copyResponse.title%",
+        "category": "Hermes"
+      }
     ],
     "menus": {
       "view/title": [
@@ -278,13 +322,13 @@
       }
     ],
     "configuration": {
-      "title": "Hermes Agent",
+      "title": "%config.title%",
       "properties": {
         "hermes.cliPath": {
           "type": "string",
           "default": "hermes",
-          "markdownDescription": "Executável do Hermes. Aceita prefixo de ambiente, ex.: `wsl hermes`.",
-          "scope": "machine-overridable"
+          "scope": "machine-overridable",
+          "description": "%config.hermes.cliPath.description%"
         },
         "hermes.agents": {
           "type": "object",
@@ -299,26 +343,26 @@
               "env": {}
             }
           },
-          "markdownDescription": "Agentes ACP disponíveis. Cada agente: `command`, `args`, `profile` (--profile do Hermes), `cwd`, `env`, `model` padrão.",
-          "scope": "machine-overridable"
+          "scope": "machine-overridable",
+          "description": "%config.hermes.agents.description%"
         },
         "hermes.defaultAgent": {
           "type": "string",
           "default": "Hermes",
-          "description": "Agente ativo ao abrir a view.",
+          "description": "%config.hermes.defaultAgent.description%",
           "scope": "machine-overridable"
         },
         "hermes.defaultWorkingDirectory": {
           "type": "string",
           "default": "",
-          "description": "cwd das sessões. Vazio = pasta do workspace.",
+          "description": "%config.hermes.defaultWorkingDirectory.description%",
           "scope": "machine-overridable"
         },
         "hermes.skipConfiguredMcp": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Exporta `HERMES_ACP_SKIP_CONFIGURED_MCP=1` no processo ACP (evita atrasar `initialize` com os MCP globais).",
-          "scope": "machine-overridable"
+          "scope": "machine-overridable",
+          "description": "%config.hermes.skipConfiguredMcp.description%"
         },
         "hermes.permissions": {
           "type": "string",
@@ -329,11 +373,11 @@
           ],
           "default": "ask",
           "enumDescriptions": [
-            "Perguntar sempre",
-            "Permitir na sessão o que você aprovar uma vez",
-            "Permitir tudo automaticamente (inseguro)"
+            "%config.hermes.permissions.enum.ask%",
+            "%config.hermes.permissions.enum.allowSession%",
+            "%config.hermes.permissions.enum.allowAll%"
           ],
-          "description": "Política padrão das respostas de aprovação."
+          "description": "%config.hermes.permissions.description%"
         },
         "hermes.showReasoning": {
           "type": "string",
@@ -343,12 +387,12 @@
             "hidden"
           ],
           "default": "collapsed",
-          "description": "Como exibir o bloco de raciocínio."
+          "description": "%config.hermes.showReasoning.description%"
         },
         "hermes.queue.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Habilitar a fila de prompts do composer."
+          "description": "%config.hermes.queue.enabled.description%"
         },
         "hermes.queue.defaultAction": {
           "type": "string",
@@ -357,14 +401,14 @@
             "steer"
           ],
           "default": "queue",
-          "description": "Ação padrão do botão de envio durante um turno ativo."
+          "description": "%config.hermes.queue.defaultAction.description%"
         },
         "hermes.context.warnAt": {
           "type": "number",
           "default": 80,
           "minimum": 10,
           "maximum": 99,
-          "description": "Avisar quando o contexto passar deste percentual."
+          "description": "%config.hermes.context.warnAt.description%"
         },
         "hermes.notifications": {
           "type": "string",
@@ -374,12 +418,12 @@
             "always"
           ],
           "default": "windowNotFocused",
-          "description": "Quando notificar sobre eventos de sessão em background."
+          "description": "%config.hermes.notifications.description%"
         },
         "hermes.logTraffic": {
           "type": "boolean",
           "default": false,
-          "description": "Registrar o JSON-RPC bruto no canal de saída \"Hermes Traffic\"."
+          "description": "%config.hermes.logTraffic.description%"
         }
       }
     }
