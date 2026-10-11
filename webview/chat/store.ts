@@ -49,3 +49,11 @@ export const userHistory = signal<string[]>([]);
 
 /** Incrementar pede foco no composer (ex.: "editar e reenviar"). */
 export const focusComposer = signal(0);
+
+/**
+ * Qual popover do composer está aberto ('meter' | 'send' | null). Eles ancoram no MESMO canto
+ * inferior direito (`.composer`), então dois abertos ao mesmo tempo se sobrepõem: o menu do envio
+ * cobria a última linha e o botão do popover do medidor (visto no harness em 1440px). Um signal só
+ * resolve a exclusividade — não há como abrir o segundo sem fechar o primeiro.
+ */
+export const openPopover = signal<'meter' | 'send' | null>(null);

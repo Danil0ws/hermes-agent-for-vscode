@@ -8,7 +8,7 @@ import { S, num } from './i18n';
 import { breakdown, filterCommands, historyNavigate, moveDeltas, replaceToken, triggerToken } from './logic';
 import type { TriggerToken } from './logic';
 import {
-  chips, commands, draft, focusComposer, models, modes, permission, queue, state, tools,
+  chips, commands, draft, focusComposer, models, modes, openPopover, permission, queue, state, tools,
   turns, usage, userHistory,
 } from './store';
 import type { ContextChip, QueueItem } from '../../src/core/types';
@@ -75,7 +75,6 @@ function historyChars(): number {
 }
 
 function Meter() {
-  const [open, setOpen] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
   const u = usage.value;
   const b = breakdown({
@@ -83,18 +82,19 @@ function Meter() {
     thoughtTokens: u?.turn?.thoughtTokens,
   });
   const level = b.pct === null ? 'ok' : b.pct > 90 ? 'critical' : b.pct >= 70 ? 'warn' : 'ok';
-  const show = open || focusWithin;
+  const show = openPopover.value === 'meter' || focusWithin;
+  const closeMeter = () => { if (openPopover.value === 'meter') openPopover.value = null; };
   const t = u?.turn;
   const segTotal = b.used > 0 ? b.used : b.attributed + b.unassigned;
 
   return (
     <div class="meter-wrap"
-      onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}
+      onMouseEnter={() => { openPopover.value = 'meter'; }} onMouseLeave={closeMeter}
       onFocusIn={() => setFocusWithin(true)} onFocusOut={() => setFocusWithin(false)}>
       <button class={`meter ${level}`} aria-label={S.meter.label} aria-expanded={show}
         aria-haspopup="dialog"
         title={b.pct === null ? S.meter.noWindow : S.meter.reported(num(b.used), num(b.size), String(b.pct))}
-        onClick={() => setOpen((v) => !v)}>
+        onClick={() => { openPopover.value = show ? null : 'meter'; }}>
         <span class="ring" aria-hidden="true" />
         <span class="meter-pct">{b.pct === null ? '—' : `${b.pct}%`}</span>
         <span class="sr-only" role="meter" aria-valuenow={b.pct ?? undefined} aria-valuemin={0} aria-valuemax={100}>
@@ -286,7 +286,10 @@ function SendButton({ onSubmit }: { onSubmit: (a: 'send' | 'queue' | 'steer' | '
   const starting = state.value.starting;
   const started = state.value.sessionId !== null;
   const qEnabled = state.value.queueEnabled;
-  const [open, setOpen] = useState(false);
+  // popover exclusivo do composer: abrir o menu do envio fecha o do medidor (e vice-versa), porque
+  // os dois ancoram no mesmo canto inferior direito
+  const open = openPopover.value === 'send';
+  const setOpen = (v: boolean) => { openPopover.value = v ? 'send' : null; };
   const menuRef = useRef<HTMLDivElement>(null);
 
   const items: ('send' | 'queue' | 'steer' | 'interrupt')[] = busy
@@ -331,7 +334,7 @@ function SendButton({ onSubmit }: { onSubmit: (a: 'send' | 'queue' | 'steer' | '
       {qEnabled && (
         <div class="send-menu-wrap">
           <button class="primary caret" aria-haspopup="menu" aria-expanded={open}
-            aria-label={S.send.menuLabel} onClick={() => setOpen((v) => !v)}>▾</button>
+            aria-label={S.send.menuLabel} onClick={() => setOpen(!open)}>▾</button>
           {open && (
             <div class="popover menu" role="menu" aria-label={S.send.menuLabel} ref={menuRef} onKeyDown={onKey}>
               {items.map((a) => (

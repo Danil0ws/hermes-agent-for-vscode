@@ -111,6 +111,19 @@ devolveu modos nem catálogo de modelos, então "sem modos"/"sem modelos" era o 
 painel recém-aberto — não um erro. Clicar numa sugestão do estado vazio continua funcionando
 (cria a sessão no primeiro prompt), mas o caminho explícito é o botão.
 
+Duas regras que valem para o painel inteiro:
+
+- **Medida de leitura**: o turno é limitado a `min(100%, 78ch)` — em painel largo (1440px medidos no
+  harness) a resposta ia de borda a borda, ~218 caracteres por linha; agora são ~87. Em painel
+  estreito quem manda é o `100%`.
+- **Um popover por vez**: o menu do envio e o popover do medidor ancoram no mesmo canto inferior
+  direito, então abrir um fecha o outro (signal `openPopover`). Antes, com os dois abertos, o menu
+  cobria a última linha e o botão do medidor.
+
+Larguras medidas (harness, 250/310/560/1440px): selects 51/101 · 71/141 · 108/216 · 255/509; a barra
+fica em duas linhas até ~540px e passa a uma linha a partir de ~550px (medido: 2 linhas em 540, 1 em
+560); abaixo de 220px os selects encolhem.
+
 ### 2.2 Barra de título — nativa (`contributes.menus.view/title`)
 
 | Item | Ícone | Comando | O que faz |

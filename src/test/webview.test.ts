@@ -213,8 +213,18 @@ test('css: a barra inferior quebra só ENTRE os grupos, e o primário fica à di
   assert.match(rule('.toolbar-actions'), /justify-content:\s*flex-end/, 'ações fora do canto direito');
   assert.match(rule('.sel-model'), /flex:\s*2 1 0/, 'o select de modelo precisa de mais espaço que o de modo');
   assert.match(rule('.sel select'), /text-overflow:\s*ellipsis/);
-  const piso = Number(rule('.sel').match(/min-width:\s*(\d+)px/)?.[1] ?? 0);
-  assert.ok(piso >= 60, `piso do select de modo pequeno demais (${piso}px): em sidebar estreita o rótulo some`);
+  // Os pisos têm de caber no painel mais estreito que o VS Code permite (~220px): 2 ícones de 28 e
+  // 36px + 3 gaps de 6px + os pisos dos dois selects ≤ 220 − 16 de padding. Piso grande não dá
+  // largura (quem dá é o `flex: 1 1 0`); ele só força a quebra entre os grupos — e, alto demais,
+  // empurra a linha para fora do painel (medido: 72/132 dava rolagem horizontal em 250px).
+  const piso = (sel: string) => Number(rule(sel).match(/min-width:\s*(\d+)px/)?.[1] ?? 0);
+  const grupo = 28 + 36 + 18 + piso('.sel') + piso('.sel-model');
+  assert.ok(piso('.sel') > 0 && piso('.sel-model') > 0, 'os selects precisam de piso para forçar a quebra');
+  assert.ok(grupo <= 204, `pisos somam ${grupo}px: o grupo dos controles estoura um painel de 220px`);
+  assert.ok(/@media \(max-width: 220px\)/.test(css), 'sem saída para painel < 220px: os controles estouram');
+  // medida de leitura: sem teto, em painel largo a resposta ocupa a largura toda (~180 caracteres
+  // por linha em 1440px, medido)
+  assert.match(css, /\.transcript > \* \{[^}]*max-width:\s*min\(100%,\s*\d+ch\)/, 'sem teto de medida de leitura');
   assert.doesNotMatch(css, /\dvw/, 'unidade de viewport no CSS do chat (resolve contra a janela, não contra o painel)');
   assert.match(rule('.bubble'), /font-family:\s*inherit/, 'prosa do balão fora da fonte da UI (vira bloco de código)');
 });

@@ -44,6 +44,22 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
   hover/foco — estavam em `opacity: 0` e ninguém descobria que existiam.
 - Guarda: teste de CSS falha se o toolbar voltar a quebrar linha, se os selects perderem a divisão
   da sobra, se aparecer unidade `vw` no CSS do chat ou se a prosa do balão sair da fonte da UI.
+- **Medida de leitura com teto.** Em painel largo a resposta ia de borda a borda: medido no harness,
+  1418px de texto em 1440px de painel (~218 caracteres por linha). Agora o turno é limitado a
+  `min(100%, 78ch)` — 564px, ~87 caracteres por linha — e em painel estreito o `100%` continua
+  mandando (250/310/560px seguem ocupando a largura útil).
+- **Pisos dos selects recalibrados e saída para painel mínimo.** Os pisos existem para forçar a
+  quebra entre os grupos (quem dá largura é o `flex: 1 1 0`), mas 72/132px estouravam o painel:
+  medido em 250px davam 286px de conteúdo contra 234px de painel, com rolagem horizontal. Agora são
+  40/80px (o grupo cabe em 202px) e abaixo de 220px — o mínimo que a sidebar do VS Code aceita — um
+  `@media` solta os pisos e deixa os selects encolherem com reticências. Medido de 170px a 1440px:
+  sem rolagem horizontal, primário sempre dentro do painel.
+- **Popovers do composer são exclusivos.** O menu do envio e o popover do medidor ancoram no mesmo
+  canto inferior direito; abertos juntos, um cobria a última linha e o botão do outro (visto no
+  harness em 1440px). Um signal `openPopover` faz abrir um fechar o outro — verificado nos dois
+  sentidos.
+- Guarda: o teste de CSS também cobra os pisos que caibam em 220px, a saída de `@media` e o teto de
+  medida de leitura.
 
 ### Corrigido
 

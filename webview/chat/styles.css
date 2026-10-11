@@ -122,6 +122,11 @@ details.thought pre { white-space: pre-wrap; margin: 4px 0 0; font-family: var(-
 .permission { border: 1px solid var(--vscode-focusBorder); border-radius: var(--hermes-radius); padding: 6px; margin: var(--hermes-gap) 0; }
 .permission .detail { font-family: var(--vscode-editor-font-family); white-space: pre-wrap; margin: 4px 0; max-height: 160px; overflow: auto; }
 
+/* Medida de leitura: em painel largo a resposta ia de borda a borda (~180 caracteres por linha em
+   1440px, medido no harness) — o olho perde o início da linha seguinte. Teto de 78ch; em painel
+   estreito o `100%` continua mandando. */
+.transcript > * { max-width: min(100%, 78ch); }
+
 /* avisos */
 .notice { padding: 4px 6px; font-size: 0.9em; }
 .notice.warning { color: var(--vscode-editorWarning-foreground); }
@@ -219,12 +224,25 @@ textarea.input:focus { outline: 1px solid var(--vscode-focusBorder); outline-off
 .toolbar { display: flex; flex-wrap: wrap; gap: 6px 6px; row-gap: 4px; align-items: center; margin-top: 6px; min-width: 0; }
 .toolbar-line { display: flex; flex: 1 1 auto; gap: 6px; align-items: center; min-width: 0; }
 .toolbar-actions { display: flex; flex: 1 1 auto; gap: 6px; align-items: center; justify-content: flex-end; }
-.sel { display: inline-flex; min-width: 72px; flex: 1 1 0; }
-.sel-model { min-width: 132px; flex: 2 1 0; }
+/* Pisos PEQUENOS de propósito: eles não existem para dar largura, e sim para forçar a quebra entre
+   os grupos (com `flex-basis: 0` os selects absorvem toda a sobra). Grandes demais, eles estouram o
+   painel: medido em 250px, piso 72/132 + os 3 gaps do grupo (18px) + os dois ícones (64px) = 286px
+   contra 234px de painel — rolagem horizontal. Com 40/80 o grupo cabe até em 220px: 28+36+18+40+80
+   = 202 ≤ 204. */
+.sel { display: inline-flex; min-width: 40px; flex: 1 1 0; }
+.sel-model { min-width: 80px; flex: 2 1 0; }
 /* select nativo trunca o texto sem reticências: limita a largura e tenta o ellipsis (o Chromium
    moderno honra em select; onde não honrar, o title do controle continua explicando) */
 .sel select { width: 100%; max-width: none; min-width: 0; text-overflow: ellipsis; }
 .icon-btn { min-width: 28px; flex: 0 0 auto; }
+/* Saída para o painel mais estreito que o VS Code permite (~170px de sidebar): abaixo de 220px os
+   pisos não cabem nem no mínimo (medido em 200px: 28+36+18+40+80 = 202 contra 184 de painel) e a
+   linha estoura — rolagem horizontal no painel. Aí os pisos saem e os selects encolhem com
+   reticências: truncar é melhor do que empurrar o primário para fora. */
+@media (max-width: 220px) {
+  .sel, .sel-model { min-width: 0; }
+}
+
 /* ícone dentro de botão: herda a cor do botão (o .ic é cinza de descrição) */
 .btn-ic { color: inherit; font-size: 1em; line-height: 1; vertical-align: -0.125em; margin-right: 4px; }
 
