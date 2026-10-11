@@ -6,6 +6,8 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   breakdown, coerceTurns, estimateTokens, filterCommands, historyNavigate,
   meterLevel, moveDeltas, percent, replaceToken, splitFenced, triggerToken, visibleTurns,
@@ -169,4 +171,35 @@ test('i18n: rótulos reais de status e opções de aprovação vêm do agente', 
     assert.ok(S.statusGlyph[st], `glifo faltando para ${st}`);
     assert.ok(S.status[st], `rótulo faltando para ${st}`);
   }
+});
+
+/* ─────────── CSS: popovers e pickers dentro do painel ─────────── */
+
+// caminho pelo cwd do runner (o bundle roda a partir da raiz do repo): `import.meta.url` aponta
+// para dist-test/ e o `..` sai do projeto
+const css = readFileSync(join(process.cwd(), 'webview', 'chat', 'styles.css'), 'utf8');
+const rule = (sel: string): string => {
+  const m = css.match(new RegExp('\\' + sel + '\\s*\\{[^}]*\\}'));
+  assert.ok(m, `regra ${sel} não encontrada em styles.css`);
+  return m[0];
+};
+
+test('css: popover se clampa ao PAINEL, não à viewport do webview', () => {
+  const pop = rule('.popover');
+  // o defeito real: min-width:240px + max-width:min(420px,90vw) fazia o menu do envio medir
+  // 240px e começar em x=-149 numa sidebar de 310px — crescia para fora e era cortado.
+  assert.match(pop, /max-width:\s*100%/, 'popover sem clamp percentual ao painel');
+  assert.doesNotMatch(pop, /\dvw/, 'unidade de viewport no popover (resolve contra a janela do webview)');
+  assert.match(pop.replace(/\s/g, ''), /min-width:min\(240px,100%\)/, 'min-width precisa de clamp');
+});
+
+test('css: menu de envio e popover do medidor não têm largura fixa em px', () => {
+  for (const sel of ['.menu', '.meter-pop']) {
+    assert.doesNotMatch(rule(sel), /(?:min-)?width:\s*\d+px/,
+      `${sel} com largura fixa em px: volta a estourar em sidebar estreita`);
+  }
+});
+
+test('css: os selects do composer truncam com reticências (indicador visível)', () => {
+  assert.match(rule('.sel select'), /text-overflow:\s*ellipsis/);
 });

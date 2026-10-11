@@ -549,3 +549,23 @@ passar por teclado/leitor de tela em cada superfície. Registrado como pendênci
     original do par falhava no tema escuro (`#0066B8` = 2,16:1 sobre a Activity Bar `#333`, mínimo
     3:1), então a variante escura passou a `#3B9EFF` (4,52:1) e o PNG da loja usa `#1E88E5`, que
     passa nos dois fundos (3,68:1 claro, 3,43:1 escuro).
+27. **Popover de webview se clampa ao PAINEL, nunca à viewport.** O menu do envio era
+    `position:absolute; right:0; min-width:240px; max-width:min(420px,90vw)` e o containing block era
+    o wrapper do próprio botão (`~30px`), então numa sidebar de 310px o menu media 240px e começava em
+    **x=-149**: crescia para fora do painel e era cortado, deixando visível só o FIM de cada rótulo
+    ("Send now (interrupt)" aparecia como "terrupt)"). O mesmo valia para o popover do medidor
+    (`right:0; width:340px` ancorado num wrapper de 40px). Correção: os wrappers perderam
+    `position:relative` (o containing block passou a ser o `.composer`, que é o painel) e as larguras
+    viraram relativas (`min-width: min(240px,100%)`, `max-width: 100%`, `width: min(340px,100%)`).
+    Medido no harness em 310/250/200px: menu em x=70/10/0 e popover do medidor em x=0 — nada mais
+    sai do painel; abaixo de 240px o menu encolhe e os rótulos ellipsizam.
+28. **`<select>` nativo trunca sem indicador.** Os seletores de modo/modelo mostravam "(no mode" e
+    "(no agen", e o caso real é pior (ids como `opencode-go:deepseek-v4.1-flash`). Correção em duas
+    partes: rótulos de estado vazio passaram a ser curtos (`sem modos`/`no models`, o motivo ficou no
+    `title` do controle, que já existia) e `.sel` ganhou `max-width:46%` + `text-overflow:ellipsis` —
+    o Chromium atual honra o ellipsis em `select`, então o truncamento passa a se anunciar
+    ("Ask be…", "deeps…"). Na largura real de sidebar (310px) nada trunca.
+29. **Harness visual: desligue o cache de rede antes de medir um CSS.** A primeira medição da
+    correção acima devolveu exatamente os números antigos (x=-149) e quase me fez "consertar" um
+    código que já estava certo: o navegador servia o `chat.css` em cache. `Network.setCacheDisabled`
+    (ou um cache-bust na URL) antes de medir. O mesmo cuidado vale para o bundle JS.

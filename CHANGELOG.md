@@ -50,6 +50,19 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
   lugar; nome conferido como livre no Marketplace. Falta apenas `repository` (URL do código) e o
   `publisher`/token da sua conta.
 
+### Corrigido (defeitos encontrados na sidebar estreita, com medida)
+
+- **Menu de envio e popover do medidor saíam do painel.** O menu media 240px ancorado no próprio
+  botão do caret (~30px), então em sidebar de 310px começava em **x=-149** e o texto aparecia
+  cortado, mostrando só o fim de cada rótulo — "Send now (interrupt)" virava "terrupt)". A âncora
+  passou a ser o composer (o painel) e as larguras viraram relativas. Medido em 310/250/200px: nada
+  mais sai do painel; abaixo de 240px o menu encolhe com reticências.
+- **Seletores de modo/modelo truncavam sem indicador** ("(no mode", "(no agen"). Rótulos de estado
+  vazio encurtados (`sem modos`, `sem modelos`) com o motivo no tooltip do controle, e `.sel` com
+  `max-width` + `text-overflow: ellipsis` — o truncamento agora se anuncia ("Ask be…", "deeps…").
+- **3 testes novos de CSS** travam a classe: popover com clamp percentual (sem unidade de viewport),
+  menu/medidor sem largura fixa em px, e os selects com reticências.
+
 ### Corrigido (defeitos encontrados RODANDO a extensão, não em teste)
 
 - **`command 'hermes.manage.open' not found`** — a causa não era o CLI. `hermes.manage` estava
