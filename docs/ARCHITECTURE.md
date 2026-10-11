@@ -213,6 +213,23 @@ camada de contexto/tokens.
 12. **Native-first**: tudo que o VS Code tem nativo, usamos nativo — `view/title` (menus), QuickPick,
     InputBox, TreeView, StatusBar, diff editor, terminal, OutputChannel. Nada disso é reconstruído
     na webview.
+13. **Checkpoints (decisão do usuário, 11/out)**: usar o mecanismo **do próprio Hermes**
+    (`~/.hermes/checkpoints/`, shadow git repo, `checkpoints.enabled` em `config.yaml`, restore por
+    `/rollback`) em vez de inventar um snapshot paralelo.
+    **Bloqueio verificado**: `acp_adapter/` não tem **nenhuma** referência a checkpoints — a sessão
+    ACP nunca liga checkpoints, mesmo com `checkpoints.enabled: true`; e `hermes checkpoints` só faz
+    `status|list|prune|clear|clear-legacy` (não restaura). Restaurar é `/rollback` **dentro de uma
+    sessão CLI**.
+    Caminho: (a) contribuição upstream pequena no adaptador — passar `checkpoints_enabled` de
+    `config.yaml` ao construir o `AIAgent` em `acp_adapter/session.py` e anunciar `/rollback` nos
+    `_COMMANDS` do `commands.py`; (b) até isso existir, o botão de checkpoint só aparece quando
+    `hermes checkpoints status` mostra store para o cwd e a sessão foi criada com checkpoints; caso
+    contrário, degrada para "Desfazer por arquivo (diff inverso)" + "Abrir CLI com --checkpoints
+    para restaurar". Nunca fingimos um checkpoint que o Hermes não tirou.
+14. **Webview**: **Preact + `@preact/signals`** (decisão do usuário), bundle único via Vite,
+    lista virtualizada própria, CSP com nonce.
+15. **Chat inline**: fora do M1. "Perguntar sobre a seleção" abre a view com chip de seleção e foco
+    no composer; `Ctrl+I` só depois do M5, se a API permitir sem hacks.
 
 ---
 
@@ -414,7 +431,11 @@ Notas de implementação:
    `usage_update`. O picker não pode mostrar "200K" antes disso.
 6. **Detalhamento por categoria** é estimativa local, sempre rotulada.
 7. **Edições não são interceptáveis**: o Hermes escreve no disco com as próprias tools. "Desfazer" é
-   diff inverso, não bloqueio de escrita. Checkpoint por turno exige snapshot próprio.
+   diff inverso, não bloqueio de escrita.
+7b. **Checkpoints não existem na sessão ACP**: `acp_adapter/` ignorou `checkpoints.enabled` do
+   `config.yaml` e não expõe `/rollback`; `hermes checkpoints` não restaura. Enquanto a contribuição
+   upstream de §3.13 não existir, restauração de turno só é possível numa sessão CLI
+   (`hermes chat --checkpoints`). O botão aparece apenas quando o store real tem dados para o cwd.
 8. **`_meta` não documentado**: o adaptador usa `_meta.hermes.sessionProvenance` e
    `_meta.hermes.containsCompactionSummary`. São extensões internas, não contrato — a UI degrada se
    sumirem. Só lemos, nunca dependemos delas para correção.

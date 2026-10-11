@@ -131,8 +131,9 @@ Cada linha: estado (`M`/`A`/`D`), caminho, `+N −M`, `[diff]`, `[Manter]`, `[�
 Rodapé: `[Manter tudo]` `[Desfazer tudo]`.
 
 Texto obrigatório no rodapé do cartão (o escopo precisa ser explícito):
-> O Hermes já escreveu estes arquivos no disco. "Desfazer" aplica o diff inverso; use o checkpoint
-> do turno para voltar o estado inteiro.
+> O Hermes já escreveu estes arquivos no disco. "Desfazer" aplica o diff inverso. Restaurar o turno
+> inteiro usa o checkpoint do próprio Hermes (`hermes chat --checkpoints` + `/rollback`) — a sessão
+> ACP ainda não tira checkpoints, então o botão só aparece quando existe store para este diretório.
 
 ---
 
@@ -434,9 +435,11 @@ literal no bundle além de `aria` montado por template traduzido.
    `used` do agente e a sobra vai para "não atribuído".
 6. **Custo** não existe no protocolo: nenhum número é exibido.
 7. **Reordenar a fila** é 100% client-side; a fila interna do servidor não é inspecionável.
-8. **Checkpoint por turno**: o VS Code não expõe API pública de checkpoint de chat. O plano é
-   snapshot próprio (repositório shadow por turno) — decisão pendente de confirmação (§12 do
-   ARCHITECTURE / pergunta no fim da Fase 0).
+8. **Checkpoint por turno**: o VS Code não expõe API pública de checkpoint de chat, e a sessão ACP do
+   Hermes não tira checkpoints (ver §3.13 do ARCHITECTURE). Decidido: usar o store do Hermes
+   (`hermes chat --checkpoints` + `/rollback`) e, no ACP, mostrar o botão só quando houver store real
+   para o cwd — com o caminho de restauração abrindo a CLI. O "Desfazer" por arquivo (diff inverso)
+   funciona sempre.
 9. **Chat inline (`Ctrl+I`)**: só se a API permitir sem hacks; caso contrário, "Perguntar sobre a
    seleção" abre a view com chip de seleção e foco no composer.
 10. **Notificações** do VS Code são usadas no lugar de toast próprio, para não ter dois sistemas.
