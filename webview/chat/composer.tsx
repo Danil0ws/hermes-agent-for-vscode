@@ -150,7 +150,7 @@ function Meter() {
             <button class="secondary" title={S.meter.newWithSummaryTip}
               onClick={() => send({ type: 'newConversation' })}>{S.meter.newWithSummary}</button>
             <button class="secondary" title={S.meter.detailsTip}
-              onClick={() => send({ type: 'openManage', tab: 'context' })}>{S.meter.details}</button>
+              onClick={() => send({ type: 'openManage', manageTab: 'context' })}>{S.meter.details}</button>
           </div>
         </div>
       )}
@@ -173,7 +173,7 @@ function Chips() {
     if (c.kind === 'file' || c.kind === 'folder' || c.kind === 'selection' || c.kind === 'symbol') {
       send({ type: 'openFile', path: c.ref, line: c.lines?.[0] });
     } else {
-      send({ type: 'openManage', tab: 'context' });
+      send({ type: 'openManage', manageTab: 'context' });
     }
   };
   return (
@@ -513,7 +513,7 @@ export function Composer() {
             </select>
           </label>
           <button class="icon-btn" title={S.composer.toolsTip} aria-label={S.composer.tools}
-            onClick={() => send({ type: 'openManage', tab: 'tools' })}><Icon name="gear" /></button>
+            onClick={() => send({ type: 'openManage', manageTab: 'tools' })}><Icon name="gear" /></button>
         </div>
         <div class="toolbar-actions">
           <Meter />

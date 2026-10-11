@@ -75,10 +75,16 @@
     ],
     "commands": [
       {
-        "command": "hermes.newConversation",
-        "title": "%command.hermes.newConversation.title%",
-        "category": "Hermes",
-        "icon": "$(add)"
+       "command": "hermes.newConversation",
+       "title": "%command.hermes.newConversation.title%",
+       "category": "Hermes",
+       "icon": "$(add)"
+      },
+      {
+       "command": "hermes.worktree.new",
+       "title": "%command.hermes.worktree.new.title%",
+       "category": "Hermes",
+       "icon": "$(git-branch)"
       },
       {
         "command": "hermes.showSessions",
@@ -298,9 +304,9 @@
           "group": "1_open@1"
         },
         {
-          "command": "hermes.manage",
-          "when": "view == hermes.chat",
-          "group": "1_open@2"
+         "command": "hermes.manage",
+         "when": "view == hermes.chat",
+         "group": "navigation@4"
         },
         {
           "command": "hermes.openCli",
@@ -525,6 +531,11 @@
           "type": "boolean",
           "default": false,
           "description": "%config.hermes.logTraffic.description%"
+        },
+        "hermes.worktreeRoot": {
+          "type": "string",
+          "default": "",
+          "description": "%config.hermes.worktreeRoot.description%"
         }
       }
     }

@@ -136,7 +136,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           await vscode.commands.executeCommand('hermes.showSessions');
           return;
         case 'openManage':
-          await vscode.commands.executeCommand('hermes.manage', msg.tab);
+          await vscode.commands.executeCommand('hermes.manage', msg.manageTab);
           return;
         case 'addContext':
           await vscode.commands.executeCommand('hermes.context.add', msg.source);
@@ -279,6 +279,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     await editor.edit((b) => b.insert(editor.selection.active, text));
   }
 
+  /**
+   * Abre uma aba nova (uma sessão nova). `cwd` escolhe a pasta de trabalho da sessão — é por aqui
+   * que a lane do worktree entra.
+   * STUB(lane A): o corpo real (criar a aba, subir a sessão com esse cwd, ativá-la) é da lane A.
+   */
+  async newTab(_cwd?: string): Promise<void> {
+    this.log('info', 'newTab: stub');
+  }
+
   private initialState(): ChatState {
     const s = settings();
     const sess = this.agents.session;
@@ -287,6 +296,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
       agent: activeAgent(s).name,
       busy: this.running,
       starting: this.starting,
+      // STUB(lane A): as abas são desta camada — a lane A troca por `this.tabList()`/`this.activeTabId`
+      tabs: [],
+      activeTab: '',
       modes: sess?.snapshot.modes ?? [],
       currentMode: sess?.snapshot.currentMode,
       models: sess?.snapshot.models ?? [],

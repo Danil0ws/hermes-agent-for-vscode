@@ -58,5 +58,7 @@
   "command.hermes.context.remove.title": "Remover contexto",
   "command.hermes.context.toggleImplicit.title": "Ligar/desligar contexto implícito",
   "command.hermes.setupCli.title": "Verificar / instalar o Hermes",
-  "command.hermes.permissions.toggleYolo.title": "Alternar aprovação automática (YOLO)"
+  "command.hermes.permissions.toggleYolo.title": "Alternar aprovação automática (YOLO)",
+  "command.hermes.worktree.new.title": "Novo worktree e sessão",
+  "config.hermes.worktreeRoot.description": "Onde criar worktrees git para as novas lanes. Vazio = pasta irmã `<repo>-worktrees`."
 }

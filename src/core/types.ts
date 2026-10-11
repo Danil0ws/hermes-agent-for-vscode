@@ -106,12 +106,41 @@ export interface SessionSummary {
   pending: number;
 }
 
+/* ───────────────────── abas (uma conversa por aba) ───────────────────── */
+
+/**
+ * Uma aba do chat = UMA sessão do ACP. `busy` e `waiting` são o indicador de lane ativa: a aba
+ * mostra spinner enquanto o turno corre e aviso colorido quando há aprovação pendente.
+ * `lane` existe só quando a sessão roda num worktree próprio.
+ */
+/**
+ * O que a SESSÃO conhece. Abas (`tabs`/`activeTab`) são do provider — a sessão não sabe que existe
+ * uma barra de abas, e das duas uma sessão pode estar visível ao mesmo tempo.
+ */
+export type SessionState = Omit<ChatState, 'tabs' | 'activeTab'>;
+
+export interface TabInfo {
+  /** id estável da aba (criado pelo host; sobrevive a trocar de sessão dentro dela) */
+  id: string;
+  title: string;
+  sessionId: string | null;
+  cwd: string;
+  agent: string;
+  busy: boolean;
+  starting?: boolean;
+  waiting?: boolean;
+  lane?: { branch: string; path: string } | null;
+}
+
 export interface ChatState {
   sessionId: string | null;
   agent: string;
   busy: boolean;
   /** o botão "Iniciar" está criando a sessão (handshake em andamento) — só o host seta */
   starting?: boolean;
+  /** abas abertas + qual está ativa. O resto deste estado descreve a aba ATIVA. */
+  tabs: TabInfo[];
+  activeTab: string;
   modes: ModeInfo[];
   currentMode?: string;
   models: ModelInfo[];
@@ -133,29 +162,31 @@ export interface ChatState {
 
 export type HostToWebview =
   | { type: 'init'; state: ChatState }
+  /** abas abertas/ativa mudaram sem trocar o resto do estado (não entra no replay) */
+  | { type: 'tabs'; tabs: TabInfo[]; active: string }
   /** reidratação: transcript persistido da sessão */
   | { type: 'hydrate'; turns: unknown[] }
-  | { type: 'session'; sessionId: string | null; title?: string }
-  | { type: 'busy'; value: boolean }
-  | { type: 'user/message'; text: string; chips: ContextChip[] }
-  | { type: 'agent/chunk'; messageId: string; text: string; /** true quando o chunk pós-compactação carrega `_meta.hermes.containsCompactionSummary` */ compaction?: boolean }
-  | { type: 'agent/message'; messageId: string; text: string }
-  | { type: 'thought/chunk'; messageId: string; text: string }
-  | { type: 'turn/end'; stopReason: StopReason }
-  | { type: 'tool/start'; tool: ToolView }
-  | { type: 'tool/update'; id: string; patch: Partial<ToolView> }
-  | { type: 'plan'; entries: PlanEntry[] }
-  | { type: 'usage'; size: number; used: number; turn?: TurnUsage }
-  | { type: 'permission/ask'; req: PermissionRequest }
-  | { type: 'permission/resolve'; id: string; outcome: string }
-  | { type: 'commands'; commands: SlashCommand[] }
-  | { type: 'modes'; modes: ModeInfo[]; current?: string }
-  | { type: 'models'; models: ModelInfo[]; current?: string }
-  | { type: 'queue'; items: QueueItem[] }
-  | { type: 'chips'; chips: ContextChip[] }
-  | { type: 'workingset'; files: ChangedFile[] }
-  | { type: 'notice'; level: 'info' | 'warning' | 'error'; text: string }
-  | { type: 'error'; text: string };
+  | { type: 'session'; tab?: string; sessionId: string | null; title?: string }
+  | { type: 'busy'; tab?: string; value: boolean }
+  | { type: 'user/message'; tab?: string; text: string; chips: ContextChip[] }
+  | { type: 'agent/chunk'; tab?: string; messageId: string; text: string; /** true quando o chunk pós-compactação carrega `_meta.hermes.containsCompactionSummary` */ compaction?: boolean }
+  | { type: 'agent/message'; tab?: string; messageId: string; text: string }
+  | { type: 'thought/chunk'; tab?: string; messageId: string; text: string }
+  | { type: 'turn/end'; tab?: string; stopReason: StopReason }
+  | { type: 'tool/start'; tab?: string; tool: ToolView }
+  | { type: 'tool/update'; tab?: string; id: string; patch: Partial<ToolView> }
+  | { type: 'plan'; tab?: string; entries: PlanEntry[] }
+  | { type: 'usage'; tab?: string; size: number; used: number; turn?: TurnUsage }
+  | { type: 'permission/ask'; tab?: string; req: PermissionRequest }
+  | { type: 'permission/resolve'; tab?: string; id: string; outcome: string }
+  | { type: 'commands'; tab?: string; commands: SlashCommand[] }
+  | { type: 'modes'; tab?: string; modes: ModeInfo[]; current?: string }
+  | { type: 'models'; tab?: string; models: ModelInfo[]; current?: string }
+  | { type: 'queue'; tab?: string; items: QueueItem[] }
+  | { type: 'chips'; tab?: string; chips: ContextChip[] }
+  | { type: 'workingset'; tab?: string; files: ChangedFile[] }
+  | { type: 'notice'; tab?: string; level: 'info' | 'warning' | 'error'; text: string }
+  | { type: 'error'; tab?: string; text: string };
 
 /* ───────────────────── Webview -> Extension ───────────────────── */
 
@@ -164,13 +195,19 @@ export type SendAction = 'send' | 'queue' | 'steer' | 'interrupt';
 export type WebviewToHost =
   | { type: 'ready' }
   /** botão "Iniciar": cria a sessão sem prompt, para os seletores receberem modos/modelos */
-  | { type: 'start' }
-  | { type: 'prompt'; text: string; chips: ContextChip[]; action: SendAction }
+  | { type: 'start'; tab?: string }
+  /* ── abas: uma conversa por aba ── */
+  | { type: 'activateTab'; tab: string }
+  | { type: 'closeTab'; tab: string }
+  | { type: 'renameTab'; tab: string; title: string }
+  /** abre aba nova; `worktree` cria um worktree git antes de subir a sessão nele */
+  | { type: 'newTab'; cwd?: string; worktree?: { branch?: string } }
+  | { type: 'prompt'; tab?: string; text: string; chips: ContextChip[]; action: SendAction }
   /** arquivo/pasta soltos na webview (drag & drop do Explorer) */
   | { type: 'addPath'; path: string }
-  | { type: 'cancel' }
-  | { type: 'setMode'; modeId: string }
-  | { type: 'setModel'; modelId: string }
+  | { type: 'cancel'; tab?: string }
+  | { type: 'setMode'; tab?: string; modeId: string }
+  | { type: 'setModel'; tab?: string; modelId: string }
   | { type: 'setReasoning'; value: 'always' | 'collapsed' | 'hidden' }
   | { type: 'addContext'; source?: string }
   | { type: 'removeChip'; id: string }
@@ -179,14 +216,14 @@ export type WebviewToHost =
   | { type: 'applyToEditor'; text: string }
   | { type: 'copy'; text: string }
   | { type: 'permission/answer'; id: string; optionId: string }
-  | { type: 'queue/remove'; id: string }
-  | { type: 'queue/move'; id: string; delta: -1 | 1 }
-  | { type: 'queue/clear' }
-  | { type: 'queue/sendNow'; id: string }
-  | { type: 'compact' }
+  | { type: 'queue/remove'; tab?: string; id: string }
+  | { type: 'queue/move'; tab?: string; id: string; delta: -1 | 1 }
+  | { type: 'queue/clear'; tab?: string }
+  | { type: 'queue/sendNow'; tab?: string; id: string }
+  | { type: 'compact'; tab?: string }
   | { type: 'newConversation' }
   | { type: 'showSessions' }
-  | { type: 'openManage'; tab?: string }
+  | { type: 'openManage'; manageTab?: string }
   | { type: 'openCli' }
   | { type: 'undoFile'; path: string }
   | { type: 'keepFile'; path: string };

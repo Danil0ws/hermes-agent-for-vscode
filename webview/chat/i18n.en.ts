@@ -16,11 +16,28 @@ export const en: Strings = {
       ['Plan a change', 'Plan, step by step, the change I describe.'],
     ] as const,
     manage: 'Manage models, skills and MCP…',
+    startTitle: 'Start the agent',
+    startBody: 'Starting creates the session and loads modes, models and commands. Nothing is sent to the model until you send something.',
     startHint: 'Click Start to load modes, models and commands.',
     starting: 'Starting the agent…',
   },
 
   /* ───── roles ───── */
+  /* ───── tabs: one conversation per tab ───── */
+  tabs: {
+    new: 'New tab',
+    newTip: 'New conversation in a new tab',
+    newWorktree: 'New lane (worktree)',
+    newWorktreeTip: 'Creates a git worktree and opens the conversation in it',
+    close: 'Close tab',
+    closeTip: 'Close this tab — the session stays in history',
+    rename: 'Rename',
+    noSession: 'no session',
+    busy: 'working',
+    waiting: 'waiting for approval',
+    laneTip: (path: string) => `lane in ${path}`,
+  },
+
   role: { user: 'you', agentFallback: 'hermes' },
 
   /* ───── states ───── */

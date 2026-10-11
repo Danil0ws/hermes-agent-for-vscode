@@ -9,6 +9,7 @@ import { feature as plan } from './plan';
 import { feature as diff } from './diff';
 import { feature as editor } from './editor';
 import { feature as manage } from './manage';
+import { feature as worktree } from './worktree';
 import { feature as diagnostics } from './diagnostics';
 
-export const FEATURES: Feature[] = [sessions, context, plan, diff, editor, manage, diagnostics];
+export const FEATURES: Feature[] = [sessions, context, plan, diff, editor, manage, worktree, diagnostics];

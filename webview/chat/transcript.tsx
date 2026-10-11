@@ -166,7 +166,7 @@ function Plan({ entries }: { entries: PlanEntry[] }) {
         <span>{S.plan.title}</span>
         <span class="muted">{S.plan.count(done, entries.length)}</span>
         <span class="spacer" />
-        <button class="secondary" onClick={() => send({ type: 'openManage', tab: 'context' })}>{S.plan.viewInView}</button>
+        <button class="secondary" onClick={() => send({ type: 'openManage', manageTab: 'context' })}>{S.plan.viewInView}</button>
       </header>
       {entries.map((p, i) => (
         <div class="plan-row" key={i}>

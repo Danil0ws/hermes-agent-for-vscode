@@ -17,11 +17,28 @@ export const zhCN: Strings = {
       ['规划一项改动', '为我描述的改动制定分步计划。'],
     ] as const,
     manage: '管理模型、技能和 MCP…',
+    startTitle: '启动代理',
+    startBody: '启动会创建会话并加载模式、模型和命令。在你发送消息之前，不会向模型发送任何内容。',
     startHint: '点击“启动”以加载模式、模型和命令。',
     starting: '正在启动代理…',
   },
 
   /* ───── papéis ───── */
+  /* ───── 标签页：一个标签页一个对话 ───── */
+  tabs: {
+    new: '新建标签页',
+    newTip: '在新标签页中开始新对话',
+    newWorktree: '新建 lane（worktree）',
+    newWorktreeTip: '创建 git worktree 并在其中打开对话',
+    close: '关闭标签页',
+    closeTip: '关闭此标签页 — 会话仍保留在历史中',
+    rename: '重命名',
+    noSession: '无会话',
+    busy: '工作中',
+    waiting: '等待批准',
+    laneTip: (path: string) => `lane：${path}`,
+  },
+
   role: { user: '你', agentFallback: 'hermes' },
 
   /* ───── estados ───── */

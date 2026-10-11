@@ -17,6 +17,7 @@ import { Composer } from './composer';
 import type { HostToWebview } from '../../src/core/types';
 import '@vscode/codicons/dist/codicon.css';
 import './styles.css';
+import './tabs.css';
 
 /* ─────────── roteador de mensagens do host ─────────── */
 

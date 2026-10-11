@@ -15,11 +15,28 @@ export const ptBR = {
       ['Planejar uma mudança', 'Planeje, passo a passo, a mudança que eu descrever.'],
     ],
     manage: 'Gerenciar modelos, skills e MCP…',
+    startTitle: 'Iniciar o agente',
+    startBody: 'Iniciar cria a sessão e carrega modos, modelos e comandos. Nada vai ao modelo até você enviar algo.',
     startHint: 'Clique em Iniciar para carregar modos, modelos e comandos.',
     starting: 'Iniciando o agente…',
   },
 
   /* ───── papéis ───── */
+  /* ───── abas: uma conversa por aba ───── */
+  tabs: {
+    new: 'Nova aba',
+    newTip: 'Nova conversa numa aba nova',
+    newWorktree: 'Nova lane (worktree)',
+    newWorktreeTip: 'Cria um worktree git e abre a conversa nele',
+    close: 'Fechar aba',
+    closeTip: 'Fechar esta aba — a sessão continua no histórico',
+    rename: 'Renomear',
+    noSession: 'sem sessão',
+    busy: 'trabalhando',
+    waiting: 'aguardando aprovação',
+    laneTip: (path: string) => `lane em ${path}`,
+  },
+
   role: { user: 'você', agentFallback: 'hermes' },
 
   /* ───── estados ───── */

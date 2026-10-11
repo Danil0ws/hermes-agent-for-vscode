@@ -58,5 +58,7 @@
   "command.hermes.context.remove.title": "Remove Context",
   "command.hermes.context.toggleImplicit.title": "Toggle Implicit Context",
   "command.hermes.setupCli.title": "Check / install Hermes",
-  "command.hermes.permissions.toggleYolo.title": "Toggle auto-approve (YOLO)"
+  "command.hermes.permissions.toggleYolo.title": "Toggle auto-approve (YOLO)",
+  "command.hermes.worktree.new.title": "New Worktree and Session",
+  "config.hermes.worktreeRoot.description": "Where to create git worktrees for new lanes. Empty = a sibling folder `<repo>-worktrees`."
 }

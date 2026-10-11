@@ -58,5 +58,7 @@
   "command.hermes.context.remove.title": "Удалить контекст",
   "command.hermes.context.toggleImplicit.title": "Включить/выключить неявный контекст",
   "command.hermes.setupCli.title": "Проверить / установить Hermes",
-  "command.hermes.permissions.toggleYolo.title": "Переключить автоодобрение (YOLO)"
+  "command.hermes.permissions.toggleYolo.title": "Переключить автоодобрение (YOLO)",
+  "command.hermes.worktree.new.title": "Новый worktree и сессия",
+  "config.hermes.worktreeRoot.description": "Где создавать git worktree для новых lanes. Пусто = соседняя папка `<repo>-worktrees`."
 }

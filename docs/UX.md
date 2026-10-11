@@ -477,3 +477,40 @@ literal no bundle além de `aria` montado por template traduzido.
 9. **Chat inline (`Ctrl+I`)**: só se a API permitir sem hacks; caso contrário, "Perguntar sobre a
    seleção" abre a view com chip de seleção e foco no composer.
 10. **Notificações** do VS Code são usadas no lugar de toast próprio, para não ter dois sistemas.
+
+## 11. Abas, lanes e o composer (o que muda aqui)
+
+```
+┌ Chat ────────────────────────────────┐   barra de título da view:
+│ [+] [conversa 1 ●] [conversa 2    ]  │   ＋ nova · ⟲ histórico · ⚙ config · ⋯
+├──────────────────────────────────────┤
+│ transcript da aba ATIVA              │
+│                                      │
+│   ── sem sessão (bloco centrado) ──  │
+│        Iniciar o agente              │
+│        <uma linha do que acontece>   │
+│           [ Iniciar ]                │
+│                                      │
+├──────────────────────────────────────┤
+│ ┌──────────────────────────────────┐ │
+│ │ Pergunte ao Hermes, # contexto… ➤│ │  ← enviar/fila DENTRO do campo
+│ └──────────────────────────────────┘ │     canto direito, só texto, sem borda
+│ [+  ] [Modo ▾] [Modelo ▾]      ◔ 12% │  ← toolbar sem a engrenagem
+└──────────────────────────────────────┘
+```
+
+Regras que fecham o pedido:
+
+- **Abas**: uma conversa por aba; a barra rola na horizontal (`overflow-x:auto`) e cada aba mostra o
+  estado da lane — `●` girando quando `busy`, ponto de aviso quando `waiting` (aprovação pendente),
+  `title` com agente · cwd · branch. Fechar aba não apaga sessão.
+- **Config no título**: `hermes.manage` saiu de `1_open@2` e foi para `navigation@4`, ao lado do
+  histórico; o botão de engrenagem **sai** da toolbar do composer (não fica nos dois lugares).
+- **Iniciar centrado**: sem sessão, o vazio mostra título + descrição de uma linha + primário
+  centralizado. O primário da toolbar continua existindo (é o mesmo `start`), porque o dedo já está lá.
+- **Enviar dentro do campo**: botão-fantasma ancorado no canto inferior direito do `textarea`
+  (sem fundo, sem borda, `--vscode-descriptionForeground`, hover → `--vscode-foreground`), com
+  `aria-label` e foco visível; clicar abre o mesmo menu (enviar / pôr na fila / dirigir / interromper),
+  então nenhuma ação some. Enter continua enviando.
+- **Lane visível sem painel novo**: a aba é o indicador; o worktree (`hermes.worktree.new`) abre uma
+  aba nova já no diretório dele.

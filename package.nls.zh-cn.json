@@ -58,5 +58,7 @@
   "command.hermes.context.remove.title": "移除上下文",
   "command.hermes.context.toggleImplicit.title": "启用/停用隐式上下文",
   "command.hermes.setupCli.title": "检查 / 安装 Hermes",
-  "command.hermes.permissions.toggleYolo.title": "切换自动批准 (YOLO)"
+  "command.hermes.permissions.toggleYolo.title": "切换自动批准 (YOLO)",
+  "command.hermes.worktree.new.title": "新建 worktree 并开始会话",
+  "config.hermes.worktreeRoot.description": "为新的 lane 创建 git worktree 的位置。留空 = 同级目录 `<repo>-worktrees`。"
 }

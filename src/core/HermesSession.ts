@@ -11,7 +11,7 @@
 import * as acp from '@agentclientprotocol/sdk';
 import { basename } from 'node:path';
 import type {
-  ChangedFile, ChatState, ContextChip, FileDiff, HostToWebview, ModeInfo, ModelInfo,
+  ChangedFile, SessionState, ContextChip, FileDiff, HostToWebview, ModeInfo, ModelInfo,
   PermissionRequest, PlanEntry, SessionSummary, SlashCommand, ToolView, TurnUsage,
 } from './types';
 
@@ -53,7 +53,7 @@ const KINDS = new Set(['read', 'edit', 'delete', 'move', 'search', 'execute', 't
 
 export class HermesSession {
   readonly sessionId: string;
-  private state: ChatState;
+  private state: SessionState;
   private tools = new Map<string, ToolView>();
   private workingSet = new Map<string, ChangedFile>();
   private pending = new Map<string, (optionId: string | null) => void>();
@@ -64,13 +64,13 @@ export class HermesSession {
     sessionId: string,
     private readonly deps: SessionDeps,
     private readonly emit: (m: HostToWebview) => void,
-    state: ChatState,
+    state: SessionState,
   ) {
     this.sessionId = sessionId;
     this.state = state;
   }
 
-  get snapshot(): ChatState { return this.state; }
+  get snapshot(): SessionState { return this.state; }
   get busy(): boolean { return this.state.busy; }
 
   /* ─────────── ciclo de vida ─────────── */
@@ -80,7 +80,7 @@ export class HermesSession {
     deps: SessionDeps, emit: (m: HostToWebview) => void, agent: string,
   ): Promise<HermesSession> {
     const res = (await conn.newSession({ cwd, mcpServers: [] })) as unknown as SessionResponseLite;
-    const state: ChatState = {
+    const state: SessionState = {
       sessionId: res.sessionId ?? '',
       agent,
       busy: false,

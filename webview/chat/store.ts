@@ -25,6 +25,8 @@ export const state = signal<ChatState>({
   sessionId: null, agent: '', busy: false, modes: [], models: [], commands: [],
   chips: [], queue: [], plan: [], workingSet: [], showReasoning: 'collapsed',
   contextWarnAt: 80, queueEnabled: true, queueDefaultAction: 'queue',
+  // STUB(lane A): preenchidos pelo primeiro `init`/`tabs` do host
+  tabs: [], activeTab: '',
 });
 
 export const turns = signal<Turn[]>([]);

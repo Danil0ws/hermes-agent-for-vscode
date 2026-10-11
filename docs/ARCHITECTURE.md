@@ -603,3 +603,37 @@ em `docs/ROADMAP.md`. Aqui fica só o diagnóstico.
     deixar o vazio explícito. O botão **Iniciar** é a versão declarada disso: um clique, não um
     efeito colateral de abrir o painel; enquanto ele corre, os selects mostram "carregando…" em vez
     de "sem modos"/"sem modelos", e o primário fica indisponível (sem duplo início).
+
+## 12. Abas: uma conversa por aba, uma lane por worktree
+
+Pedido do usuário (11/10): abas no chat, uma conversa por aba; a engrenagem (config) sobe para o
+título da view, ao lado do histórico; o **Iniciar** vira um bloco centrado com descrição no estado
+sem sessão; o **enviar/fila** passa para dentro do campo de texto (canto direito, sem borda nem cor);
+e um jeito fácil de ver a **lane ativa** e de **criar worktree** — uma por lane.
+
+### 12.1 Contrato (fonte: `src/core/types.ts`)
+
+- **A aba é do view provider, não da sessão.** `ChatState` ganhou `tabs: TabInfo[]` e
+  `activeTab: string`; `HermesSession` continua com o estado de UMA sessão, agora tipado como
+  `SessionState = Omit<ChatState, 'tabs' | 'activeTab'>`. A sessão não sabe que existe barra de abas.
+- **Todo evento de sessão carrega a aba.** Os membros de `HostToWebview` que uma sessão emite ganham
+  `tab?: string` (ausente = aba ativa, para o caminho de uma aba só continuar funcionando). O host
+  sela o id no `emit` de cada aba; a webview roteia o chunk para o transcript daquela aba — é isso que
+  permite uma **lane em background** continuar acumulando turnos sem aparecer.
+- **`tabs` é anúncio próprio** (`{ type: 'tabs', tabs, active }`), além do `init`: abrir/fechar/trocar
+  de aba não deve obrigar a webview a reprocessar o estado inteiro (e não entra no replay).
+- **Aba é agnóstica à sessão**: `activateTab/closeTab/renameTab/newTab`. Fechar aba **não** apaga
+  sessão (o histórico continua em `hermes sessions`); só `newConversation` troca a sessão dentro da aba.
+- **Lane = aba com cwd próprio.** `newTab(cwd?)` é a única porta: escolher a pasta de trabalho da
+  sessão. `TabInfo.lane = { branch, path }` marca a aba que roda num worktree, e `busy`/`waiting`
+  (aprovação pendente) são o indicador de lane ativa — a própria aba é o indicador, sem painel novo.
+- **Worktree**: comando `hermes.worktree.new` (`Hermes: Novo worktree e sessão`) cria
+  `git worktree add <root>/<branch> -b <branch>` e chama `newTab(<caminho>)`. `hermes.worktreeRoot`
+  (vazio = pasta irmã `<repo>-worktrees`) escolhe onde. Nada de config nova além dessa.
+
+### 12.2 Por que assim
+
+Duas abas = duas sessões = dois processos `hermes acp`, já suportados pelo `AgentManager`
+(`sessions: Map`). O que faltava era (a) o id da aba nas mensagens — a lacuna 11.14, que deixou de ser
+lacuna e virou pré-requisito — e (b) um dono para o estado por aba. Nenhum dos dois exige mudança no
+adaptador ACP: `newTab(cwd)` é só um `AgentManager.newSession({ cwd })` a mais.
