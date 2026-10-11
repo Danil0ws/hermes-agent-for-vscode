@@ -309,6 +309,11 @@
          "group": "navigation@4"
         },
         {
+         "command": "hermes.worktree.new",
+         "when": "view == hermes.chat",
+         "group": "navigation@5"
+        },
+        {
           "command": "hermes.openCli",
           "when": "view == hermes.chat",
           "group": "2_advanced@1"

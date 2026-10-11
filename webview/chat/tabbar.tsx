@@ -13,11 +13,10 @@ import type { TabInfo } from '../../src/core/types';
 export interface TabBarProps {
   tabs: TabInfo[];
   active: string;
-  /** sem sessão o painel não oferece outra interação além do "Iniciar": abrir aba/worktree fica inerte */
-  locked?: boolean;
   onActivate: (id: string) => void;
   onClose: (id: string) => void;
   onRename: (id: string, title: string) => void;
+  /** atalhos das abas (o `+`/worktree vivem no título da view, não aqui) */
   onNew: () => void;
   onNewWorktree: () => void;
 }
@@ -49,7 +48,7 @@ function RenameInput({ value, onCommit, onCancel }: {
   );
 }
 
-export function TabBar({ tabs, active, locked, onActivate, onClose, onRename, onNew, onNewWorktree }: TabBarProps) {
+export function TabBar({ tabs, active, onActivate, onClose, onRename, onNew, onNewWorktree }: TabBarProps) {
   const [editing, setEditing] = useState<string | null>(null);
   const commit = (id: string, value: string) => {
     setEditing(null);
@@ -58,12 +57,6 @@ export function TabBar({ tabs, active, locked, onActivate, onClose, onRename, on
 
   return (
     <div class="tabbar" role="tablist" aria-label={S.tabs.new}>
-      <button class="tab-add" title={S.tabs.newTip} aria-label={S.tabs.new} onClick={onNew} disabled={locked}>
-        <Icon name="add" />
-      </button>
-      <button class="tab-add" title={S.tabs.newWorktreeTip} aria-label={S.tabs.newWorktree} onClick={onNewWorktree} disabled={locked}>
-        <Icon name="git-branch" />
-      </button>
       <div class="tabbar-strip">
         {tabs.map((t) => {
           const isActive = t.id === active;

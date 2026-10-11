@@ -20,19 +20,6 @@
   scrollbar-width: thin;
 }
 
-.tab-add {
-  display: inline-flex; align-items: center; justify-content: center;
-  flex: 0 0 auto; width: 22px; height: 22px; align-self: center;
-  background: none; border: 0; padding: 0;
-  color: var(--vscode-icon-foreground, var(--vscode-foreground));
-  cursor: pointer; border-radius: 4px;
-}
-.tab-add:hover { background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground)); }
-.tab-add:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
-/* sem sessão o único caminho é o "Iniciar" do bloco central: abrir aba/worktree fica inerte */
-.tab-add:disabled { color: var(--vscode-disabledForeground, var(--vscode-descriptionForeground)); cursor: default; opacity: .6; }
-.tab-add:disabled:hover { background: none; }
-
 .tab {
   display: inline-flex; align-items: center; gap: 4px;
   flex: 0 0 auto; max-width: 200px; min-width: 56px;

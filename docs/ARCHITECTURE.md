@@ -648,6 +648,10 @@ adaptador ACP: `newTab(cwd)` é só um `AgentManager.newSession({ cwd })` a mais
   `announce()` (posta `tabs` + `init`), `activateTab`/`closeTab`/`renameTab`; `onAgentEvent` espelha
   `busy`/`waiting`/`sessionId` no `TabInfo` e reanuncia; `initialState()` deriva da aba ativa; `post()`
   deixa `tabs` fora do replay (o anúncio é próprio).
+- **Os atalhos vivem no título da view, não na barra de abas**: `＋` (nova conversa = aba nova, via
+  `hermes.newConversation`), `⟲` reiniciar, `⚙` Manage (`navigation@4`) e o worktree
+  (`hermes.worktree.new`, `navigation@5`). A barra de abas só mostra as abas — dois "+" na mesma
+  tela foi defeito relatado.
 - **Webview**: `webview/chat/router.ts` (novo) concentra o reducer e o `applyHost` que roteia por `tab`
   — extraído do `main.tsx` para ser testável sem DOM; `store.ts` guarda um `Snapshot` por aba
   (`captureActive`/`applySnapshot`/`routeBackground`/`switchTab`/`restoreTranscript`), então a aba de

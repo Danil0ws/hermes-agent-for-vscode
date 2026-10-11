@@ -35,6 +35,10 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Corrigido
 
+- **Dois botões de "nova conversa" na tela**: a barra de abas tinha `+` e worktree próprios, e o título
+  da view já tinha o `+` de nova conversa. Agora a barra de abas **só** mostra as abas, e os dois
+  atalhos vivem no título: `+` (nova conversa = aba nova) e o ícone de branch
+  (`Hermes: New Worktree and Session`, `navigation@5`). `⟲` continua reiniciando a sessão na mesma aba.
 - **`Iniciar` duplicado e painel interativo antes de iniciar**: o bloco central e o primário da
   toolbar mostravam o MESMO botão, e o resto do painel aceitava interação sem sessão (campo de texto,
   `+`, selects em "sem modos"/"sem modelos", medidor, botões de aba/worktree). Agora o único `Iniciar`

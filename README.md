@@ -54,8 +54,9 @@ code --install-extension hermes-agent-vscode-0.1.0.vsix
    (bottom right, text only); it opens the same menu — send, queue, steer, interrupt.
 4. **Tabs**: each tab is one conversation (its own session), and the tab strip is the lane indicator —
    a spinner while that tab's turn runs, a warning dot when it is waiting for approval. Closing a tab
-   does not delete the session (history keeps it). `+` opens a tab, the branch icon opens one in a
-   git worktree ([Commands](#commands)).
+   does not delete the session (history keeps it). The view title holds the two entry points: `+`
+   (new conversation = a new tab) and the branch icon (**Hermes: New Worktree and Session**), which
+   opens one in a git worktree ([Commands](#commands)).
 5. Native menus in the view title bar: new conversation, history, restart session, open in editor,
    Manage (the gear), and a "…" menu with **Open Full CLI**, **Run CLI Command…**, diagnostics, log
    and traffic.

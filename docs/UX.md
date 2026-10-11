@@ -501,7 +501,8 @@ literal no bundle além de `aria` montado por template traduzido.
 
 Regras que fecham o pedido:
 
-- **Abas**: uma conversa por aba; a barra rola na horizontal (`overflow-x:auto`) e cada aba mostra o
+- **Abas**: uma conversa por aba; a barra de abas NÃO tem botão próprio (o `+` e o worktree vivem no
+  título da view, para não existirem dois "+" na tela); a barra rola na horizontal (`overflow-x:auto`) e cada aba mostra o
   estado da lane — `●` girando quando `busy`, ponto de aviso quando `waiting` (aprovação pendente),
   `title` com agente · cwd · branch. Fechar aba não apaga sessão.
 - **Config no título**: `hermes.manage` saiu de `1_open@2` e foi para `navigation@4`, ao lado do
