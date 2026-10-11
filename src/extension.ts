@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { AgentManager } from './core/AgentManager';
 import { ChatViewProvider } from './ui/ChatViewProvider';
 import { CliRunner } from './cli/CliRunner';
-import { activeAgent, onSettingsChanged, settings, workingDirectory } from './config/Settings';
+import { activeAgent, onSettingsChanged, settings } from './config/Settings';
 import { FEATURES } from './features';
 
 let diagnostics: vscode.DiagnosticCollection;
@@ -54,10 +54,6 @@ export function activate(ctx: vscode.ExtensionContext): void {
   reg('hermes.showContext', async () => { await vscode.commands.executeCommand('hermes.chat.focus'); });
   reg('hermes.showPlan', async () => { await vscode.commands.executeCommand('hermes.plan.focus'); });
   reg('hermes.exportConversation', async () => { await vscode.commands.executeCommand('hermes.export'); });
-  reg('hermes.diagnostics', async () => {
-    const term = new CliRunner((l, t) => log[l === 'info' ? 'info' : l](t));
-    await term.run('hermes', ['doctor'], workingDirectory(settings()), 'Hermes: Diagnóstico');
-  });
   reg('hermes.askAboutSelection', async () => { await askAboutSelection(provider); });
   reg('hermes.explainSelection', async () => { await askAboutSelection(provider, 'Explique este código: '); });
   reg('hermes.sendFileToHermes', async () => {
@@ -67,19 +63,9 @@ export function activate(ctx: vscode.ExtensionContext): void {
     await provider.attachFilePath(uri.fsPath);
   });
 
-  // Comandos cujas superfícies chegam nos próximos marcos: registrados como no-op
-  // para os menus não quebrarem enquanto isso.
-  for (const id of [
-    'hermes.fixProblem', 'hermes.diff.open', 'hermes.sessions.pick', 'hermes.manage.open',
-    'hermes.plan.focus', 'hermes.export', 'hermes.plan.implement', 'hermes.context.manage',
-    'hermes.agents.test', 'hermes.mcp.add', 'hermes.skill.open', 'hermes.instructions.open',
-    'hermes.approvals.open', 'hermes.queue.toggle', 'hermes.keepFile', 'hermes.undoFile',
-    'hermes.copyResponse',
-  ]) {
-    ctx.subscriptions.push(vscode.commands.registerCommand(id, (...args: unknown[]) => {
-      log.warn(`comando ${id} ainda não implementado (args: ${JSON.stringify(args)})`);
-    }));
-  }
+  // As features (src/features/*) são donas dos próprios comandos. Nada de no-op aqui:
+  // registrar o mesmo id duas vezes faz o segundo `registerCommand` lançar.
+  // `hermes.diagnostics` passou a ser da feature de diagnóstico; `hermes.manage` da de Gerenciar.
 
   // Features dos marcos M2–M9: cada uma é dona do seu arquivo em src/features/.
   const featureDeps = {

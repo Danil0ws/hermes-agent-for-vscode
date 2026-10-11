@@ -136,7 +136,7 @@ export type HostToWebview =
   | { type: 'session'; sessionId: string | null; title?: string }
   | { type: 'busy'; value: boolean }
   | { type: 'user/message'; text: string; chips: ContextChip[] }
-  | { type: 'agent/chunk'; messageId: string; text: string }
+  | { type: 'agent/chunk'; messageId: string; text: string; /** true quando o chunk pós-compactação carrega `_meta.hermes.containsCompactionSummary` */ compaction?: boolean }
   | { type: 'agent/message'; messageId: string; text: string }
   | { type: 'thought/chunk'; messageId: string; text: string }
   | { type: 'turn/end'; stopReason: StopReason }
@@ -162,6 +162,8 @@ export type SendAction = 'send' | 'queue' | 'steer' | 'interrupt';
 export type WebviewToHost =
   | { type: 'ready' }
   | { type: 'prompt'; text: string; chips: ContextChip[]; action: SendAction }
+  /** arquivo/pasta soltos na webview (drag & drop do Explorer) */
+  | { type: 'addPath'; path: string }
   | { type: 'cancel' }
   | { type: 'setMode'; modeId: string }
   | { type: 'setModel'; modelId: string }

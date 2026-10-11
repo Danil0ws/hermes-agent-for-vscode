@@ -44,6 +44,12 @@ code --install-extension hermes-agent-vscode-0.1.0.vsix
 | Comando | O que faz |
 |---|---|
 | `Hermes: Nova conversa` | `session/new` no agente ativo |
+| `Hermes: Histórico de sessões` | quick pick nativo (Hoje/Ontem/Anteriores), retoma com `session/load` |
+| `Hermes: Ver plano` / `Implementar plano` | view do plano; implementar envia o plano como prompt |
+| `Hermes: Gerenciar` | painel com 8 abas (Modelos, Skills, Ferramentas/MCP, Instruções, Contexto, Agentes, Aprovações, Avançado) |
+| `Hermes: Gerenciar contexto` | o que vai ao modelo, por grupo, com tokens |
+| `Hermes: Adicionar contexto` / `Remover contexto` | chips de contexto do composer |
+| `Hermes: Manter arquivo` / `Desfazer alterações do arquivo` | working set por arquivo (desfazer = diff inverso) |
 | `Hermes: Abrir em editor` | a mesma view como aba |
 | `Hermes: Abrir CLI completa` | `hermes` (TUI) no terminal integrado, na pasta do workspace |
 | `Hermes: Executar comando da CLI…` | quick pick: `model`, `setup`, `doctor`, `update`, `sessions browse`, `skills`, `mcp`, `tools`, `approvals`, `checkpoints`, `profile`, `config`, `insights` |

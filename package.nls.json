@@ -47,5 +47,14 @@
   "config.hermes.queue.defaultAction.description": "Default send-button action during an active turn.",
   "config.hermes.context.warnAt.description": "Warn when context usage exceeds this percentage.",
   "config.hermes.notifications.description": "When to notify about background session events.",
-  "config.hermes.logTraffic.description": "Log raw JSON-RPC to the \"Hermes Traffic\" output channel."
+  "config.hermes.logTraffic.description": "Log raw JSON-RPC to the \"Hermes Traffic\" output channel.",
+  "command.hermes.sessions.open.title": "Open Session",
+  "command.hermes.sessions.rename.title": "Rename Session",
+  "command.hermes.sessions.fork.title": "Duplicate Session",
+  "command.hermes.sessions.archive.title": "Archive Session",
+  "command.hermes.sessions.delete.title": "Delete Session",
+  "command.hermes.sessions.copyId.title": "Copy Session ID",
+  "command.hermes.context.add.title": "Add Context",
+  "command.hermes.context.remove.title": "Remove Context",
+  "command.hermes.context.toggleImplicit.title": "Toggle Implicit Context"
 }

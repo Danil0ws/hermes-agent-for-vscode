@@ -1,53 +1,78 @@
 /**
- * Webview do painel "Gerenciar" (M6, esqueleto navegável).
+ * Shell da webview "Gerenciar": abas verticais com navegação por teclado.
  *
- * Regra dura: este painel NÃO guarda estado próprio. Ele lê e escreve a configuração
- * real (`~/.hermes/config.yaml`, `~/.hermes/skills`, settings da extensão) ou chama a CLI.
- * Enquanto isso não existe, as abas explicam de onde o dado virá — nada é fingido.
+ * Acessibilidade: `role="tablist"`/`role="tab"`/`role="tabpanel"`, `aria-selected`,
+ * `aria-current`, roving tabindex e setas ↑/↓/Home/End — como o painel Settings do VS Code.
  */
 import { render } from 'preact';
-import { useState } from 'preact/hooks';
-import { onMessage, ready, send } from '../shared/bridge';
+import { useEffect, useRef } from 'preact/hooks';
+import type { ComponentType } from 'preact';
+import { ready } from '../shared/bridge';
+import { manageState, onManage, sendManage } from './store';
+import { t } from './i18n';
+import {
+  AdvancedTab, AgentsTab, ApprovalsTab, ContextTab, InstructionsTab, ModelsTab, SkillsTab, ToolsTab,
+} from './tabs';
+import type { ManageTab } from './protocol';
 import './styles.css';
 
-const TABS = [
-  ['models', 'Modelos', 'Catálogo vem de `session/new.models` (id `provider:modelo`). Janela de contexto só do modelo ativo, via `usage_update`.'],
-  ['skills', 'Skills', 'Não existe no ACP. Fonte real: `~/.hermes/skills/**/SKILL.md` (+ skills de projeto) e `hermes skills`.'],
-  ['tools', 'Ferramentas e MCP', 'Não existe no ACP (`configOptions` volta vazio). Fonte real: `platform_toolsets.acp` e `agent.disabled_toolsets` no config.yaml; `hermes tools` e `hermes mcp`.'],
-  ['instructions', 'Instruções', 'AGENTS.md, .hermes.md, CLAUDE.md e SOUL.md detectados no workspace e no perfil.'],
-  ['context', 'Contexto e uso', '`usage_update` (usado/total reais) + detalhamento estimado localmente, sempre rotulado.'],
-  ['agents', 'Agentes/Perfis', 'Configuração de agente da extensão + `hermes profile`. Botão "Testar conexão" roda `hermes acp --check`.'],
-  ['approvals', 'Aprovações', 'Política da extensão + `command_allowlist` do Hermes; `hermes approvals suggest/test`.'],
-  ['advanced', 'Avançado', 'Log de tráfego, caminhos (`hermes config path`), versão e `hermes doctor`.'],
-] as const;
+const TABS: ManageTab[] = ['models', 'skills', 'tools', 'instructions', 'context', 'agents', 'approvals', 'advanced'];
 
-type Tab = typeof TABS[number][0];
+const VIEWS: Record<ManageTab, ComponentType> = {
+  models: ModelsTab, skills: SkillsTab, tools: ToolsTab, instructions: InstructionsTab,
+  context: ContextTab, agents: AgentsTab, approvals: ApprovalsTab, advanced: AdvancedTab,
+};
 
 function App() {
-  const [tab, setTab] = useState<Tab>('models');
-  onMessage((m) => {
-    if (m.type === 'init') ready();
-  });
-  const current = TABS.find(([id]) => id === tab)!;
+  useEffect(() => {
+    onManage((m) => { if (m.type === 'manage/state') manageState.value = m.state; });
+    ready();
+  }, []);
+
+  const s = manageState.value;
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const select = (tab: ManageTab) => { if (tab !== s.tab) sendManage({ type: 'manage/tab', tab }); };
+
+  const onKey = (e: KeyboardEvent, i: number) => {
+    const last = TABS.length - 1;
+    let j: number | null = null;
+    if (e.key === 'ArrowDown') j = i === last ? 0 : i + 1;
+    else if (e.key === 'ArrowUp') j = i === 0 ? last : i - 1;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = last;
+    if (j === null) return;
+    e.preventDefault();
+    refs.current[j]?.focus();
+    select(TABS[j]);
+  };
+
+  const View = VIEWS[s.tab];
+
   return (
     <div class="manage">
-      <nav class="tabs" aria-label="Seções de gerenciamento">
-        {TABS.map(([id, label]) => (
+      <nav class="tabs" role="tablist" aria-orientation="vertical" aria-label={t.tabsLabel}>
+        {TABS.map((id, i) => (
           <button
             key={id}
-            class={id === tab ? 'tab active' : 'tab'}
-            aria-current={id === tab}
-            onClick={() => setTab(id)}
-          >{label}</button>
+            ref={(el) => { refs.current[i] = el; }}
+            id={`tab-${id}`}
+            role="tab"
+            class={id === s.tab ? 'tab active' : 'tab'}
+            aria-selected={id === s.tab}
+            aria-current={id === s.tab ? 'page' : undefined}
+            aria-controls={`panel-${id}`}
+            tabindex={id === s.tab ? 0 : -1}
+            onClick={() => select(id)}
+            onKeyDown={(e) => onKey(e, i)}
+          >{t.tabs[id]}</button>
         ))}
       </nav>
-      <section class="panel" aria-label={current[1]}>
-        <h2>{current[1]}</h2>
-        <p>{current[2]}</p>
-        <p class="hint">Esta tela é preenchida no M6 lendo a configuração real do Hermes — sem estado paralelo.</p>
-        <div class="row">
-          <button class="secondary" onClick={() => send({ type: 'openCli' })}>Abrir a CLI</button>
-        </div>
+
+      <section class="panel" role="tabpanel" id={`panel-${s.tab}`} aria-labelledby={`tab-${s.tab}`} tabindex={-1}>
+        <h2>{t.tabs[s.tab]}</h2>
+        {s.restricted && <p class="notice warning" role="status">{t.common.restricted}</p>}
+        {s.notice && <p class={`notice ${s.notice.level}`} role="status">{s.notice.text}</p>}
+        <View />
       </section>
     </div>
   );

@@ -407,17 +407,24 @@ Notas de implementação:
 
 ## 10. Marcos
 
-| Marco | Entrega verificável (F5 no Extension Development Host) |
-|---|---|
-| M1 | Conexão ACP + chat com streaming + cancelar + composer básico |
-| M2 | Raciocínio, tool calls, diff nativo, aprovações |
-| M3 | Pickers de modo/modelo + medidor de contexto + chips de contexto |
-| M4 | Sessões (tree, histórico, retomar, fork, background, notificações) |
-| M5 | Fila + envio dividido (enviar / enfileirar / steer / enviar agora) |
-| M6 | Painel Gerenciar (Modelos, Skills, Ferramentas/MCP, Instruções, Contexto e uso) |
-| M7 | Plano, working set com Manter/Desfazer, checkpoints |
-| M8 | Escape hatches da CLI, diagnóstico, integração com o editor |
-| M9 | Temas, acessibilidade, Remote, polimento, `.vsix` |
+| Marco | Entrega verificável (F5 no Extension Development Host) | Estado |
+|---|---|---|
+| M1 | Conexão ACP + chat com streaming + cancelar + composer básico | ✅ feito |
+| M2 | Raciocínio, tool calls, diff nativo, aprovações | ✅ feito |
+| M3 | Pickers de modo/modelo + medidor de contexto + chips de contexto | ✅ feito |
+| M4 | Sessões (tree, histórico, retomar, fork, background, notificações) | ✅ feito |
+| M5 | Fila + envio dividido (enviar / enfileirar / steer / enviar agora) | ✅ feito |
+| M6 | Painel Gerenciar (Modelos, Skills, Ferramentas/MCP, Instruções, Contexto e uso) | ✅ feito |
+| M7 | Plano, working set com Manter/Desfazer, checkpoints | ✅ feito (checkpoint degrada: §11.7b) |
+| M8 | Escape hatches da CLI, diagnóstico, integração com o editor | ✅ feito |
+| M9 | Temas, acessibilidade, Remote, polimento, `.vsix` | ⚠️ parcial: `.vsix` empacota (176 KB); falta a passada visual de temas e a de acessibilidade com o VS Code de verdade |
+
+Gates no estado atual: `tsc --noEmit` limpo · `npm run build` OK · `npm test` **44/44** ·
+`vsce package` → `hermes-agent-vscode-0.1.0.vsix` (15 arquivos, 176 KB).
+
+M9 é a única parte que **não** pode ser fechada por execução de linha de comando: exige abrir o
+Extension Development Host, alternar Dark+ → Light+ → High Contrast → um tema de terceiros, e
+passar por teclado/leitor de tela em cada superfície. Registrado como pendência, não como feito.
 
 ---
 
@@ -455,3 +462,16 @@ Notas de implementação:
 12. **SDK TS ↔ agente — resolvido no M1**: `PROTOCOL_VERSION = 1` em 0.21.1 e 1.8.0. O SDK não tipa
     `models`/`session/set_model`/`session/fork`, que o Hermes implementa → `extMethod` + tipos locais.
     Se uma versão futura do SDK tipar isso, o wrapper some.
+13. **`session/list` precisa de conexão viva**: `listSessions` no cliente devolve `[]` sem sessão
+    aberta (o `session/list` só existe dentro de uma conexão ACP ativa). A view de sessões mostra
+    vazio com explicação nesse caso.
+14. **Pendências por sessão não existem**: as notificações de `session/update` não trazem
+    `sessionId` no nosso nível de roteamento, então o contador de pendências é atribuído à sessão
+    ativa. Um `sessionId` por notificação resolveria.
+15. **Codicons na webview**: sem `@vscode/codicons` como dependência, as webviews usam símbolos
+    tipográficos com `aria-label`. O extension host usa Codicon/ThemeIcon onde a API nativa oferece.
+16. **L10n de runtime**: o manifesto está em `package.nls` (en + pt-BR, 58 chaves verificadas), mas
+    as strings das webviews vivem em `webview/*/i18n.ts` (pt-BR) — migrar para `vscode.l10n` é uma
+    passada separada.
+17. **M9 pendente**: verificação visual em 4 temas, passada de teclado/leitor de tela e teste em
+    Remote (SSH/WSL/Dev Containers) não foram executados — exigem o Extension Development Host.

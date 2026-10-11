@@ -1,0 +1,18 @@
+# O que NÃO vai no .vsix: o bundle em dist/ é autossuficiente.
+src/**
+webview/**
+scripts/**
+docs/**
+node_modules/**
+dist-test/**
+dist/*.map
+*.vsix
+*.tsbuildinfo
+.env
+.env.*
+.gitignore
+.vscode/**
+tsconfig.json
+vite.config.ts
+package-lock.json
+**/*.log

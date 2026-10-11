@@ -47,5 +47,14 @@
   "config.hermes.queue.defaultAction.description": "Ação padrão do botão de envio durante um turno ativo.",
   "config.hermes.context.warnAt.description": "Avisar quando o contexto passar deste percentual.",
   "config.hermes.notifications.description": "Quando notificar sobre eventos de sessão em background.",
-  "config.hermes.logTraffic.description": "Registrar o JSON-RPC bruto no canal de saída \"Hermes Traffic\"."
+  "config.hermes.logTraffic.description": "Registrar o JSON-RPC bruto no canal de saída \"Hermes Traffic\".",
+  "command.hermes.sessions.open.title": "Abrir sessão",
+  "command.hermes.sessions.rename.title": "Renomear sessão",
+  "command.hermes.sessions.fork.title": "Duplicar sessão",
+  "command.hermes.sessions.archive.title": "Arquivar sessão",
+  "command.hermes.sessions.delete.title": "Excluir sessão",
+  "command.hermes.sessions.copyId.title": "Copiar ID da sessão",
+  "command.hermes.context.add.title": "Adicionar contexto",
+  "command.hermes.context.remove.title": "Remover contexto",
+  "command.hermes.context.toggleImplicit.title": "Ligar/desligar contexto implícito"
 }

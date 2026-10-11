@@ -3,3 +3,4 @@ dist/
 *.vsix
 dist-test/
 *.log
+hermes-agent-vscode-*.vsix

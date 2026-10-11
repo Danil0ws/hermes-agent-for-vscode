@@ -37,6 +37,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
 
   resolveWebviewView(view: vscode.WebviewView): void { this.attach(view); }
 
+  /** Transcript cru já enviado à webview: insumo do "Exportar conversa". */
+  get transcript(): HostToWebview[] { return this.last; }
+
   async openInEditor(): Promise<void> {
     const panel = vscode.window.createWebviewPanel(ChatViewProvider.panelType, 'Hermes', vscode.ViewColumn.Beside, {
       enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [this.assetsRoot()],
@@ -132,10 +135,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
         case 'openManage':
           await vscode.commands.executeCommand('hermes.manage', msg.tab);
           return;
+        case 'addContext':
+          await vscode.commands.executeCommand('hermes.context.add', msg.source);
+          return;
+        case 'removeChip':
+          await vscode.commands.executeCommand('hermes.context.remove', msg.id);
+          return;
+        case 'addPath':
+          await this.attachFilePath(msg.path);
+          return;
         case 'undoFile':
+          await vscode.commands.executeCommand('hermes.undoFile', msg.path);
+          return;
         case 'keepFile':
-          // ponytail: M7 — desfazer por arquivo = diff inverso do que veio no tool_call
-          void vscode.window.showInformationMessage(`"${msg.type === 'undoFile' ? 'Desfazer' : 'Manter'}" chega no M7.`);
+          await vscode.commands.executeCommand('hermes.keepFile', msg.path);
           return;
         default:
           this.log('info', `mensagem desconhecida da webview: ${JSON.stringify(msg)}`);

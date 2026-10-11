@@ -11,8 +11,13 @@ export interface Turn {
   text: string;
   chips?: ContextChip[];
   thought?: string;
+  /** epoch ms do 1º chunk de raciocínio (para o tempo decorrido) */
+  thoughtStartedAt?: number;
+  /** duração final do raciocínio (ms), fixada no fim do turno */
+  thoughtMs?: number;
   streaming?: boolean;
   startedAt: number;
+  /** bloco de raciocínio colapsado manualmente pelo usuário */
   collapsed?: boolean;
 }
 
@@ -35,4 +40,12 @@ export const modes = signal<ModeInfo[]>([]);
 export const models = signal<ModelInfo[]>([]);
 export const queue = signal<QueueItem[]>([]);
 export const chips = signal<ContextChip[]>([]);
+
+/** Rascunho do composer (compartilhado com "editar" do transcript e ações do estado vazio). */
 export const draft = signal('');
+
+/** Histórico de prompts enviados (↑/↓ no composer). */
+export const userHistory = signal<string[]>([]);
+
+/** Incrementar pede foco no composer (ex.: "editar e reenviar"). */
+export const focusComposer = signal(0);

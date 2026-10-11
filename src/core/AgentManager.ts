@@ -14,7 +14,7 @@ import type { HostToWebview, PermissionRequest, SessionSummary } from './types';
 export class AgentManager implements acp.Client {
   private conn?: Connection;
   private sessions = new Map<string, HermesSession>();
-  private emit: (m: HostToWebview) => void = () => {};
+  private handlers: ((m: HostToWebview) => void)[] = [];
   private authHandler?: () => void;
 
   constructor(private readonly log: (level: 'info' | 'warn' | 'error', text: string) => void) {}
@@ -26,7 +26,20 @@ export class AgentManager implements acp.Client {
   }
   get allSessions(): HermesSession[] { return [...this.sessions.values()]; }
 
-  onEvent(fn: (m: HostToWebview) => void): void { this.emit = fn; }
+  /** Aditivo de propósito: a view de chat, o tree de sessões e as features assinam o mesmo bus. */
+  onEvent(fn: (m: HostToWebview) => void): vscode.Disposable {
+    this.handlers.push(fn);
+    return new vscode.Disposable(() => {
+      const i = this.handlers.indexOf(fn);
+      if (i >= 0) this.handlers.splice(i, 1);
+    });
+  }
+
+  private notify(m: HostToWebview): void {
+    for (const fn of [...this.handlers]) {
+      try { fn(m); } catch (e) { this.log('warn', `handler de evento falhou: ${String(e)}`); }
+    }
+  }
   onAuthRequired(fn: () => void): void { this.authHandler = fn; }
 
   async connect(cfg: AgentConfig, cwd: string): Promise<void> {
@@ -35,7 +48,7 @@ export class AgentManager implements acp.Client {
       onStderr: (l) => this.log('info', l),
       onExit: (code, signal) => {
         this.log('error', `hermes acp saiu (code=${code} signal=${signal})`);
-        this.emit({ type: 'error', text: 'A conexão com o Hermes caiu. Reinicie a sessão.' });
+        this.notify({ type: 'error', text: 'A conexão com o Hermes caiu. Reinicie a sessão.' });
       },
     });
     const init = await this.conn.start(cwd, this);
@@ -51,7 +64,7 @@ export class AgentManager implements acp.Client {
   async newSession(cfg: AgentConfig, cwd: string, agentName: string): Promise<HermesSession> {
     if (!this.connected) await this.connect(cfg, cwd);
     const deps = this.deps();
-    const session = await HermesSession.create(this.conn!.connection, cwd, deps, this.emit, agentName);
+    const session = await HermesSession.create(this.conn!.connection, cwd, deps, (m) => this.notify(m), agentName);
     this.sessions.set(session.sessionId, session);
     return session;
   }
@@ -60,7 +73,7 @@ export class AgentManager implements acp.Client {
     if (!this.conn) throw new Error('sem conexão');
     const existing = this.sessions.get(sessionId);
     if (existing) return existing;
-    const session = await HermesSession.load(this.conn.connection, cwd, sessionId, this.deps(), this.emit, agentName);
+    const session = await HermesSession.load(this.conn.connection, cwd, sessionId, this.deps(), (m) => this.notify(m), agentName);
     if (session) this.sessions.set(sessionId, session);
     return session;
   }
@@ -104,7 +117,7 @@ export class AgentManager implements acp.Client {
       },
       askPermission: (req: PermissionRequest, resolve) => {
         this.pendingPerms.set(req.id, resolve);
-        this.emit({ type: 'permission/ask', req });
+        this.notify({ type: 'permission/ask', req });
       },
       log: this.log,
     };
