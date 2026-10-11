@@ -684,3 +684,21 @@ uma de comportamento (o `init` tem de aplicar estado, abas e `usage`) e uma de f
 dentro de `applyInit`, fora de comentários). Medido depois no harness: o mesmo `init` renderiza 3 abas
 com `loading`/`bell-dot`, o `input-send` aparece e o medidor mostra `50%`; a aba de fundo continua
 acumulando sem vazar na ativa, e trocar de aba restaura o transcript dela.
+
+## 13. Anexos: uma fonte de chips, `draft/insert` e corte por teto
+
+- **Chips têm UM dono.** O `ContextManager` é quem manda na lista e publica por `deps.publish`; o
+  provider passa a ser o ponto de escrita (`setChips`) e o único a postar `{type:'chips'}` para a
+  webview. Antes havia DUAS listas (a do provider, usada em `send`/`initialState`, e a da sessão) e a
+  remoção pelo `×` voltava no `init` seguinte — o defeito relatado. Chips anexados antes de existir
+  sessão também deixam de ser descartados em silêncio (o `publish` só logava).
+- `ContextChip.truncated?`: o texto enviado foi cortado (só o começo) por passar do teto de tokens de
+  um anexo. O corte acontece na criação do chip, no host; a UI marca e o `title` aponta o conteúdo
+  inteiro. Teto: constante no host (`CHIP_MAX_TOKENS`), sem setting enquanto não houver quem queira
+  outro valor.
+- `WebviewToHost.attachImage { name, mime, data }`: bitmap do clipboard em base64 (sem o prefixo
+  `data:`). O host valida o mime, grava num arquivo temporário e cria o chip `kind: 'image'` com
+  `imagePath` — `toContentBlocks` já manda isso como bloco de imagem no prompt.
+- `HostToWebview.draft/insert { text }`: o host manda inserir texto no campo (referência
+  `arquivo:linha` de uma seleção anexada). A webview insere no caret; quem sabe o caminho é o host,
+  nunca a webview.

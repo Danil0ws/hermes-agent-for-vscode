@@ -29,6 +29,12 @@ export interface ContextChip {
   implicit?: boolean;
   /** caminho de imagem, quando kind === 'image' */
   imagePath?: string;
+  /**
+   * O texto enviado foi CORTADO (só o começo foi anexado) porque passava do teto de tokens de um
+   * anexo. A UI mostra o corte e o `title` diz onde está o conteúdo inteiro — anexar em silêncio
+   * seria mentir sobre o que foi para o modelo.
+   */
+  truncated?: boolean;
 }
 
 export interface ToolView {
@@ -184,6 +190,8 @@ export type HostToWebview =
   | { type: 'models'; tab?: string; models: ModelInfo[]; current?: string }
   | { type: 'queue'; tab?: string; items: QueueItem[] }
   | { type: 'chips'; tab?: string; chips: ContextChip[] }
+  /** o host manda inserir texto no campo (ex.: referência `arquivo:linha` ao anexar uma seleção) */
+  | { type: 'draft/insert'; tab?: string; text: string }
   | { type: 'workingset'; tab?: string; files: ChangedFile[] }
   | { type: 'notice'; tab?: string; level: 'info' | 'warning' | 'error'; text: string }
   | { type: 'error'; tab?: string; text: string };
@@ -205,6 +213,8 @@ export type WebviewToHost =
   | { type: 'prompt'; tab?: string; text: string; chips: ContextChip[]; action: SendAction }
   /** arquivo/pasta soltos na webview (drag & drop do Explorer) */
   | { type: 'addPath'; path: string }
+  /** imagem colada no campo (bitmap do clipboard): base64 SEM o prefixo `data:` */
+  | { type: 'attachImage'; name: string; mime: string; data: string }
   | { type: 'cancel'; tab?: string }
   | { type: 'setMode'; tab?: string; modeId: string }
   | { type: 'setModel'; tab?: string; modelId: string }

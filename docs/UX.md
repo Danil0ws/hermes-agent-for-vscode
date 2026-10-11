@@ -518,3 +518,18 @@ Regras que fecham o pedido:
   então nenhuma ação some. Enter continua enviando.
 - **Lane visível sem painel novo**: a aba é o indicador; o worktree (`hermes.worktree.new`) abre uma
   aba nova já no diretório dele.
+
+## 12. Chips e anexos (o que muda aqui)
+
+- **Chips com UMA fonte**: quem manda na lista é o `ContextManager`; o provider deixa de guardar uma
+  cópia. Sintoma do defeito antigo: o `×` do chip "não pegava" — o chip saía da lista da sessão mas
+  voltava no `init` seguinte, porque a cópia do provider ainda o tinha.
+- **Seleção vira referência no texto**: anexar uma seleção escreve no campo `` `.vscodeignore:4` ``
+  (caminho relativo + linha) **e** mantém o chip com o conteúdo. O texto diz *onde* está; o chip
+  carrega o *quê*.
+- **Colar** (`Ctrl/Cmd+V` no campo): arquivos/pastas copiados do Finder entram como chip (a URI do
+  clipboard, mesmo caminho do drag & drop) e imagem do clipboard vira chip `kind: 'image'` (bitmap →
+  `attachImage` → arquivo temporário → bloco de imagem no prompt). Texto colado continua texto.
+- **Anexo grande é cortado no começo**: passa do teto de tokens por anexo → guarda o começo, marca o
+  chip (`cortado`) e o `title` diz onde está o conteúdo inteiro. Corte silencioso seria mentira sobre
+  o que foi para o modelo.
