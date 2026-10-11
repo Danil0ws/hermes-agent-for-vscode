@@ -14,6 +14,8 @@ import { join } from 'node:path';
 import {
   laneBranches, nextLaneName, validBranchName, worktreePath, worktreeRoot,
 } from '../features/worktree-logic.ts';
+import { applyHost } from '../../webview/chat/router.ts';
+import { caret, draft, focusComposer } from '../../webview/chat/store.ts';
 
 const root = process.cwd();
 const css = readFileSync(join(root, 'webview', 'chat', 'styles.css'), 'utf8');
@@ -107,8 +109,10 @@ test('sem sessão: um só "Iniciar", campo desabilitado e toolbar inexistente', 
   // nada de interação antes de iniciar
   assert.match(composer, /disabled=\{!started\}/, 'o campo tem de ficar desabilitado sem sessão');
   assert.match(composer, /!started \? S\.composer\.locked/, 'sem sessão o placeholder tem de mandar iniciar');
-  assert.match(tabbar, /disabled=\{locked\}/, 'abrir aba/worktree tem de ficar inerte sem sessão');
-  assert.match(tabsCss, /\.tab-add:disabled/, 'falta o estilo do botão de aba desabilitado');
+  // o `+`/worktree saíram da barra de abas: vivem no TÍTULO da view, junto do `+` de nova
+  // conversa (o usuário reclamou de "dois botões de conversa"). A barra de abas não tem botão próprio.
+  assert.doesNotMatch(tabbar, /tab-add/, 'a barra de abas não pode ter botão próprio (o + / worktree vivem no título da view)');
+  assert.doesNotMatch(tabsCss, /\.tab-add/, 'sobrou estilo do botão de aba (o + / worktree vivem no título da view)');
   assert.match(css, /textarea\.input:disabled/, 'falta o estilo do campo desabilitado');
 
   // o bloco central sem sessão: título + descrição + botão, e mais nada clicável
@@ -118,4 +122,57 @@ test('sem sessão: um só "Iniciar", campo desabilitado e toolbar inexistente', 
   assert.doesNotMatch(bloco, /start-actions|S\.empty\.startHint/,
     'sem sessão só o botão de iniciar pode estar ativo (nem sugestões, nem dica)');
   assert.match(bloco, /send\(\{ type: 'start' \}\)/, 'o bloco central tem de continuar mandando `start`');
+});
+
+/* ─────────── chips e anexos (§12/§13): ×, colar, draft/insert, corte ─────────── */
+
+test('composer: chip cortado usa a chave nova (selo + title do conteúdo inteiro)', () => {
+  assert.match(composer, /S\.composer\.chipTruncated\b/, 'chip cortado sem o rótulo novo');
+  assert.match(composer, /S\.composer\.chipTruncatedTip\(c\.ref\)/, 'chip cortado sem o title novo');
+  assert.match(css, /\.chip-trunc\s*\{[^}]*--vscode-/, 'selo do chip cortado sem token --vscode-*');
+  assert.doesNotMatch(css, /\.chip-trunc\s*\{[^}]*#[0-9a-fA-F]{3,6}/, 'cor literal no selo do chip cortado');
+});
+
+test('composer: o × do chip para a propagação, tem aria-label e não guarda estado local', () => {
+  const i = composer.indexOf('class="chip-x"');
+  assert.ok(i > -1, 'botão × do chip ausente');
+  const x = composer.slice(i, i + 260);
+  assert.match(x, /stopPropagation/, 'o × pode borbulhar para o activate do chip');
+  assert.match(x, /removeChip/, 'o × não manda removeChip');
+  assert.match(x, /aria-label=\{S\.composer\.removeChip/, 'o × sem aria-label acessível');
+});
+
+test('composer: onPaste trata URI file:// e imagem (image/ antes do texto), sem engolir texto', () => {
+  const i = composer.indexOf('const onPaste');
+  assert.ok(i > -1, 'sem handler de colar no campo');
+  const paste = composer.slice(i, composer.indexOf('const onDrop', i));
+  assert.ok(paste.length > 200, 'corpo do onPaste curto demais');
+  const iUri = paste.indexOf('file://');
+  const iImg = paste.indexOf("'image/'");
+  const iText = paste.indexOf('texto normal');
+  assert.ok(iUri > -1, 'onPaste não trata URI file:// (Finder)');
+  assert.ok(iImg > -1, 'onPaste não trata imagem do clipboard');
+  assert.ok(iText > -1, 'onPaste não deixa o texto colar');
+  assert.ok(iUri < iImg && iImg < iText, 'ordem tem de ser URI → imagem → texto');
+  assert.match(paste, /type: 'addContext'/, 'URI não vira addContext');
+  assert.match(paste, /type: 'attachImage'/, 'imagem não vira attachImage');
+  assert.match(paste, /replace\(\/\^data:/, 'base64 ainda com o prefixo data:');
+  assert.match(composer, /S\.composer\.pasteImageFailed/, 'falha ao ler a imagem sem aviso');
+});
+
+test('draft/insert: insere no caret do campo e devolve o foco', () => {
+  draft.value = 'ab';
+  caret.value = 1;
+  const before = focusComposer.value;
+  applyHost({ type: 'draft/insert', text: 'X' });
+  assert.equal(draft.value, 'aXb', 'não inseriu no caret');
+  assert.equal(caret.value, 2, 'caret não ficou depois do texto inserido');
+  assert.equal(focusComposer.value, before + 1, 'foco não voltou ao campo');
+});
+
+test('draft/insert: sem foco (caret null) insere no fim do rascunho', () => {
+  draft.value = 'abc';
+  caret.value = null;
+  applyHost({ type: 'draft/insert', text: 'XY' });
+  assert.equal(draft.value, 'abcXY');
 });

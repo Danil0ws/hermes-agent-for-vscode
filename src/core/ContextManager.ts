@@ -67,9 +67,54 @@ export function headLines(text: string, max: number): string {
   return lines.length <= max ? text : lines.slice(0, max).join('\n');
 }
 
+/* ── corte por teto e referência textual (puros, testáveis sem o VS Code) ── */
+
+/** Teto de tokens de UM anexo. O corte guarda o começo; o chip marca `truncated`. */
+// ponytail: constante até alguém querer outro valor
+export const CHIP_MAX_TOKENS = 2000;
+
+/** Teto de tamanho de uma imagem colada (10 MB). */
+export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+/**
+ * Corte por teto: guarda o COMEÇO do texto (em fronteira de linha quando der) e diz se cortou.
+ * O texto devolvido é o que vai ao modelo — nunca corte em silêncio. PURA.
+ */
+export function truncateChipText(text: string, maxTokens: number): { text: string; truncated: boolean } {
+  const maxChars = maxTokens * 4; // mesma heurística de estimateTokens (chars/4)
+  if (text.length <= maxChars) return { text, truncated: false };
+  const head = text.slice(0, maxChars);
+  const nl = head.lastIndexOf('\n');
+  return { text: nl > 0 ? head.slice(0, nl) : head, truncated: true };
+}
+
+/** Referência textual `arquivo:linha` (caminho relativo) para o campo do chat. PURA. */
+export function refText(relPath: string, lines?: [number, number]): string {
+  const where = lines ? (lines[0] === lines[1] ? `${lines[0]}` : `${lines[0]}-${lines[1]}`) : '';
+  return `\`${relPath}${where ? `:${where}` : ''}\` `;
+}
+
+/** Extensão do arquivo temporário de uma imagem colada (derivada do mime). PURA. */
+export function imageExt(mime: string): string {
+  if (mime === 'image/jpeg' || mime === 'image/jpg') return '.jpg';
+  if (mime === 'image/gif') return '.gif';
+  if (mime === 'image/webp') return '.webp';
+  if (mime === 'image/bmp') return '.bmp';
+  return '.png';
+}
+
+/** true só para mime de imagem (o resto é recusado na colagem). PURA. */
+export function isImageMime(mime: string): boolean { return mime.startsWith('image/'); }
+
+/** corte por teto na criação do chip; imagem (base64) NUNCA é cortada. */
+function capText(kind: ContextChip['kind'], text: string | undefined): { text: string; truncated: boolean } {
+  if (kind === 'image' || text === undefined) return { text: text ?? '', truncated: false };
+  return truncateChipText(text, CHIP_MAX_TOKENS);
+}
+
 export interface ContextManagerDeps {
   vs: VSCode;
-  /** publica a lista ao host (a feature encaminha para a webview via `session.setChips`). */
+  /** publica a lista ao host (o provider é o ponto de escrita: espelha na webview e na sessão). */
   publish(chips: ContextChip[]): void;
   /** `hermes.context.warnAt` (%) */
   warnAt(): number;
@@ -114,16 +159,18 @@ export class ContextManager {
   isPinned(id: string): boolean { return this.pinned.has(id); }
 
   add(draft: DraftChip): ContextChip {
+    const cap = capText(draft.kind, draft.text);
     const chip: ContextChip = {
       id: `chip-${++this.seq}-${Date.now()}`,
       kind: draft.kind,
       label: draft.label,
       ref: draft.ref,
-      tokensEstimate: chipTokens(draft.text),
+      tokensEstimate: chipTokens(cap.text),
       ...(draft.lines ? { lines: draft.lines } : {}),
-      ...(draft.text !== undefined ? { text: draft.text } : {}),
+      ...(draft.text !== undefined ? { text: cap.text } : {}),
       ...(draft.imagePath ? { imagePath: draft.imagePath } : {}),
       ...(draft.implicit ? { implicit: true } : {}),
+      ...(cap.truncated ? { truncated: true } : {}),
     };
     this.list.push(chip);
     this.publish();
@@ -172,17 +219,19 @@ export class ContextManager {
     }
     const sel = info!;
     const existing = idx >= 0 ? this.list[idx] : undefined;
+    const cap = capText('selection', sel.text);
     // evita churn a cada movimento de cursor: só republica quando o texto/faixa muda.
-    if (existing && existing.text === sel.text && existing.ref === sel.ref) return;
+    if (existing && existing.text === cap.text && existing.ref === sel.ref) return;
     const chip: ContextChip = {
       id: existing?.id ?? `chip-implicit-${Date.now()}`,
       kind: 'selection',
       label: sel.label,
       ref: sel.ref,
       lines: sel.lines,
-      text: sel.text,
-      tokensEstimate: chipTokens(sel.text),
+      text: cap.text,
+      tokensEstimate: chipTokens(cap.text),
       implicit: true,
+      ...(cap.truncated ? { truncated: true } : {}),
     };
     if (idx >= 0) this.list[idx] = chip; else this.list.unshift(chip);
     this.publish();
@@ -209,8 +258,8 @@ export class ContextManager {
   async pick(source?: string): Promise<void> {
     const vs = this.deps.vs;
     const qp = vs.window.createQuickPick<PickItem>();
-    qp.title = 'Adicionar contexto';
-    qp.placeholder = 'Arquivos, pastas, símbolos, problemas, terminal, Git, URL, imagem…';
+    qp.title = tr('Adicionar contexto');
+    qp.placeholder = tr('Arquivos, pastas, símbolos, problemas, terminal, Git, URL, imagem…');
     qp.matchOnDescription = true;
     qp.matchOnDetail = true;
 
@@ -302,7 +351,7 @@ export class ContextManager {
           await this.attachGit();
           return;
         case 'url': {
-          const url = await vs.window.showInputBox({ title: tr('Adicionar URL'), prompt: 'Endereço (entra como referência textual).' });
+          const url = await vs.window.showInputBox({ title: tr('Adicionar URL'), prompt: tr('Endereço (entra como referência textual).') });
           if (url?.trim()) this.add({ kind: 'url', label: url.trim(), ref: url.trim(), text: url.trim() });
           return;
         }
@@ -312,7 +361,7 @@ export class ContextManager {
       }
     } catch (err) {
       this.deps.log('error', `falha ao anexar contexto: ${String(err)}`);
-      void vs.window.showWarningMessage(`Não foi possível anexar: ${String(err)}`);
+      void vs.window.showWarningMessage(tr(`Não foi possível anexar: ${String(err)}`));
     }
   }
 
@@ -349,7 +398,7 @@ export class ContextManager {
       if (!diags.length) continue;
       byFile.push(uri.fsPath);
       for (const d of diags) {
-        const sev = ['', 'erro', 'aviso', 'info', 'dica'][d.severity] ?? 'info';
+        const sev = ['', tr('erro'), tr('aviso'), tr('info'), tr('dica')][d.severity] ?? tr('info');
         rows.push(`${vs.workspace.asRelativePath(uri)}:${d.range.start.line + 1} [${sev}] ${d.message}`);
       }
     }
@@ -366,13 +415,13 @@ export class ContextManager {
     let text = '';
     if (win.onDidWriteTerminalData) {
       // não há histórico retroativo: anexa um aviso claro em vez de inventar a saída.
-      text = `(saída do terminal "${term.name}" não é recuperável retroativamente por esta API)`;
+      text = tr(`(saída do terminal "${term.name}" não é recuperável retroativamente por esta API)`);
     } else {
       await vs.commands.executeCommand('workbench.action.terminal.copySelection');
       text = await vs.env.clipboard.readText();
     }
     if (!text.trim()) { void vs.window.showInformationMessage(tr('Sem saída do terminal para anexar.')); return; }
-    this.add({ kind: 'terminal', label: `Terminal: ${term.name}`, ref: 'terminal', text });
+    this.add({ kind: 'terminal', label: tr(`Terminal: ${term.name}`), ref: 'terminal', text });
   }
 
   private async attachGit(): Promise<void> {
@@ -393,7 +442,7 @@ export class ContextManager {
     const vs = this.deps.vs;
     const picked = await vs.window.showOpenDialog({
       canSelectMany: false,
-      filters: { Imagens: ['png', 'jpg', 'jpeg', 'gif', 'webp'] },
+      filters: { [tr('Imagens')]: ['png', 'jpg', 'jpeg', 'gif', 'webp'] },
     });
     const uri = picked?.[0];
     if (!uri) return;
@@ -419,7 +468,7 @@ export class ContextManager {
         body = ranged;
       } else if (mode === 'summary') {
         const head = headLines(text, 200);
-        body = `[resumo local, estimado — ${head.split('\n').length} de ${text.split('\n').length} linhas]\n${head}`;
+        body = tr(`[resumo local, estimado — ${head.split('\n').length} de ${text.split('\n').length} linhas]\n${head}`);
       }
     }
     this.add({ ...base, text: body });
@@ -428,14 +477,14 @@ export class ContextManager {
   private async askLarge(label: string, tokens: number, windowSize: number): Promise<'all' | 'range' | 'summary' | undefined> {
     const vs = this.deps.vs;
     const k = (tokens / 1000).toFixed(1);
-    const pct = windowSize > 0 ? `${warningPercent(tokens, windowSize)}% da janela do modelo ativo` : 'janela do agente ainda não reportada';
+    const pct = windowSize > 0 ? tr(`${warningPercent(tokens, windowSize)}% da janela do modelo ativo`) : tr('janela do agente ainda não reportada');
     const pick = await vs.window.showQuickPick(
       [
         { label: tr('Incluir tudo'), action: 'all' as const },
         { label: tr('Incluir trecho (definir intervalo)'), action: 'range' as const },
-        { label: 'Resumir', action: 'summary' as const },
+        { label: tr('Resumir'), action: 'summary' as const },
       ],
-      { title: `Anexar ${label}`, placeHolder: `≈ ${k}k tokens — cerca de ${pct}.`, ignoreFocusOut: true },
+      { title: tr(`Anexar ${label}`), placeHolder: tr(`≈ ${k}k tokens — cerca de ${pct}.`), ignoreFocusOut: true },
     );
     return pick?.action;
   }
@@ -445,8 +494,8 @@ export class ContextManager {
     const total = text.split('\n').length;
     const answer = await vs.window.showInputBox({
       title: tr('Incluir trecho'),
-      prompt: `Intervalo de linhas (1–${total}), ex.: 40-78`,
-      validateInput: (v) => (/^\d+\s*-\s*\d+$/.test(v.trim()) ? undefined : 'Use o formato início-fim, ex.: 40-78'),
+      prompt: tr(`Intervalo de linhas (1–${total}), ex.: 40-78`),
+      validateInput: (v) => (/^\d+\s*-\s*\d+$/.test(v.trim()) ? undefined : tr('Use o formato início-fim, ex.: 40-78')),
     });
     if (!answer) return undefined;
     const [a, b] = answer.split('-').map((n) => parseInt(n.trim(), 10));

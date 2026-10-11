@@ -53,6 +53,13 @@ export const userHistory = signal<string[]>([]);
 export const focusComposer = signal(0);
 
 /**
+ * Posição do caret no campo, mantida pelo composer. `null` = campo sem foco — aí uma inserção do
+ * host (`draft/insert`, ex.: referência `arquivo:linha` de uma seleção) vai para o FIM do rascunho.
+ * O router é sem-DOM e não consegue ler o `selectionStart`; este signal é a ponte.
+ */
+export const caret = signal<number | null>(null);
+
+/**
  * Qual popover do composer está aberto ('meter' | 'send' | null). Eles ancoram no MESMO canto
  * inferior direito (`.composer`), então dois abertos ao mesmo tempo se sobrepõem: o menu do envio
  * cobria a última linha e o botão do popover do medidor (visto no harness em 1440px). Um signal só

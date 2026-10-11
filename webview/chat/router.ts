@@ -10,8 +10,8 @@
 import type { ChatState, HostToWebview, TabInfo } from '../../src/core/types';
 import { coerceTurns } from './logic';
 import {
-  changed, chips, commands, lastStop, models, modes, notice, permission, plan, queue, state,
-  tools, turns, usage,
+  caret, changed, chips, commands, draft, focusComposer, lastStop, models, modes, notice,
+  permission, plan, queue, state, tools, turns, usage,
 } from './store';
 import { captureActive, restoreTranscript, routeBackground, snapshotOf } from './store';
 
@@ -105,6 +105,15 @@ function reduce(m: HostToWebview): void {
     case 'chips':
       chips.value = m.chips;
       break;
+    case 'draft/insert': {
+      // Insere o texto do host (referência `arquivo:linha` de uma seleção) NO CARET; sem foco
+      // (`caret === null`) vai para o fim. Devolve o foco ao campo depois de inserir.
+      const at = Math.max(0, Math.min(caret.value ?? draft.value.length, draft.value.length));
+      draft.value = draft.value.slice(0, at) + m.text + draft.value.slice(at);
+      caret.value = at + m.text.length;
+      focusComposer.value++;
+      break;
+    }
     case 'workingset':
       changed.value = m.files;
       break;

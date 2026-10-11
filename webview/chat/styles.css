@@ -152,6 +152,7 @@ details.thought pre { white-space: pre-wrap; margin: 4px 0 0; font-family: var(-
 .chip.implicit { opacity: 0.55; }
 .chip-main { display: inline-flex; gap: 4px; align-items: baseline; background: none; border: none; color: inherit; cursor: pointer; padding: 1px 4px 1px 8px; }
 .chip-label { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip-trunc { color: var(--vscode-descriptionForeground); font-size: 0.85em; font-style: italic; }
 .chip-tok { color: var(--vscode-descriptionForeground); font-size: 0.9em; }
 .chip-x { background: none; border: none; color: inherit; cursor: pointer; padding: 0 6px; }
 .chip :focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }

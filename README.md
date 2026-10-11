@@ -52,12 +52,19 @@ code --install-extension hermes-agent-vscode-0.1.0.vsix
 3. Once started the toolbar appears (`+` for context, mode and model) and typing works (`Enter`;
    `Shift+Enter` for a newline; `Esc` cancels the turn). The send button sits **inside** the field
    (bottom right, text only); it opens the same menu — send, queue, steer, interrupt.
-4. **Tabs**: each tab is one conversation (its own session), and the tab strip is the lane indicator —
+4. **Attachments**: the chips above the field carry what goes to the model. Removing one is the `×`
+   (the session keeps the list, and the chip does not come back). Attaching a selection or a file
+   also writes a textual reference (`` `.vscodeignore:4` ``) into the field, at the caret, so the
+   prompt says where the content is. Paste works in the field: files/folders copied from Finder
+   attach as chips, a clipboard image attaches as an image block, and plain text pastes normally.
+   An attachment over the per-chip token cap is **truncated to its beginning** and the chip is
+   marked `truncated` — the tooltip points at the whole content.
+5. **Tabs**: each tab is one conversation (its own session), and the tab strip is the lane indicator —
    a spinner while that tab's turn runs, a warning dot when it is waiting for approval. Closing a tab
    does not delete the session (history keeps it). The view title holds the two entry points: `+`
    (new conversation = a new tab) and the branch icon (**Hermes: New Worktree and Session**), which
    opens one in a git worktree ([Commands](#commands)).
-5. Native menus in the view title bar: new conversation, history, restart session, open in editor,
+6. Native menus in the view title bar: new conversation, history, restart session, open in editor,
    Manage (the gear), and a "…" menu with **Open Full CLI**, **Run CLI Command…**, diagnostics, log
    and traffic.
 

@@ -706,3 +706,30 @@ acumulando sem vazar na ativa, e trocar de aba restaura o transcript dela.
 - `HostToWebview.draft/insert { text }`: o host manda inserir texto no campo (referência
   `arquivo:linha` de uma seleção anexada). A webview insere no caret; quem sabe o caminho é o host,
   nunca a webview.
+
+### 13.1 Como ficou (e o que ficou de fora)
+
+- **Chips com um dono**: `ChatViewProvider.setChips` é o ponto de escrita (posta `{type:'chips'}` e
+  espelha na sessão da aba); `send()`/`initialState()` leem a mesma lista; o `publish` do
+  `ContextManager` roteia para o provider (`provider.setContextManager`). Chip anexado **sem sessão**
+  deixou de ser descartado — era o caminho que sumia com o anexo em silêncio.
+- **`×` do chip**: a webview parou de deixar o clique chegar ao `activate` do chip (`stopPropagation`),
+  e o defeito-raiz (o chip voltando no `init` seguinte) morreu junto com a segunda lista. Medido no
+  harness: clicar no `×` posta **só** `removeChip:<id>`.
+- **Corte por teto**: `CHIP_MAX_TOKENS` (2000) em `ContextManager`; `truncateChipText` corta em
+  fronteira de linha, marca `truncated` e o `tokensEstimate` reflete o que sobrou. Imagem nunca corta.
+  A UI mostra o selo `cortado` e o `title` aponta o conteúdo inteiro.
+- **Referência textual**: `attachFilePath`/`attachSelection` postam `{type:'draft/insert'}` com
+  `refText(relPath, lines)` (`` `.vscodeignore:4` ``); a webview insere **no caret** e devolve o foco.
+  Medido: caret em 7 → texto no meio; sem foco → no fim.
+- **Colar**: URI `file://` do clipboard → `addContext` (um por linha); bitmap em `clipboardData.files`
+  → `attachImage` (base64 sem `data:`) → arquivo temporário → chip `kind:'image'`; texto puro passa
+  normal. Medido no harness com `ClipboardEvent` sintético: arquivo → `addContext`, PNG → `attachImage`
+  (`colada.png`, `image/png`), texto → nada.
+- **Ficou de fora, com o motivo**: (a) `toContentBlocks` fixa `mimeType: 'image/png'`
+  (`HermesSession.ts`) — colar JPEG/GIF/WebP rotula a imagem como PNG; exige carregar o mime no chip
+  (mudança de contrato) e não afeta o caso comum (bitmap de screenshot no macOS já é PNG); (b) `chips`
+  é postado duas vezes quando há sessão (o `setChips` posta e a sessão espelha/emite) — idempotente,
+  deixado como está de propósito; (c) **chave de dicionário não cobre texto dinâmico**: o host traduz
+  por `tr('<texto pt-BR>')` com a chave sendo o próprio texto, então strings com `${…}` caem no pt-BR
+  por construção — resolver exigiria o dicionário aceitar função (como o `S.*(args)` da webview).

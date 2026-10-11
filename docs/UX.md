@@ -531,6 +531,8 @@ Regras que fecham o pedido:
 - **Colar** (`Ctrl/Cmd+V` no campo): arquivos/pastas copiados do Finder entram como chip (a URI do
   clipboard, mesmo caminho do drag & drop) e imagem do clipboard vira chip `kind: 'image'` (bitmap →
   `attachImage` → arquivo temporário → bloco de imagem no prompt). Texto colado continua texto.
+- **O `×` do chip não pode alcançar o chip**: clicar nele posta só `removeChip` (medido no harness);
+  o resto do clique (abrir o arquivo, alternar implícito) é do corpo do chip.
 - **Anexo grande é cortado no começo**: passa do teto de tokens por anexo → guarda o começo, marca o
   chip (`cortado`) e o `title` diz onde está o conteúdo inteiro. Corte silencioso seria mentira sobre
   o que foi para o modelo.

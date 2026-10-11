@@ -6,8 +6,10 @@
  * (+ `hermes.context.add`/`hermes.context.remove`, que são o alvo do roteamento das mensagens
  * `addContext`/`removeChip` da webview — ver relatório).
  *
- * Publicação dos chips para a webview usa `HermesSession.setChips`, que emite `{type:'chips'}`
- * pelo mesmo canal do provider. Nada de cor/fonte literal; strings em pt-BR.
+ * Publicação dos chips para a webview passa pelo provider (`setChips`), o único ponto de escrita:
+ * o `ContextManager` publica e o provider espelha na webview e na sessão ativa. Chip anexado antes
+ * de existir sessão NÃO é descartado — ele vive na lista do host até a conversa começar.
+ * Nada de cor/fonte literal; strings em pt-BR.
  */
 import * as vscode from 'vscode';
 import { homedir } from 'node:os';
@@ -40,22 +42,20 @@ export const feature: Feature = {
 
     const manager = new ContextManager({
       vs: vscode,
-      publish: (chips) => {
-        const s = session();
-        if (s) s.setChips(chips);
-        else log('info', `chips sem sessão ativa (${chips.length}); envie após iniciar uma conversa.`);
-      },
+      publish: (chips) => deps.provider.setChips(chips),
       warnAt: () => settings().contextWarnAt,
       windowSize: () => session()?.snapshot.usage?.size,
       log,
     });
+    // o provider é o dono da lista: anexos por arquivo/seleção entram por ele, não numa cópia.
+    deps.provider.setContextManager(manager);
 
     const workingSet = new WorkingSet({
       changed: () => session()?.changedFiles ?? [],
       diffsFor: (p) => session()?.diffsFor(p) ?? [],
       readFile: async (p) => new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.file(p))),
       applyEdit: (p, content) => applyContent(vscode.Uri.file(p), content),
-      confirm: async (message) => (await vscode.window.showWarningMessage(message, { modal: true }, 'Desfazer')) === 'Desfazer',
+      confirm: async (message) => (await vscode.window.showWarningMessage(message, { modal: true }, tr('Desfazer'))) === tr('Desfazer'),
       notify: (message) => void vscode.window.showInformationMessage(message),
       log,
     });
@@ -91,7 +91,7 @@ export const feature: Feature = {
       const c = vscode.workspace.getConfiguration('hermes');
       const next = !c.get<boolean>('queue.enabled', true);
       await c.update('queue.enabled', next, vscode.ConfigurationTarget.Global);
-      void vscode.window.showInformationMessage(`Fila de prompts ${next ? 'ligada' : 'desligada'}.`);
+      void vscode.window.showInformationMessage(tr(`Fila de prompts ${next ? tr('ligada') : tr('desligada')}.`));
     });
 
     ctx.subscriptions.push(manager.watchSelection() as unknown as vscode.Disposable);
@@ -146,7 +146,7 @@ function buildGroups(manager: ContextManager, session: HermesSession | undefined
     tokens: sum(instructions),
     percent: pct(sum(instructions)),
     items: instructions,
-    ...(instructions.length ? {} : { note: 'Nenhum AGENTS.md/.hermes.md/CLAUDE.md/SOUL.md detectado.' }),
+    ...(instructions.length ? {} : { note: tr('Nenhum AGENTS.md/.hermes.md/CLAUDE.md/SOUL.md detectado.') }),
   };
 
   /* Skills — o ACP não expõe quais estão ativas: listamos as instaladas e dizemos isso. */
@@ -159,8 +159,8 @@ function buildGroups(manager: ContextManager, session: HermesSession | undefined
     percent: pct(skillsTokens),
     items: shown,
     note: skills.length
-      ? `${skills.length} skill(s) instalada(s) em ~/.hermes/skills; o ACP não expõe quais estão carregadas — estimativa pelo cabeçalho (name+description).`
-      : 'Nenhuma skill em ~/.hermes/skills.',
+      ? tr(`${skills.length} skill(s) instalada(s) em ~/.hermes/skills; o ACP não expõe quais estão carregadas — estimativa pelo cabeçalho (name+description).`)
+      : tr('Nenhuma skill em ~/.hermes/skills.'),
   };
 
   /* Ferramentas / MCP — do config.yaml (o ACP devolve configOptions vazio). */
@@ -170,15 +170,15 @@ function buildGroups(manager: ContextManager, session: HermesSession | undefined
   const mcpServers = cfg ? parseBlockKeys(cfg, 'mcp_servers') : (mcp ? parseJsonKeys(mcp) : []);
   const toolsText = [cfg ? extractBlock(cfg, 'platform_toolsets') : '', mcp ?? ''].join('\n');
   const toolsItems = [
-    ...toolsets.map((t) => ({ id: `tool:${t}`, label: `Toolset: ${t}`, tokens: 0 })),
-    ...mcpServers.map((m) => ({ id: `mcp:${m}`, label: `MCP: ${m}`, tokens: 0 })),
+    ...toolsets.map((t) => ({ id: `tool:${t}`, label: tr(`Toolset: ${t}`), tokens: 0 })),
+    ...mcpServers.map((m) => ({ id: `mcp:${m}`, label: tr(`MCP: ${m}`), tokens: 0 })),
   ];
   const toolsGroup: ContextGroup = {
     title: tr('Ferramentas / MCP'),
     tokens: estimateTokens(toolsText),
     percent: pct(estimateTokens(toolsText)),
     items: toolsItems,
-    note: 'O ACP não expõe os schemas das ferramentas; estimativa pelo config.yaml/MCP — o total pode ser bem maior.',
+    note: tr('O ACP não expõe os schemas das ferramentas; estimativa pelo config.yaml/MCP — o total pode ser bem maior.'),
   };
 
   /* Arquivos e anexos — chips (removíveis/fixáveis). */
@@ -188,7 +188,7 @@ function buildGroups(manager: ContextManager, session: HermesSession | undefined
     tokens: manager.sumTokens(),
     percent: pct(manager.sumTokens()),
     items: chips.map((c) => ({ id: c.id, label: c.label, tokens: c.tokensEstimate, removable: true, pinned: manager.isPinned(c.id) })),
-    ...(chips.length ? {} : { note: 'Nenhum chip anexado.' }),
+    ...(chips.length ? {} : { note: tr('Nenhum chip anexado.') }),
   };
 
   /* Raciocínio (último turno) — medido pelo agente. */
@@ -198,7 +198,7 @@ function buildGroups(manager: ContextManager, session: HermesSession | undefined
     tokens: thought,
     percent: pct(thought),
     items: [],
-    note: thought ? 'Medido pelo agente (thought_tokens).' : 'O agente não reportou raciocínio p/ o último turno.',
+    note: thought ? tr('Medido pelo agente (thought_tokens).') : tr('O agente não reportou raciocínio p/ o último turno.'),
   };
 
   /* Histórico — o host não tem o transcript (a webview é dona): mostramos a sobra do total. */
@@ -210,8 +210,8 @@ function buildGroups(manager: ContextManager, session: HermesSession | undefined
     percent: pct(history),
     items: [],
     note: used > 0
-      ? 'Sobra do total do agente menos os grupos acima (estimado; o transcript vive na webview).'
-      : 'O agente ainda não reportou a janela; histórico indisponível.',
+      ? tr('Sobra do total do agente menos os grupos acima (estimado; o transcript vive na webview).')
+      : tr('O agente ainda não reportou a janela; histórico indisponível.'),
   };
 
   return [instructionsGroup, skillsGroup, toolsGroup, filesGroup, historyGroup, reasoningGroup];

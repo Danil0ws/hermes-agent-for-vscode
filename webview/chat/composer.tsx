@@ -8,8 +8,8 @@ import { S, num } from './i18n';
 import { breakdown, filterCommands, historyNavigate, moveDeltas, replaceToken, triggerToken } from './logic';
 import type { TriggerToken } from './logic';
 import {
-  chips, commands, draft, focusComposer, models, modes, openPopover, permission, queue, state, tools,
-  turns, usage, userHistory,
+  caret, chips, commands, draft, focusComposer, models, modes, notice, openPopover, permission,
+  queue, state, tools, turns, usage, userHistory,
 } from './store';
 import type { ContextChip, QueueItem } from '../../src/core/types';
 import { Icon } from '../shared/icon';
@@ -185,15 +185,20 @@ function Chips() {
   return (
     <div class="chips" role="list" aria-label={S.a11y.context}>
       {list.map((c) => (
-        <span class={`chip ${c.implicit ? 'implicit' : ''}`} role="listitem" key={c.id} title={chipTip(c)}>
+        <span class={`chip ${c.implicit ? 'implicit' : ''}`} role="listitem" key={c.id}
+          title={c.truncated ? S.composer.chipTruncatedTip(c.ref) : chipTip(c)}>
           <button class="chip-main" onClick={() => activate(c)}
             aria-label={c.implicit ? S.composer.toggleChip(c.label) : c.label}>
             <ChipIcon kind={c.kind} />
             <span class="chip-label">{c.label}</span>
+            {c.truncated && <span class="chip-trunc">{S.composer.chipTruncated}</span>}
             <span class="chip-tok">{S.composer.chipTokens(num(c.tokensEstimate))}</span>
           </button>
+          {/* O `×` é um botão IRMÃO do `chip-main`: parar a propagação garante que o clique não
+              alcance o `activate` do chip (abrir arquivo / alternar implícito). A remoção em si não
+              mexe em estado local — quem manda na lista é o host (`{type:'chips'}`/`init`). */}
           <button class="chip-x" aria-label={S.composer.removeChip(c.label)} title={S.composer.removeChip(c.label)}
-            onClick={() => send({ type: 'removeChip', id: c.id })}>×</button>
+            onClick={(e) => { e.stopPropagation(); send({ type: 'removeChip', id: c.id }); }}>×</button>
         </span>
       ))}
     </div>
@@ -363,8 +368,13 @@ export function Composer() {
     el.style.height = `${Math.min(el.scrollHeight, 240)}px`;
   }, [txt]);
 
-  // foco pedido de fora (editar/reenviar)
-  useEffect(() => { box.current?.focus(); }, [focusComposer.value]);
+  // foco pedido de fora (editar/reenviar) — e posiciona o caret quando veio de um `draft/insert`
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    el.focus();
+    if (caret.value !== null) el.setSelectionRange(caret.value, caret.value);
+  }, [focusComposer.value]);
 
   const syncMenu = (value: string, caret: number) => {
     const tok = triggerToken(value, caret);
@@ -391,12 +401,12 @@ export function Composer() {
     if (!it) return;
     if (menu.tok.type === 'slash') {
       const next = replaceToken(txt, menu.tok, `${it.primary} `);
-      draft.value = next; setMenu(null);
+      draft.value = next; setMenu(null); caret.value = next.length;
       queueMicrotask(() => { el?.focus(); el?.setSelectionRange(next.length, next.length); });
     } else {
       const source = it.key;
       const next = replaceToken(txt, menu.tok, '');
-      draft.value = next; setMenu(null);
+      draft.value = next; setMenu(null); caret.value = next.length;
       send({ type: 'addContext', source });
       queueMicrotask(() => { el?.focus(); el?.setSelectionRange(next.length, next.length); });
     }
@@ -407,6 +417,7 @@ export function Composer() {
     if (!text.trim() && chips.value.length === 0) return;
     if (text.trim()) userHistory.value = [...userHistory.value, text].slice(-100);
     draft.value = '';
+    caret.value = 0;
     setHistIdx(-1);
     setMenu(null);
     send({ type: 'prompt', text, chips: chips.value, action });
@@ -438,6 +449,39 @@ export function Composer() {
     : busy ? S.composer.placeholderBusy
       : chips.value.length > 0 ? S.composer.placeholderChips(chips.value.length)
         : S.composer.placeholderIdle;
+
+  /**
+   * Colar no campo. Três caminhos, nesta ordem:
+   *   1. URI(s) `file://` (arquivo/pasta copiados do Finder) → um `addContext` por URI, o MESMO
+   *      caminho do drag & drop (`onDrop`).
+   *   2. imagem no clipboard (bitmap) → `attachImage` com base64 SEM o prefixo `data:`.
+   *   3. texto normal → deixa colar (sem `preventDefault`).
+   */
+  const onPaste = (e: ClipboardEvent) => {
+    const dt = e.clipboardData;
+    if (!dt) return;
+    const raw = dt.getData('text/uri-list') || dt.getData('text/plain') || '';
+    const uris = raw.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.startsWith('file://'));
+    if (uris.length > 0) {
+      e.preventDefault();
+      for (const u of uris) send({ type: 'addContext', source: decodeURIComponent(u.replace(/^file:\/\//, '')) });
+      return;
+    }
+    const image = Array.from(dt.files).find((f) => f.type.startsWith('image/'));
+    if (image) {
+      e.preventDefault();
+      const reader = new FileReader();
+      reader.onload = () => {
+        const data = String(reader.result ?? '').replace(/^data:[^,]*,/, '');
+        if (data) send({ type: 'attachImage', name: image.name || 'colada.png', mime: image.type, data });
+        else notice.value = { level: 'warning', text: S.composer.pasteImageFailed };
+      };
+      reader.onerror = () => { notice.value = { level: 'warning', text: S.composer.pasteImageFailed }; };
+      reader.readAsDataURL(image);
+      return;
+    }
+    // 3. texto normal: o paste segue sozinho (nada a fazer aqui)
+  };
 
   const onDrop = (e: DragEvent) => {
     if (e.dataTransfer?.types.includes('application/x-hermes-queue')) return;
@@ -475,8 +519,13 @@ export function Composer() {
           aria-controls={menu ? 'composer-pop' : undefined}
           aria-activedescendant={menu ? `composer-pop-${active}` : undefined}
           aria-autocomplete={menu ? 'list' : undefined}
-          onInput={(e) => { const el = e.target as HTMLTextAreaElement; draft.value = el.value; syncMenu(el.value, el.selectionStart); }}
-          onClick={(e) => { const el = e.target as HTMLTextAreaElement; syncMenu(el.value, el.selectionStart); }}
+          onInput={(e) => { const el = e.target as HTMLTextAreaElement; draft.value = el.value; caret.value = el.selectionStart; syncMenu(el.value, el.selectionStart); }}
+          onClick={(e) => { const el = e.target as HTMLTextAreaElement; caret.value = el.selectionStart; syncMenu(el.value, el.selectionStart); }}
+          onKeyUp={(e) => { caret.value = (e.target as HTMLTextAreaElement).selectionStart; }}
+          onSelect={(e) => { caret.value = (e.target as HTMLTextAreaElement).selectionStart; }}
+          // sem foco o `draft/insert` do host vai para o FIM do rascunho (o caret vivo só existe focado)
+          onBlur={() => { caret.value = null; }}
+          onPaste={onPaste}
           onKeyDown={onKey}
         />
         {started && <SendInline onSubmit={submit} />}

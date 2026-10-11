@@ -15,6 +15,23 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Adicionado
 
+- **Anexos de contexto**: colar no campo anexa arquivos/pastas copiados do Finder (URI do clipboard) e
+  imagens do clipboard (bitmap → arquivo temporário → bloco de imagem no prompt); anexar uma seleção ou
+  um arquivo escreve também a referência textual `` `.vscodeignore:4` `` no campo, no caret, para o
+  prompt dizer ONDE está o conteúdo; anexo acima do teto por chip é **cortado no começo** e marcado
+  (`cortado` no chip, caminho do conteúdo inteiro no tooltip). Teto: 2000 tokens por anexo.
+
+### Corrigido
+
+- **Remover chip anexado não pegava** (`×`): havia DUAS listas de chips — a do provider (usada em
+  `send`/`initialState`) e a do `ContextManager` publicada pela sessão. O `×` removia da segunda e o
+  chip **voltava no `init` seguinte** (trocar de aba, iniciar, nova conversa). Agora `setChips` do
+  provider é o ponto único de escrita, o `publish` do manager roteia para ele, e chip anexado antes de
+  existir sessão não é mais descartado em silêncio.
+- **`×` do chip também abria o arquivo**: o clique chegava ao `activate` do chip por bubbling.
+
+### Adicionado
+
 - **Abas no chat: uma conversa por aba.** Cada aba é uma sessão própria (não uma troca de contexto na
   mesma sessão), e a barra de abas **é** o indicador de lane ativa: girando enquanto o turno daquela
   aba corre, ponto de aviso quando ela espera aprovação, `title` com agente · cwd · branch. Fechar aba

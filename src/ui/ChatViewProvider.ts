@@ -6,12 +6,17 @@
  * são do próprio editor.
  */
 import * as vscode from 'vscode';
-import { basename } from 'node:path';
+import { basename, join } from 'node:path';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { AgentManager } from '../core/AgentManager';
 import type { HermesSession } from '../core/HermesSession';
 import { QueueManager } from '../core/QueueManager';
 import { activeAgent, settings, workingDirectory } from '../config/Settings';
 import { estimateTokens } from '../utils/Tokens';
+import {
+  CHIP_MAX_TOKENS, MAX_IMAGE_BYTES, imageExt, isImageMime, refText, truncateChipText, type DraftChip,
+} from '../core/ContextManager';
 import type { ChatState, ContextChip, HostToWebview, TabInfo, WebviewToHost } from '../core/types';
 import { tr } from '../l10n';
 
@@ -22,6 +27,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
   private view?: vscode.WebviewView | vscode.WebviewPanel;
   private queue: QueueManager;
   private chips: ContextChip[] = [];
+  /** ContextManager (dono da lista), instalado pela feature "context". */
+  private contextManager?: { add(draft: DraftChip): ContextChip; clear(): void };
   private last: HostToWebview[] = [];
   private starting = false;
   /** abas abertas (uma conversa = uma sessão) e qual está ativa. Vive só aqui — a sessão não sabe. */
@@ -82,7 +89,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           await this.start(msg.tab);
           return;
         case 'prompt':
-          await this.send(msg.text, msg.chips, msg.action, msg.tab);
+          await this.send(msg.text, msg.action, msg.tab);
           return;
         case 'cancel':
           await this.sessionFor(msg.tab)?.cancel();
@@ -120,7 +127,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           this.queue.clear(); this.post({ type: 'queue', items: this.queue.all }); return;
         case 'queue/sendNow': {
           const item = this.queue.take(msg.id);
-          if (item) { await this.sessionFor(msg.tab)?.cancel(); await this.send(item.text, item.chips, 'send', msg.tab); }
+          if (item) { await this.sessionFor(msg.tab)?.cancel(); await this.send(item.text, 'send', msg.tab); }
           this.post({ type: 'queue', items: this.queue.all });
           return;
         }
@@ -128,7 +135,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           await this.newConversation();
           return;
         case 'compact':
-          await this.send('/compress', [], 'send', msg.tab);
+          await this.send('/compress', 'send', msg.tab);
           return;
         case 'openFile': {
           const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(msg.path));
@@ -147,7 +154,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           return;
         case 'copy':
           await vscode.env.clipboard.writeText(msg.text);
-          void vscode.window.showInformationMessage('Copiado.');
+          void vscode.window.showInformationMessage(tr('Copiado.'));
           return;
         case 'openCli':
           await vscode.commands.executeCommand('hermes.openCli');
@@ -167,6 +174,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
         case 'addPath':
           await this.attachFilePath(msg.path);
           return;
+        case 'attachImage':
+          await this.attachImage(msg.name, msg.mime, msg.data);
+          return;
         case 'undoFile':
           await vscode.commands.executeCommand('hermes.undoFile', msg.path);
           return;
@@ -182,8 +192,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     }
   }
 
-  private async send(text: string, chips: ContextChip[], action: 'send' | 'queue' | 'steer' | 'interrupt', tab?: string): Promise<void> {
+  private async send(text: string, action: 'send' | 'queue' | 'steer' | 'interrupt', tab?: string): Promise<void> {
     const s = settings();
+    // FONTE ÚNICA: o que vai ao modelo é a lista do host (nunca uma cópia que a webview mandou).
+    const chips = this.chips;
     if (!text.trim() && chips.length === 0) return;
 
     const t = this.tabs.find((x) => x.id === (tab ?? this.activeTabId)) ?? this.ensureTab();
@@ -202,7 +214,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
       t.sessionId = session.sessionId;
     }
 
-    this.chips = chips;
     this.post({ type: 'user/message', text, chips, tab: t.id });
     const stop = await session.prompt(text, chips);
     this.log('info', `turno terminou: ${stop}`);
@@ -211,7 +222,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
       const nextItem = this.queue.next();
       if (nextItem) {
         this.post({ type: 'queue', items: this.queue.all });
-        await this.send(nextItem.text, nextItem.chips, 'send');
+        await this.send(nextItem.text, 'send');
       }
     }
   }
@@ -248,7 +259,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
   /** Nova conversa: troca a sessão DENTRO da aba ativa (o histórico antigo continua em `hermes sessions`). */
   async newConversation(): Promise<void> {
     const t = this.ensureTab();
-    this.chips = [];
+    this.clearChips();
     this.last = [];
     t.sessionId = null;
     t.busy = false;
@@ -294,39 +305,84 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     }
   }
 
+  /* ─────────── chips: UMA lista (a do host) ─────────── */
+
+  /** a feature "context" instala o ContextManager (dono da lista). Sem ele o provider mantém a lista. */
+  setContextManager(manager: { add(draft: DraftChip): ContextChip; clear(): void }): void {
+    this.contextManager = manager;
+  }
+
+  /**
+   * ÚNICO ponto de escrita da lista de chips: guarda a lista, espelha na webview e, quando houver
+   * sessão na aba ativa, espelha também no lado ACP. `init`/`send` leem daqui — a cópia paralela que
+   * fazia o `×` "não pegar" não existe mais.
+   */
+  setChips(chips: ContextChip[]): void {
+    this.chips = chips;
+    this.post({ type: 'chips', chips });
+    this.sessionFor()?.setChips(chips);
+  }
+
+  private clearChips(): void {
+    if (this.contextManager) this.contextManager.clear();
+    else this.setChips([]);
+  }
+
   /** chip de arquivo (menu do explorer / "Enviar arquivo atual"). */
   async attachFilePath(path: string): Promise<void> {
     const bytes = await vscode.workspace.fs.readFile(vscode.Uri.file(path));
     const text = new TextDecoder().decode(bytes);
     this.addChip({ kind: 'file', ref: path, label: basename(path), text });
+    this.post({ type: 'draft/insert', text: refText(vscode.workspace.asRelativePath(vscode.Uri.file(path))) });
   }
 
   /** chip de seleção ("Perguntar sobre a seleção"). */
-  async attachSelection(editor: vscode.TextEditor, prefix: string): Promise<void> {
+  async attachSelection(editor: vscode.TextEditor, _prefix: string): Promise<void> {
     const sel = editor.selection;
     const text = editor.document.getText(sel);
+    const lines: [number, number] = [sel.start.line + 1, sel.end.line + 1];
     this.addChip({
       kind: 'selection',
       ref: editor.document.uri.fsPath,
-      label: `${basename(editor.document.uri.fsPath)} L${sel.start.line + 1}–L${sel.end.line + 1}`,
+      label: `${basename(editor.document.uri.fsPath)} L${lines[0]}–L${lines[1]}`,
       text,
-      lines: [sel.start.line + 1, sel.end.line + 1],
-      prefix,
+      lines,
     });
     await vscode.commands.executeCommand('hermes.chat.focus');
-    this.post({ type: 'notice', level: 'info', text: `${(text.length / 4 / 1000).toFixed(1)}k tokens anexados.` });
+    // o chip carrega o QUÊ; a referência no campo diz ONDE (caminho relativo + linhas).
+    this.post({ type: 'draft/insert', text: refText(vscode.workspace.asRelativePath(editor.document.uri), lines) });
+    this.post({ type: 'notice', level: 'info', text: tr(`${(text.length / 4 / 1000).toFixed(1)}k tokens anexados.`) });
   }
 
-  private chipPrefix = new Map<string, string>();
+  /** imagem colada no campo: valida o mime, grava num temporário e cria o chip `kind: 'image'`. */
+  async attachImage(name: string, mime: string, data: string): Promise<void> {
+    if (!isImageMime(mime)) { void vscode.window.showWarningMessage(tr('Só é possível colar imagens como anexo.')); return; }
+    // contrato: base64 SEM o prefixo `data:`; remove um prefixo se algum dia vier (defensivo).
+    const b64 = data.includes(',') ? data.slice(data.indexOf(',') + 1) : data;
+    const bytes = Buffer.from(b64, 'base64');
+    if (bytes.length > MAX_IMAGE_BYTES) { void vscode.window.showWarningMessage(tr('Imagem grande demais: o limite é 10 MB.')); return; }
+    const dir = mkdtempSync(join(tmpdir(), 'hermes-img-'));
+    const file = join(dir, `colada${imageExt(mime)}`);
+    writeFileSync(file, bytes);
+    this.addChip({ kind: 'image', label: name.trim() || 'colada.png', ref: file, text: b64, imagePath: file });
+  }
 
-  private addChip(c: Omit<ContextChip, 'id' | 'tokensEstimate'> & { prefix?: string }): void {
+  /** cria um chip: pelo ContextManager quando existe (fonte única), senão localmente (mesmo teto). */
+  private addChip(draft: DraftChip): void {
+    if (this.contextManager) { this.contextManager.add(draft); return; }
+    const cap = draft.kind === 'image' ? { text: draft.text ?? '', truncated: false } : truncateChipText(draft.text ?? '', CHIP_MAX_TOKENS);
     const id = `chip-${Date.now()}-${this.chips.length}`;
-    if (c.prefix) this.chipPrefix.set(id, c.prefix);
-    this.chips = [
+    this.setChips([
       ...this.chips,
-      { id, kind: c.kind, ref: c.ref, label: c.label, text: c.text, lines: c.lines, implicit: c.implicit, imagePath: c.imagePath, tokensEstimate: estimateTokens(c.text ?? '') },
-    ];
-    this.post({ type: 'chips', chips: this.chips });
+      {
+        id, kind: draft.kind, ref: draft.ref, label: draft.label, tokensEstimate: estimateTokens(cap.text),
+        ...(draft.lines ? { lines: draft.lines } : {}),
+        ...(draft.text !== undefined ? { text: cap.text } : {}),
+        ...(draft.imagePath ? { imagePath: draft.imagePath } : {}),
+        ...(draft.implicit ? { implicit: true } : {}),
+        ...(cap.truncated ? { truncated: true } : {}),
+      },
+    ]);
   }
 
   private async runAuthTerminal(): Promise<void> {
@@ -447,8 +503,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
 
   private post(m: HostToWebview): void {
     // `tabs` é anúncio próprio (não deve obrigar a webview a reprocessar o estado) e não entra no
-    // replay; `init`/`busy` também não (o `init` já é reconstruído no attach/ready).
-    if (m.type !== 'init' && m.type !== 'busy' && m.type !== 'tabs') {
+    // replay; `init`/`busy` também não (o `init` já é reconstruído no attach/ready). `draft/insert`
+    // é uma ação de uma vez só — replay insere de novo ao reabrir a view.
+    if (m.type !== 'init' && m.type !== 'busy' && m.type !== 'tabs' && m.type !== 'draft/insert') {
       this.last.push(m);
       if (this.last.length > 200) this.last.shift();
     }
