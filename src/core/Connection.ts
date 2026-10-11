@@ -7,6 +7,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { Readable, Writable } from 'node:stream';
 import * as acp from '@agentclientprotocol/sdk';
+import { tr } from '../l10n';
 
 export interface AgentConfig {
   command: string;
@@ -45,7 +46,7 @@ export class Connection {
   constructor(private readonly cfg: AgentConfig, private readonly events: ConnectionEvents = {}) {}
 
   get connection(): acp.ClientSideConnection {
-    if (!this.conn) throw new Error('ACP não inicializado');
+    if (!this.conn) throw new Error(tr('ACP não inicializado'));
     return this.conn;
   }
 
@@ -100,7 +101,7 @@ export class Connection {
       exited,
     ]);
     if (init.protocolVersion !== acp.PROTOCOL_VERSION) {
-      throw new Error(`protocolo incompatível: agente=${init.protocolVersion} cliente=${acp.PROTOCOL_VERSION}`);
+      throw new Error(tr(`protocolo incompatível: agente=${init.protocolVersion} cliente=${acp.PROTOCOL_VERSION}`));
     }
     return init;
   }

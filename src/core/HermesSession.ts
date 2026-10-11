@@ -10,6 +10,7 @@
  */
 import * as acp from '@agentclientprotocol/sdk';
 import { basename } from 'node:path';
+import { tr } from '../l10n';
 import type {
   ChangedFile, SessionState, ContextChip, FileDiff, HostToWebview, ModeInfo, ModelInfo,
   PermissionRequest, PlanEntry, SessionSummary, SlashCommand, ToolView, TurnUsage,
@@ -309,7 +310,7 @@ export class HermesSession {
     const detail = permissionDetail(req.toolCall);
     const view: PermissionRequest = {
       id,
-      title: req.toolCall?.title ?? 'Aprovação necessária',
+      title: req.toolCall?.title ?? tr('Aprovação necessária'),
       detail,
       cwd: (req.toolCall?._meta as Record<string, unknown> | undefined)?.cwd as string | undefined,
       options,

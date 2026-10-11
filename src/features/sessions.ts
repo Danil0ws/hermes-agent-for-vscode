@@ -19,9 +19,10 @@ import {
 import { StatusBar } from '../ui/StatusBar';
 import { tr } from '../l10n';
 
-const CLI_NOTE =
+const CLI_NOTE = tr(
   'Renomear, arquivar e excluir abrem a CLI num terminal integrado: o protocolo ACP não expõe ' +
-  'essas operações (não há `session/delete`). Duplicar (fork) e copiar o ID acontecem aqui mesmo.';
+  'essas operações (não há `session/delete`). Duplicar (fork) e copiar o ID acontecem aqui mesmo.',
+);
 
 export const feature: Feature = {
   id: 'sessions',
@@ -88,7 +89,7 @@ export const feature: Feature = {
         .map((s) => deriveState(s.sessionId))
         .filter((st) => st === 'waiting' || st === 'error').length;
       view.badge = attention
-        ? { value: attention, tooltip: `${attention} sessão(ões) precisam de atenção` }
+        ? { value: attention, tooltip: tr(`${attention} sessão(ões) precisam de atenção`) }
         : undefined;
     }
 
@@ -128,7 +129,7 @@ export const feature: Feature = {
       const show = kind === 'error'
         ? vscode.window.showWarningMessage
         : vscode.window.showInformationMessage;
-      void show(text, 'Abrir sessões').then((choice) => {
+      void show(text, tr('Abrir sessões')).then((choice) => {
         if (choice) void vscode.commands.executeCommand('hermes.sessions.pick');
       });
     }
@@ -149,7 +150,7 @@ export const feature: Feature = {
           break;
         case 'permission/ask':
           if (id) pendingById.set(id, (pendingById.get(id) ?? 0) + 1);
-          notify('confirm', 'O Hermes aguarda a sua aprovação.');
+          notify('confirm', tr('O Hermes aguarda a sua aprovação.'));
           scheduleRefresh();
           break;
         case 'permission/resolve':
@@ -158,12 +159,12 @@ export const feature: Feature = {
           break;
         case 'turn/end':
           if (id && m.stopReason !== 'cancelled') doneById.add(id);
-          notify('response', 'Resposta do Hermes concluída.');
+          notify('response', tr('Resposta do Hermes concluída.'));
           scheduleRefresh();
           break;
         case 'error':
           if (id) errorById.add(id);
-          notify('error', 'A sessão do Hermes falhou.');
+          notify('error', tr('A sessão do Hermes falhou.'));
           scheduleRefresh();
           break;
         default:
@@ -229,8 +230,8 @@ export const feature: Feature = {
       const title = await vscode.window.showInputBox({
         title: tr('Renomear sessão'),
         value: titleOf(arg) ?? '',
-        prompt: 'Novo título. A CLI aplica a mudança (o ACP só informa o título, não o altera).',
-        validateInput: (v) => (v.trim().length ? undefined : 'Informe um título.'),
+        prompt: tr('Novo título. A CLI aplica a mudança (o ACP só informa o título, não o altera).'),
+        validateInput: (v) => (v.trim().length ? undefined : tr('Informe um título.')),
       });
       if (!title) return;
       await deps.openCli({ args: ['sessions', 'rename', id, title.trim()] });
@@ -268,11 +269,11 @@ export const feature: Feature = {
       const id = idOf(arg);
       if (!id) return;
       const ok = await vscode.window.showWarningMessage(
-        `Excluir a sessão "${rowLabel({ sessionId: id, title: titleOf(arg), state: 'idle', pending: 0 })}"?`,
+        tr(`Excluir a sessão "${rowLabel({ sessionId: id, title: titleOf(arg), state: 'idle', pending: 0 })}"?`),
         { modal: true },
-        'Excluir',
+        tr('Excluir'),
       );
-      if (ok !== 'Excluir') return;
+      if (ok !== tr('Excluir')) return;
       await deps.openCli({ args: ['sessions', 'delete', id, '--yes'] });
       deps.log('info', `sessions.delete ${id}`);
     });
@@ -281,7 +282,7 @@ export const feature: Feature = {
       const id = idOf(arg);
       if (!id) return;
       await vscode.env.clipboard.writeText(id);
-      void vscode.window.showInformationMessage(`ID copiado: ${id}`);
+      void vscode.window.showInformationMessage(tr(`ID copiado: ${id}`));
     });
 
     reg('hermes.sessions.pick', async () => { await pick(); });

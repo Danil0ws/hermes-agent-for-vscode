@@ -66,9 +66,9 @@ async function implementPlan(deps: FeatureDeps): Promise<void> {
 
   // Em `default` a edição pede aprovação a cada passo: sugerir (não impor) `accept_edits`.
   if (session.snapshot.currentMode === 'default') {
-    const trocar = 'Trocar para "Aceitar edições"';
+    const trocar = tr('Trocar para "Aceitar edições"');
     const pick = await vscode.window.showInformationMessage(tr('Plano enviado. O modo atual ("Default") pede aprovação de edição a cada alteração.'),
-      trocar, 'Manter "Default"',
+      trocar, tr('Manter "Default"'),
     );
     if (pick === trocar) await session.setMode('accept_edits');
   }

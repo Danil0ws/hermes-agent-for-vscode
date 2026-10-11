@@ -185,6 +185,11 @@ Trust) still wins: nothing runs.
 
 ## Languages
 
+Every user-visible string in the extension host goes through `tr()` and the three dictionaries
+(`src/l10n.en.ts`, `src/l10n.ru.ts`, `src/l10n.zh-cn.ts`) must cover every key — a test fails on a
+pt-BR literal left outside `tr()` and another checks the key parity, so a new string cannot ship
+untranslated by accident.
+
 The extension language follows the **VS Code display language** (there is no picker of its own):
 change it in `Ctrl+Shift+P` → *Configure Display Language* and reload the window.
 

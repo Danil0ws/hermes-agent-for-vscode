@@ -39,7 +39,8 @@ export function activate(ctx: vscode.ExtensionContext): void {
   reg('hermes.newConversation', async () => {
     if (restricted()) return warnRestricted();
     await vscode.commands.executeCommand('hermes.chat.focus');
-    await provider.newConversation();
+    // o `+` do título da view é o único caminho para uma conversa nova: abre uma ABA nova.
+    await provider.newTab();
   });
   reg('hermes.openInEditor', async () => { await provider.openInEditor(); });
   reg('hermes.openCli', async (opts) => {
@@ -85,7 +86,7 @@ export function activate(ctx: vscode.ExtensionContext): void {
   const yolo = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   const syncYolo = () => {
     if (settings().permissions !== 'allowAll') { yolo.hide(); return; }
-    yolo.text = '$(shield) Hermes: aprovando tudo';
+    yolo.text = tr('$(shield) Hermes: aprovando tudo');
     yolo.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
     yolo.tooltip = tr('hermes.permissions = allowAll: o Hermes não pede permissão. Clique para desligar.');
     yolo.command = 'hermes.permissions.toggleYolo';

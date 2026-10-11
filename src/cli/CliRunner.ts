@@ -130,7 +130,7 @@ export class CliRunner {
   /** Instala o Hermes pelo script oficial, num terminal integrado. */
   async runInstall(): Promise<void> {
     const s = settings();
-    const name = 'Hermes: instalação';
+    const name = tr('Hermes: instalação');
     let terminal = this.terminals.get(name);
     if (!terminal || terminal.exitStatus !== undefined) {
       terminal = vscode.window.createTerminal({ name, cwd: workingDirectory(s) });

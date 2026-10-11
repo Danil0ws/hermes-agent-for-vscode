@@ -12,6 +12,7 @@
  * O módulo não importa o runtime do `vscode`: leitura/escrita/edição são injetadas.
  */
 import type { ChangedFile, FileDiff } from './types';
+import { tr } from '../l10n';
 
 export interface WorkingSetDeps {
   /** arquivos alterados acumulados na sessão (HermesSession.changedFiles). */
@@ -91,34 +92,34 @@ export class WorkingSet {
    * próprias tools). Só afirmamos isso explicitamente ao usuário.
    */
   keep(path: string): void {
-    this.deps.notify(`"${path}" mantido (o Hermes já gravou no disco).`);
+    this.deps.notify(tr(`"${path}" mantido (o Hermes já gravou no disco).`));
   }
 
   keepAll(): void {
-    this.deps.notify('Alterações mantidas (o Hermes já gravou no disco).');
+    this.deps.notify(tr('Alterações mantidas (o Hermes já gravou no disco).'));
   }
 
   /** "Desfazer" = aplica o diff inverso sobre o conteúdo atual do arquivo. */
   async undo(path: string): Promise<void> {
     const diffs = this.deps.diffsFor(path);
     if (!diffs.length) {
-      this.deps.notify(`Sem diff guardado para "${path}" — não há como desfazer.`);
+      this.deps.notify(tr(`Sem diff guardado para "${path}" — não há como desfazer.`));
       return;
     }
     const current = await this.deps.readFile(path);
     const restored = reverseApply(current, diffs);
     if (restored === current) {
-      this.deps.notify(`Nenhuma alteração reversível em "${path}".`);
+      this.deps.notify(tr(`Nenhuma alteração reversível em "${path}".`));
       return;
     }
     await this.deps.applyEdit(path, restored);
-    this.deps.notify(`Diff inverso aplicado a "${path}". O arquivo já estava no disco; isto o reverte.`);
+    this.deps.notify(tr(`Diff inverso aplicado a "${path}". O arquivo já estava no disco; isto o reverte.`));
   }
 
   async undoAll(): Promise<void> {
     const files = this.deps.changed();
     if (!files.length) return;
-    if (!(await this.deps.confirm(`Desfazer as alterações de ${files.length} arquivo(s)?`))) return;
+    if (!(await this.deps.confirm(tr(`Desfazer as alterações de ${files.length} arquivo(s)?`)))) return;
     for (const f of files) {
       try {
         await this.undo(f.path);

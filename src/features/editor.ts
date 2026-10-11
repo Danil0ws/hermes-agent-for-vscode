@@ -44,7 +44,7 @@ class HermesCodeActionProvider implements vscode.CodeActionProvider {
   ): vscode.CodeAction[] {
     // um Quick Fix por diagnóstico na faixa (o VS Code já filtra pelo range/cursor).
     return context.diagnostics.map((d) => {
-      const action = new vscode.CodeAction('Corrigir problema com o Hermes', vscode.CodeActionKind.QuickFix);
+      const action = new vscode.CodeAction(tr('Corrigir problema com o Hermes'), vscode.CodeActionKind.QuickFix);
       action.diagnostics = [d];
       action.command = {
         title: tr('Corrigir problema com o Hermes'),
@@ -73,7 +73,7 @@ async function fixProblem(
 
     const rel = vscode.workspace.asRelativePath(target);
     const line = diagnostic.range.start.line + 1;
-    const severity = ['', 'erro', 'aviso', 'informação', 'dica'][diagnostic.severity] ?? 'problema';
+    const severity = ['', tr('erro'), tr('aviso'), tr('informação'), tr('dica')][diagnostic.severity] ?? tr('problema');
     const text = `Corrija este problema em ${rel}:${line}:\n${diagnostic.message}`;
 
     const api = contextApi();
@@ -95,7 +95,7 @@ async function fixProblem(
     await session.prompt(text, chip ? [chip] : []);
   } catch (err) {
     log('error', `hermes.fixProblem falhou: ${String(err)}`);
-    void vscode.window.showWarningMessage(`Não foi possível corrigir: ${String(err)}`);
+    void vscode.window.showWarningMessage(tr(`Não foi possível corrigir: ${String(err)}`));
   }
 }
 

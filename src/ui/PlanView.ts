@@ -7,6 +7,7 @@
  */
 import * as vscode from 'vscode';
 import type { PlanEntry } from '../core/types';
+import { tr } from '../l10n';
 
 const RANK: Record<PlanEntry['priority'], number> = { high: 0, medium: 1, low: 2 };
 
@@ -98,11 +99,11 @@ export class PlanView implements vscode.WebviewViewProvider, vscode.Disposable {
 <body>
   <div class="head">
     <span id="count" aria-live="polite">—</span>
-    <div class="bar" id="bar" role="progressbar" aria-label="Progresso do plano" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"><div id="fill"></div></div>
+    <div class="bar" id="bar" role="progressbar" aria-label="${tr('Progresso do plano')}" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"><div id="fill"></div></div>
   </div>
-  <ul id="list" role="list" aria-label="Tarefas do plano"></ul>
+  <ul id="list" role="list" aria-label="${tr('Tarefas do plano')}"></ul>
   <div class="foot">
-    <button id="impl" type="button" aria-label="Implementar plano">Implementar plano</button>
+    <button id="impl" type="button" aria-label="${tr('Implementar plano')}">${tr('Implementar plano')}</button>
   </div>
 <script nonce="${nonce}">
   const api = acquireVsCodeApi();
@@ -111,7 +112,7 @@ export class PlanView implements vscode.WebviewViewProvider, vscode.Disposable {
   const bar = document.getElementById('bar');
   const fill = document.getElementById('fill');
   const btn = document.getElementById('impl');
-  const LABEL = { pending: 'pendente', in_progress: 'em andamento', completed: 'concluído' };
+  const LABEL = { pending: '${tr('pendente')}', in_progress: '${tr('em andamento')}', completed: '${tr('concluído')}' };
   btn.addEventListener('click', () => api.postMessage({ type: 'implement' }));
   window.addEventListener('message', (e) => { if (e.data && e.data.type === 'plan') render(e.data); });
   function render(m) {
@@ -124,7 +125,7 @@ export class PlanView implements vscode.WebviewViewProvider, vscode.Disposable {
     if (!entries.length) {
       const li = document.createElement('li');
       li.className = 'empty';
-      li.textContent = 'Sem plano nesta sessão. O Hermes publica o plano quando o agente usa a ferramenta "todo".';
+      li.textContent = '${tr('Sem plano nesta sessão. O Hermes publica o plano quando o agente usa a ferramenta "todo".')}';
       list.appendChild(li);
     }
     for (const e of entries) {

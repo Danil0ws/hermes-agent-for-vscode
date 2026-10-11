@@ -7,6 +7,8 @@
  * O host monta os grupos (context.ts lê as fontes reais: AGENTS.md/.hermes.md/CLAUDE.md/SOUL.md,
  * ~/.hermes/skills, config.yaml) e esta view só apresenta — nunca inventa dado.
  */
+import { tr } from '../l10n';
+
 type VSCode = typeof import('vscode');
 
 export interface ContextGroupItem {
@@ -55,7 +57,7 @@ export class ContextView {
     }
     this.panel = vs.window.createWebviewPanel(
       'hermes.context',
-      'Contexto da sessão',
+      tr('Contexto da sessão'),
       vs.ViewColumn.Beside,
       { enableScripts: true, retainContextWhenHidden: true },
     );
@@ -117,11 +119,11 @@ export class ContextView {
   .actions button[disabled] { opacity: 0.5; cursor: not-allowed; }
   .pinned { color: var(--vscode-textLink-foreground); }
 </style>
-<title>Contexto</title>
+<title>${tr('Contexto')}</title>
 </head>
 <body>
-<h1>Contexto da sessão</h1>
-<div id="root" role="region" aria-label="Contexto da sessão" aria-live="polite">Carregando…</div>
+<h1>${tr('Contexto da sessão')}</h1>
+<div id="root" role="region" aria-label="${tr('Contexto da sessão')}" aria-live="polite">${tr('Carregando…')}</div>
 <script nonce="${nonce}">
   const vscode = acquireVsCodeApi();
   function esc(s) { const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
@@ -130,8 +132,8 @@ export class ContextView {
     const groups = state.groups || [];
     const usage = state.usage;
     const head = usage && usage.size > 0
-      ? usage.used.toLocaleString('pt-BR') + ' de ' + usage.size.toLocaleString('pt-BR') + ' tokens (do agente)'
-      : 'o agente ainda não reportou a janela';
+      ? usage.used.toLocaleString('pt-BR') + '${tr(' de ')}' + usage.size.toLocaleString('pt-BR') + '${tr(' tokens (do agente)')}'
+      : '${tr('o agente ainda não reportou a janela')}';
     let html = '<div class="usage">' + esc(head) + '</div>';
     for (const g of groups) {
       html += '<section class="group" aria-label="' + esc(g.title) + '">';
@@ -139,9 +141,9 @@ export class ContextView {
       if (g.items && g.items.length) {
         html += '<ul>';
         for (const it of g.items) {
-          const pin = it.removable ? '<button aria-label="Fixar ' + esc(it.label) + '" title="Fixar" data-pin="' + it.id + '" class="' + (it.pinned ? 'pinned' : '') + '">Fixar</button>' : '';
-          const rem = it.removable ? '<button aria-label="Remover ' + esc(it.label) + '" title="Remover" data-remove="' + it.id + '">Remover</button>' : '';
-          const est = it.measured ? 'medido' : 'estimado';
+          const pin = it.removable ? '<button aria-label="${tr('Fixar')} ' + esc(it.label) + '" title="${tr('Fixar')}" data-pin="' + it.id + '" class="' + (it.pinned ? 'pinned' : '') + '">${tr('Fixar')}</button>' : '';
+          const rem = it.removable ? '<button aria-label="${tr('Remover')} ' + esc(it.label) + '" title="${tr('Remover')}" data-remove="' + it.id + '">${tr('Remover')}</button>' : '';
+          const est = it.measured ? '${tr('medido')}' : '${tr('estimado')}';
           html += '<li><span class="label">' + esc(it.label) + '</span><span class="tokens">' + it.tokens.toLocaleString('pt-BR') + '</span><span class="est">' + est + '</span>' + pin + rem + '</li>';
         }
         html += '</ul>';
@@ -151,8 +153,8 @@ export class ContextView {
     }
     const compactDisabled = state.canCompact ? '' : ' disabled';
     html += '<div class="actions">'
-      + '<button data-compact' + compactDisabled + ' title="' + (state.canCompact ? 'Envia /compress' : 'aguarde o turno ou cancele') + '">Compactar contexto</button>'
-      + '<button data-newconv>Nova conversa com resumo</button>'
+      + '<button data-compact' + compactDisabled + ' title="' + (state.canCompact ? '${tr('Envia /compress')}' : '${tr('aguarde o turno ou cancele')}') + '">${tr('Compactar contexto')}</button>'
+      + '<button data-newconv>${tr('Nova conversa com resumo')}</button>'
       + '</div>';
     root.innerHTML = html;
   }

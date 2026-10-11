@@ -63,7 +63,7 @@ function cli(): { file: string; prefix: string[] } {
 
 async function checkEnvironment(deps: FeatureDeps, view: DiagnosticsView, collection: vscode.DiagnosticCollection): Promise<void> {
   if (!vscode.workspace.isTrusted) {
-    view.set('Workspace em modo restrito: a verificação de ambiente foi desativada.');
+    view.set(tr('Workspace em modo restrito: a verificação de ambiente foi desativada.'));
     return;
   }
   const cwd = workingDirectory(settings());
@@ -74,27 +74,27 @@ async function checkEnvironment(deps: FeatureDeps, view: DiagnosticsView, collec
   const version = await run(file, [...prefix, '--version'], cwd);
   const versionLine = version.out.split('\n')[0]?.trim() ?? '';
   if (version.ok && versionLine) {
-    lines.push(`Versão: ${versionLine}`);
+    lines.push(tr(`Versão: ${versionLine}`));
   } else {
-    lines.push(`Versão: indisponível (${version.out || 'sem saída'})`);
-    diags.push(diag(`Não foi possível obter a versão do Hermes: ${version.out || 'sem saída'}`));
+    lines.push(tr(`Versão: indisponível (${version.out || tr('sem saída')})`));
+    diags.push(diag(tr(`Não foi possível obter a versão do Hermes: ${version.out || tr('sem saída')}`)));
   }
 
   const acp = await run(file, [...prefix, 'acp', '--check'], cwd);
   const acpOk = acp.ok && /check ok/i.test(acp.out);
   if (acpOk) {
-    lines.push('ACP: ok (hermes acp --check)');
+    lines.push(tr('ACP: ok (hermes acp --check)'));
   } else {
-    lines.push(`ACP: falhou (${acp.out || 'sem saída'})`);
-    diags.push(diag(`hermes acp --check falhou: ${acp.out || 'sem saída'}`));
+    lines.push(tr(`ACP: falhou (${acp.out || tr('sem saída')})`));
+    diags.push(diag(tr(`hermes acp --check falhou: ${acp.out || tr('sem saída')}`)));
   }
 
   const cp = await checkpointsStatus(cwd);
   lines.push(cp.hasStore
-    ? `Checkpoints: store encontrado para ${cwd}. Restaurar é /rollback numa sessão CLI (\`hermes chat --checkpoints\`).`
-    : 'Checkpoints: a sessão ACP não tira checkpoints e não há store deste diretório. Restauração só na CLI (`hermes chat --checkpoints` + /rollback).');
+    ? tr(`Checkpoints: store encontrado para ${cwd}. Restaurar é /rollback numa sessão CLI (\`hermes chat --checkpoints\`).`)
+    : tr('Checkpoints: a sessão ACP não tira checkpoints e não há store deste diretório. Restauração só na CLI (`hermes chat --checkpoints` + /rollback).'));
 
-  lines.push('', `cwd: ${cwd}`, `comando: ${file} ${[...prefix].join(' ')}`.trim());
+  lines.push('', tr(`cwd: ${cwd}`), tr(`comando: ${file} ${[...prefix].join(' ')}`.trim()));
 
   view.set(lines.join('\n'));
   collection.set(vscode.Uri.parse(ENV_URI), diags);
@@ -123,10 +123,10 @@ export async function checkpointsStatus(cwd: string): Promise<CheckpointStatus> 
 export async function offerCheckpointRestore(deps: FeatureDeps, cwd?: string): Promise<void> {
   const dir = cwd ?? workingDirectory(settings());
   const { hasStore } = await checkpointsStatus(dir);
-  const restore = 'Abrir CLI com --checkpoints para restaurar';
+  const restore = tr('Abrir CLI com --checkpoints para restaurar');
   if (hasStore) {
     const pick = await vscode.window.showInformationMessage(
-      `Existe checkpoint do Hermes para ${dir}. Restaurar é /rollback, dentro de uma sessão CLI (a sessão ACP não tira checkpoints).`,
+      tr(`Existe checkpoint do Hermes para ${dir}. Restaurar é /rollback, dentro de uma sessão CLI (a sessão ACP não tira checkpoints).`),
       restore,
     );
     if (pick === restore) await deps.openCli({ args: ['chat', '--checkpoints'] });
@@ -151,7 +151,7 @@ async function exportConversation(deps: FeatureDeps): Promise<void> {
 
   const target = await vscode.window.showSaveDialog({
     title: tr('Exportar conversa do Hermes'),
-    saveLabel: 'Exportar',
+    saveLabel: tr('Exportar'),
     filters: { Markdown: ['md'], JSON: ['json'] },
   });
   if (!target) return;
@@ -165,7 +165,7 @@ async function exportConversation(deps: FeatureDeps): Promise<void> {
   const isJson = target.fsPath.toLowerCase().endsWith('.json');
   const content = isJson ? transcriptToJson(msgs, meta) : transcriptToMarkdown(msgs, meta);
   await vscode.workspace.fs.writeFile(target, new TextEncoder().encode(content));
-  void vscode.window.showInformationMessage(`Conversa exportada em ${basename(target.fsPath)}.`);
+  void vscode.window.showInformationMessage(tr(`Conversa exportada em ${basename(target.fsPath)}.`));
 }
 
 export function transcriptToJson(msgs: HostToWebview[], meta: ExportMeta): string {
@@ -174,21 +174,21 @@ export function transcriptToJson(msgs: HostToWebview[], meta: ExportMeta): strin
 
 export function transcriptToMarkdown(msgs: HostToWebview[], meta: ExportMeta): string {
   const out: string[] = [
-    '# Conversa do Hermes', '',
-    `- Exportado em: ${meta.exportedAt}`,
-    `- Agente: ${meta.agent}`,
-    `- Sessão: ${meta.sessionId ?? '—'}`, '',
+    tr('# Conversa do Hermes'), '',
+    tr(`- Exportado em: ${meta.exportedAt}`),
+    tr(`- Agente: ${meta.agent}`),
+    tr(`- Sessão: ${meta.sessionId ?? '—'}`), '',
   ];
   let buf = '';
   const flush = () => { if (buf.trim()) { out.push(buf.trim(), ''); buf = ''; } };
   for (const m of msgs) {
     switch (m.type) {
-      case 'user/message': flush(); out.push('## Você', '', m.text, ''); break;
+      case 'user/message': flush(); out.push(tr('## Você'), '', m.text, ''); break;
       case 'agent/chunk': buf += m.text; break;
-      case 'agent/message': flush(); out.push('## Hermes', '', m.text, ''); break;
-      case 'tool/start': flush(); out.push(`### Ferramenta: ${m.tool.title} (${m.tool.kind})`, ''); break;
-      case 'plan': flush(); out.push('### Plano', '', ...m.entries.map((e) => `- [${e.status === 'completed' ? 'x' : ' '}] ${e.content} (${e.priority})`), ''); break;
-      case 'error': flush(); out.push(`> Erro: ${m.text}`, ''); break;
+      case 'agent/message': flush(); out.push(tr('## Hermes'), '', m.text, ''); break;
+      case 'tool/start': flush(); out.push(tr(`### Ferramenta: ${m.tool.title} (${m.tool.kind})`), ''); break;
+      case 'plan': flush(); out.push(tr('### Plano'), '', ...m.entries.map((e) => `- [${e.status === 'completed' ? 'x' : ' '}] ${e.content} (${e.priority})`), ''); break;
+      case 'error': flush(); out.push(tr(`> Erro: ${m.text}`), ''); break;
       default: break; // thought/chunk, tool/update, usage, init, etc.: não entram no resumo
     }
   }

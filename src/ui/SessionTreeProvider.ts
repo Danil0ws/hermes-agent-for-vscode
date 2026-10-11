@@ -39,11 +39,11 @@ export type SessionNode =
 /* ─────────── rótulos / ícones (Codicon) / cor (token de tema) por estado ─────────── */
 
 export const STATE_LABEL: Record<SessionState, string> = {
-  running: 'rodando',
-  waiting: 'aguardando aprovação',
-  idle: 'ocioso',
-  done: 'concluído',
-  error: 'erro',
+  running: tr('rodando'),
+  waiting: tr('aguardando aprovação'),
+  idle: tr('ocioso'),
+  done: tr('concluído'),
+  error: tr('erro'),
 };
 
 /** ids de Codicon para `ThemeIcon` — sem emoji. */
@@ -93,26 +93,26 @@ export function relativeTime(updatedAt: string | undefined, now: Date): string {
   const d = parseDate(updatedAt);
   if (!d) return '—';
   const ms = now.getTime() - d.getTime();
-  if (ms < 60_000) return 'agora';
+  if (ms < 60_000) return tr('agora');
   const min = Math.floor(ms / 60_000);
-  if (min < 60) return `há ${min} min`;
+  if (min < 60) return tr(`há ${min} min`);
   const h = Math.floor(min / 60);
-  if (h < 24) return `há ${h} h`;
+  if (h < 24) return tr(`há ${h} h`);
   const days = Math.floor(h / 24);
-  if (days < 7) return `há ${days} d`;
+  if (days < 7) return tr(`há ${days} d`);
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
 }
 
 /** Contador de pendências: vazio em zero, singular/plural depois. */
 export function formatPending(n: number): string {
   if (!n || n <= 0) return '';
-  return n === 1 ? '1 pendência' : `${n} pendências`;
+  return n === 1 ? tr('1 pendência') : tr(`${n} pendências`);
 }
 
 /** Título exibido: o do agente, ou um rótulo derivado do ID (nunca uma string vazia). */
 export function rowLabel(row: SessionRow): string {
   const t = row.title?.trim();
-  return t && t.length ? t : `Sessão ${row.sessionId.slice(0, 8)}`;
+  return t && t.length ? t : tr(`Sessão ${row.sessionId.slice(0, 8)}`);
 }
 
 /** Descrição do item: modelo · tempo relativo · pendências — o que não se sabe, some. */
@@ -131,7 +131,7 @@ export function groupSessions(rows: SessionRow[], now: Date): SessionGroup[] {
     if (list) list.push(r); else buckets.set(p, [r]);
   }
   const order: Period[] = ['today', 'yesterday', 'earlier'];
-  const labels: Record<Period, string> = { today: 'Hoje', yesterday: 'Ontem', earlier: 'Anteriores' };
+  const labels: Record<Period, string> = { today: tr('Hoje'), yesterday: tr('Ontem'), earlier: tr('Anteriores') };
   const out: SessionGroup[] = [];
   for (const p of order) {
     const list = buckets.get(p);
@@ -168,10 +168,10 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionNode>
       return item;
     }
     if (node.kind === 'empty') {
-      const item = new vs.TreeItem('Nenhuma sessão', vs.TreeItemCollapsibleState.None);
+      const item = new vs.TreeItem(tr('Nenhuma sessão'), vs.TreeItemCollapsibleState.None);
       item.contextValue = 'hermes.sessionEmpty';
       // Honestidade: sem conexão/sem sessão o `session/list` não devolve nada; não fingimos dados.
-      item.tooltip = 'Inicie uma conversa. A lista depende de o Hermes estar conectado (session/list).';
+      item.tooltip = tr('Inicie uma conversa. A lista depende de o Hermes estar conectado (session/list).');
       return item;
     }
     const row = node.row;
@@ -202,10 +202,10 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionNode>
   private tooltip(row: SessionRow): vscode.MarkdownString {
     const md = new this.vs.MarkdownString();
     md.appendMarkdown(`**${rowLabel(row)}**\n\n`);
-    md.appendMarkdown(`- Estado: ${STATE_LABEL[row.state]}\n`);
-    if (row.model) md.appendMarkdown(`- Modelo: ${row.model}\n`);
-    md.appendMarkdown(`- Atualizada: ${relativeTime(row.updatedAt, new Date())}\n`);
-    if (row.cwd) md.appendMarkdown(`- Pasta: \`${row.cwd}\`\n`);
+    md.appendMarkdown(`- ${tr('Estado')}: ${STATE_LABEL[row.state]}\n`);
+    if (row.model) md.appendMarkdown(`- ${tr('Modelo')}: ${row.model}\n`);
+    md.appendMarkdown(`- ${tr('Atualizada')}: ${relativeTime(row.updatedAt, new Date())}\n`);
+    if (row.cwd) md.appendMarkdown(`- ${tr('Pasta')}: \`${row.cwd}\`\n`);
     md.appendMarkdown(`- ID: \`${row.sessionId}\`\n\n`);
     md.appendMarkdown(this.cliNote);
     md.isTrusted = false;

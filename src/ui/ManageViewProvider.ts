@@ -96,7 +96,7 @@ export class ManageViewProvider implements vscode.Disposable {
         case 'manage/skill/open':
           await this.openPath(m.path); return;
         case 'manage/skill/create': {
-          const name = await vscode.window.showInputBox({ title: t.skills.create, prompt: 'nome-da-skill', placeHolder: 'minha-skill' });
+          const name = await vscode.window.showInputBox({ title: t.skills.create, prompt: tr('nome-da-skill'), placeHolder: tr('minha-skill') });
           if (!name) return;
           const file = this.catalogs.skills.createSkeleton(m.scope, name);
           this.skills = undefined;
@@ -210,7 +210,7 @@ export class ManageViewProvider implements vscode.Disposable {
       size: sess?.snapshot.usage?.size,
       used: sess?.snapshot.usage?.used,
       estimates: [
-        { label: 'Instruções', tokens: instructions.filter((f) => f.found).reduce((a, f) => a + f.tokens, 0) },
+        { label: tr('Instruções'), tokens: instructions.filter((f) => f.found).reduce((a, f) => a + f.tokens, 0) },
         { label: tr('Skills (nome + descrição)'), tokens: skillList.reduce((a, k) => a + estimateTokens(k.name + k.description), 0) },
       ],
     };

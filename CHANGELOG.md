@@ -52,6 +52,16 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Corrigido
 
+- **Texto de item não seguia o idioma do VS Code**: o host tinha **63 literais pt-BR fora de `tr()`**
+  (itens da árvore de Sessões, títulos de view, QuickPick/InputBox, notificações, nome do terminal,
+  cabeçalhos do export, rótulos de severidade) — apareciam em português mesmo com o editor em
+  inglês/russo/chinês. Todos passaram por `tr()` e os três dicionários foram preenchidos (111 → 205
+  chaves cada, paridade conferida por script). Guarda nova em `src/test/l10n.test.ts`: qualquer literal
+  pt-BR visível fora de `tr()` quebra a suíte (verificada falhando no código antigo, acusando 63
+  ocorrências). Ficaram de fora, por decisão: logs, prompts enviados ao modelo e strings com `${…}`
+  (chave dinâmica não casa com o dicionário — ver `docs/ARCHITECTURE.md` §13.1).
+- **O `+` do título da view abre uma ABA nova** (`hermes.newConversation` → `provider.newTab()`), já que
+  a barra de abas deixou de ter `+` próprio; `⟲` continua reiniciando a sessão na mesma aba.
 - **Renomear aba disparava o comando duas vezes**: `Enter` commitava e o input saía da árvore, então o
   browser disparava `blur` — que commitava DE NOVO (medido no harness: dois `renameTab` por renomeação).
   Agora só o primeiro commit da edição vale (`once` no `RenameInput`). Medido depois: `Enter` = 1 post,

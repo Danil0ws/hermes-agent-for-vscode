@@ -3,9 +3,10 @@
  * em vez de recriar um painel na webview.
  */
 import * as vscode from 'vscode';
+import { tr } from '../l10n';
 
 export class DiagnosticsView implements vscode.Disposable {
-  private readonly out = vscode.window.createOutputChannel('Hermes Diagnóstico');
+  private readonly out = vscode.window.createOutputChannel(tr('Hermes Diagnóstico'));
 
   set(report: string): void {
     this.out.clear();

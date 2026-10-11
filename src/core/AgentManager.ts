@@ -10,6 +10,7 @@ import * as acp from '@agentclientprotocol/sdk';
 import { Connection, type AgentConfig } from './Connection';
 import { HermesSession, type SessionDeps } from './HermesSession';
 import { settings } from '../config/Settings';
+import { tr } from '../l10n';
 import type { HostToWebview, PermissionRequest, SessionSummary } from './types';
 
 export class AgentManager implements acp.Client {
@@ -49,7 +50,7 @@ export class AgentManager implements acp.Client {
       onStderr: (l) => this.log('info', l),
       onExit: (code, signal) => {
         this.log('error', `hermes acp saiu (code=${code} signal=${signal})`);
-        this.notify({ type: 'error', text: 'A conexão com o Hermes caiu. Reinicie a sessão.' });
+        this.notify({ type: 'error', text: tr('A conexão com o Hermes caiu. Reinicie a sessão.') });
       },
     });
     const init = await this.conn.start(cwd, this);
@@ -75,7 +76,7 @@ export class AgentManager implements acp.Client {
   }
 
   async loadSession(cwd: string, sessionId: string, agentName: string): Promise<HermesSession | undefined> {
-    if (!this.conn) throw new Error('sem conexão');
+    if (!this.conn) throw new Error(tr('sem conexão'));
     const existing = this.sessions.get(sessionId);
     if (existing) return existing;
     const session = await HermesSession.load(this.conn.connection, cwd, sessionId, this.deps(), (m) => this.notify(m), agentName);
