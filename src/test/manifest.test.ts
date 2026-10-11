@@ -57,7 +57,10 @@ function registrations(): Map<string, string[]> {
 }
 
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
-  contributes: { commands: { command: string; title: string }[] };
+  contributes: {
+    commands: { command: string; title: string }[];
+    configuration: { properties: Record<string, unknown> };
+  };
 };
 const declared = pkg.contributes.commands.map((c) => c.command);
 
@@ -126,6 +129,32 @@ test('manifesto: toda chave de contributes.views aponta para um container declar
   const ids = new Set(Object.values(containers).flat().map((c) => c.id));
   const orfas = Object.keys((pkg.contributes as { views?: Record<string, unknown> }).views ?? {}).filter((k) => !ids.has(k));
   assert.deepEqual(orfas, [], `views num container inexistente (vão para o Explorer): ${orfas.join(', ')}`);
+});
+
+test('manifesto: README cita só comando e configuração que existem', () => {
+  // O README já derivou duas vezes (45→56 testes, 58→60 chaves): ele é a porta de entrada do repo e
+  // da loja, então o que ele cita tem de existir no manifesto. Sem isso, o erro só aparece quando
+  // alguém cola um comando da tabela na palette e não acontece nada.
+  const readme = readFileSync(join(root, 'README.md'), 'utf8');
+  const en = JSON.parse(readFileSync(join(root, 'package.nls.json'), 'utf8')) as Record<string, string>;
+  const titulos = new Set(pkg.contributes.commands.map((c) => en[c.title.slice(1, -1)] ?? c.title));
+  const citados = [...readme.matchAll(/^\|\s*`Hermes: ([^`]+)`/gm)].map((m) => m[1]);
+  assert.ok(citados.length >= 10, `tabela de comandos encolheu demais (${citados.length} linhas)?`);
+  assert.deepEqual(citados.filter((t) => !titulos.has(t)), [], 'README cita comando que não existe');
+
+  const cfg = new Set(Object.keys(pkg.contributes.configuration.properties));
+  const chaves = [...new Set([...readme.matchAll(/`(hermes\.[\w.]+)`/g)].map((m) => m[1]))];
+  assert.ok(chaves.length >= 8, `poucas chaves citadas (${chaves.length})?`);
+  assert.deepEqual(chaves.filter((k) => !cfg.has(k)), [], 'README cita configuração que não existe');
+});
+
+test('manifesto: arquivos citados no README existem (doc apontando para o vazio)', () => {
+  const readme = readFileSync(join(root, 'README.md'), 'utf8');
+  const alvos = new Set(
+    [...readme.matchAll(/`((?:docs|media|scripts)\/[\w./-]+|CONTRIBUTING\.md|LICENSE|CHANGELOG\.md|package\.json)`/g)].map((m) => m[1]),
+  );
+  assert.ok(alvos.size >= 4, `poucos caminhos citados no README (${alvos.size})?`);
+  assert.deepEqual([...alvos].filter((p) => !existsSync(join(root, p))), [], 'README aponta para arquivo inexistente');
 });
 
 test('manifesto: as 4 localidades cobrem as mesmas chaves do nls padrão', () => {

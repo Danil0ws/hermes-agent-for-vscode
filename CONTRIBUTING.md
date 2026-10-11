@@ -88,6 +88,13 @@ Toda entrega atualiza, na mesma mudança: `README.md` (instalação/configuraç�
 `docs/` (`ARCHITECTURE.md` com o mapa capability→UI e a seção de **lacunas verificadas**;
 `UX.md` com os wireframes) e `CHANGELOG.md`. Lacuna conhecida se documenta, não se esconde.
 
+Idioma dos documentos: **`README.md` em inglês** (é a porta de entrada do repo e a página da loja) e
+o resto em pt-BR (`docs/`, `CONTRIBUTING.md`, `CHANGELOG.md`). O README cita comandos, chaves de
+configuração e caminhos de arquivo — os três são cobrados por teste contra o manifesto e o disco
+(`src/test/manifest.test.ts`), então renomear um comando quebra o teste antes de quebrar a página.
+Números que derivam (total de testes, contagem de chaves de i18n) ficam **fora** do README de
+propósito: quem conta é o `npm test`.
+
 ## Ordem do build (invariante)
 
 ```

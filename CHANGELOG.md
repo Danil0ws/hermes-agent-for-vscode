@@ -32,6 +32,17 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Alterado
 
+- **`README.md` em inglês.** É a porta de entrada do repo e a página do Marketplace, então passou a
+  ser o único documento em inglês (`docs/`, `CONTRIBUTING.md` e este CHANGELOG seguem em pt-BR, e o
+  README diz isso em uma linha honesta). Os títulos de comando da tabela agora são os **reais** do
+  `package.nls.json` (antes eram traduções livres do pt-BR) e as descrições de configuração/conexão
+  foram conferidas contra o manifesto.
+- Números que derivam saíram do README (total de testes, total de comandos, contagem de chaves de
+  i18n): ele já tinha derivado duas vezes (45→56 testes, 58→60 chaves). Quem conta é o `npm test`.
+- Guardas novas em `src/test/manifest.test.ts`: o README só pode citar comando e chave `hermes.*` que
+  existem no manifesto, e todo caminho (`docs/`, `media/`, `CONTRIBUTING.md`, `LICENSE`, …) que ele
+  cita tem de existir em disco. Verificado que as duas falham com o README quebrado (comando, chave e
+  arquivo inexistentes) e passam com ele correto.
 - **Entrada e saída do chat: escala e posições.** A barra inferior do composer não quebra mais linha
   (`flex-wrap: nowrap`): os dois selects dividem a sobra — o de modelo com o dobro do espaço, porque
   ids como `OpenCode Go · deepseek-v4.1-flash` são longos — e o primário fica colado à direita em

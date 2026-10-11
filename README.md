@@ -1,224 +1,228 @@
-<img src="media/icon.png" width="110" align="right" alt="Ícone do Hermes Agent">
+<img src="media/icon.png" width="110" align="right" alt="Hermes Agent icon">
 
 # Hermes Agent for VS Code
 
-Interface nativa do [Hermes Agent](https://hermes-agent.nousresearch.com/docs) (Nous Research) no
-VS Code. Não reimplementa o agente: fala **ACP (JSON-RPC sobre stdio)** com `hermes acp`, então usa
-a mesma config (`~/.hermes`), os mesmos providers, modelos, skills, MCP, memória e toolsets da CLI.
-Nada que a CLI faz fica inacessível — o que o ACP não expõe vira terminal integrado.
+A native VS Code interface for the [Hermes Agent](https://hermes-agent.nousresearch.com/docs) CLI
+(Nous Research). It does not reimplement the agent: it speaks **ACP (JSON-RPC over stdio)** to
+`hermes acp`, so it uses the same config (`~/.hermes`), providers, models, skills, MCP servers,
+memory and toolsets as the CLI. Nothing the CLI can do becomes unreachable — whatever ACP does not
+expose falls back to the integrated terminal.
 
-Estado: **M1–M8 implementados** (conexão ACP, chat com streaming, raciocínio, tool calls, diff
-nativo, aprovações, pickers, medidor de contexto, chips, sessões em paralelo, fila, painel
-Gerenciar, plano, working set e escape hatches da CLI). M9 (passada visual nos 4 temas, teclado/
-leitor de tela e Remote) está **parcial** — ver `docs/ARCHITECTURE.md` §10.
-Ver `docs/ARCHITECTURE.md` (marcos e lacunas reais) e `docs/UX.md` (wireframes).
+Status: **milestones M1–M8 done** (ACP connection, streaming chat, reasoning, tool calls, native
+diff, approvals, pickers, context meter, chips, parallel sessions, prompt queue, Manage panel, plan,
+working set and the CLI escape hatches). M9 (visual pass across the 4 themes, keyboard/screen reader
+and Remote) is **partial** — see `docs/ARCHITECTURE.md` §10.
+See `docs/ARCHITECTURE.md` (milestones and verified gaps) and `docs/UX.md` (wireframes).
 
-Licença MIT · 4 idiomas (en, pt-BR, ru, zh-CN) · sem nenhuma cor hardcoded.
+MIT licensed · 4 languages (en, pt-BR, ru, zh-CN) · no hardcoded colors.
 
-## Requisitos
+> The in-repo docs (`docs/`, `CHANGELOG.md`, `CONTRIBUTING.md`) are written in Portuguese for now;
+> this README is the English entry point.
 
-- Hermes Agent instalado e com provider configurado (`hermes model`). Windows só via WSL2.
-- O extra ACP ativo: `hermes acp --check` deve responder `Hermes ACP check OK`.
-- Node 18+ e VS Code 1.100+ (desenvolvido e testado em 1.141.0).
+## Requirements
 
-## Instalação
+- Hermes Agent installed with a provider configured (`hermes model`). Windows only through WSL2.
+- The ACP extra enabled: `hermes acp --check` must answer `Hermes ACP check OK`.
+- Node 18+ and VS Code 1.100+ (developed and tested on 1.141.0).
+
+## Installation
 
 ```bash
-git clone <este-repo> ~/Dev/hermes-for-vs-code
+git clone https://github.com/Danil0ws/hermes-agent-vscode.git ~/Dev/hermes-for-vs-code
 cd ~/Dev/hermes-for-vs-code
-export NODE_ENV=development   # devDeps são obrigatórias para buildar
+export NODE_ENV=development   # devDependencies are required to build
 npm install
 npm run build                 # tsc --noEmit + esbuild (extension host) + vite (webviews)
 ```
 
-Depois abra no VS Code e use **F5** (Extension Development Host), ou empacote:
+Then open the folder in VS Code and press **F5** (Extension Development Host), or package it:
 
 ```bash
-npm run package               # gera hermes-agent-vscode-<versão>.vsix
+npm run package               # produces hermes-agent-vscode-<version>.vsix
 code --install-extension hermes-agent-vscode-0.1.0.vsix
 ```
 
-## Uso
+## Usage
 
-1. Clique no ícone do Hermes na Activity Bar → view **Chat**.
-2. **Iniciar** cria a sessão e carrega modos, modelos e comandos — enquanto não há sessão ele é o
-   botão primário (com spinner); depois volta a ser **Enviar**.
-3. Digite e envie (`Enter`; `Shift+Enter` quebra linha; `Esc` cancela o turno).
-4. Menus nativos na barra de título da view: nova conversa, histórico, reiniciar sessão, abrir em
-   editor, Gerenciar e o menu "…" com **Abrir CLI completa**, **Executar comando da CLI…**,
-   diagnóstico, log e tráfego.
+1. Click the Hermes icon in the Activity Bar → the **Chat** view.
+2. **Start** creates the session and loads modes, models and commands — until a session exists it is
+   the primary button (with a spinner); afterwards it goes back to **Send**.
+3. Type and send (`Enter`; `Shift+Enter` for a newline; `Esc` cancels the turn).
+4. Native menus in the view title bar: new conversation, history, restart session, open in editor,
+   Manage, and a "…" menu with **Open Full CLI**, **Run CLI Command…**, diagnostics, log and traffic.
 
-## Comandos
+## Commands
 
-| Comando | O que faz |
+| Command | What it does |
 |---|---|
-| `Hermes: Nova conversa` | `session/new` no agente ativo |
-| `Hermes: Histórico de sessões` | quick pick nativo (Hoje/Ontem/Anteriores), retoma com `session/load` |
-| `Hermes: Ver plano` / `Implementar plano` | view do plano; implementar envia o plano como prompt |
-| `Hermes: Gerenciar` | painel com 8 abas (Modelos, Skills, Ferramentas/MCP, Instruções, Contexto, Agentes, Aprovações, Avançado) |
-| `Hermes: Gerenciar contexto` | o que vai ao modelo, por grupo, com tokens |
-| `Hermes: Adicionar contexto` / `Remover contexto` | chips de contexto do composer |
-| `Hermes: Manter arquivo` / `Desfazer alterações do arquivo` | working set por arquivo (desfazer = diff inverso) |
-| `Hermes: Abrir em editor` | a mesma view como aba |
-| `Hermes: Abrir CLI completa` | `hermes` (TUI) no terminal integrado, na pasta do workspace |
-| `Hermes: Executar comando da CLI…` | quick pick: `model`, `setup`, `doctor`, `update`, `sessions browse`, `skills`, `mcp`, `tools`, `approvals`, `checkpoints`, `profile`, `config`, `insights` |
-| `Hermes: Verificar / instalar o Hermes` | detecta o CLI (`--version` + `acp --check`) e oferece instalar, informar o caminho ou rodar o `doctor` |
-| `Hermes: Alternar aprovação automática (YOLO)` | liga/desliga `hermes.permissions = allowAll` (confirmação modal; indicador na barra de status enquanto ligado) |
-| `Hermes: Diagnóstico` | `hermes doctor` + `hermes acp --check` no terminal |
-| `Hermes: Mostrar log` / `Mostrar tráfego` | canais de saída `Hermes` e `Hermes Traffic` |
-| `Hermes: Perguntar/Explicar sobre a seleção` | anexa a seleção como chip e foca o composer |
-| `Hermes: Enviar arquivo atual` | anexa o arquivo ativo como chip |
+| `Hermes: New Conversation` | `session/new` on the active agent |
+| `Hermes: Session History` | native quick pick (Today/Yesterday/Earlier), resumes with `session/load` |
+| `Hermes: View Plan` / `Implement Plan` | plan view; implement sends the plan as a prompt |
+| `Hermes: Manage` | panel with 8 tabs (Models, Skills, Tools and MCP, Instructions, Context and usage, Agents/Profiles, Approvals, Advanced) |
+| `Hermes: Manage Context` | what goes to the model, grouped, with token counts |
+| `Hermes: Add Context` / `Remove Context` | composer context chips |
+| `Hermes: Keep File Changes` / `Undo File Changes` | per-file working set (undo = reverse diff) |
+| `Hermes: Open in Editor` | the same view as an editor tab |
+| `Hermes: Open Full CLI` | `hermes` (TUI) in the integrated terminal, at the workspace folder |
+| `Hermes: Run CLI Command…` | quick pick: `model`, `setup`, `doctor`, `update`, `sessions browse`, `skills`, `mcp`, `tools`, `approvals`, `checkpoints`, `profile`, `config`, `insights` |
+| `Hermes: Check / install Hermes` | detects the CLI (`--version` + `acp --check`) and offers to install, set the path or run `doctor` |
+| `Hermes: Toggle auto-approve (YOLO)` | turns `hermes.permissions = allowAll` on/off (modal confirmation; status bar indicator while on) |
+| `Hermes: Export Conversation` | writes the transcript to a file |
+| `Hermes: Diagnostics` | `hermes doctor` + `hermes acp --check` in the terminal |
+| `Hermes: Show Log` / `Show Protocol Traffic` | `Hermes` and `Hermes Traffic` output channels |
+| `Hermes: Ask Hermes About Selection` / `Explain with Hermes` | attaches the selection as a chip and focuses the composer |
+| `Hermes: Send Current File to Hermes` | attaches the active file as a chip |
 
-## Configuração (`hermes.*`)
+The Command Palette holds the full list — the table above is the day-to-day subset.
 
-| Chave | Padrão | Para que serve |
+## Settings (`hermes.*`)
+
+| Key | Default | What it is for |
 |---|---|---|
-| `hermes.cliPath` | `hermes` | executável; aceita prefixo de ambiente (`wsl hermes`) |
-| `hermes.agents` | `{"Hermes": {"command":"hermes","args":["acp"]}}` | agentes: comando, args, `profile`, `cwd`, `env`, `model` |
-| `hermes.defaultAgent` | `Hermes` | agente ativo |
-| `hermes.defaultWorkingDirectory` | vazio | cwd das sessões; vazio = pasta do workspace |
-| `hermes.skipConfiguredMcp` | `true` | exporta `HERMES_ACP_SKIP_CONFIGURED_MCP=1` (evita os MCP globais atrasarem o `initialize`) |
-| `hermes.permissions` | `ask` | política padrão das respostas de aprovação |
+| `hermes.cliPath` | `hermes` | executable; accepts an environment prefix (`wsl hermes`) |
+| `hermes.agents` | `{"Hermes": {"command":"hermes","args":["acp"]}}` | agents: command, args, `profile`, `cwd`, `env`, `model` |
+| `hermes.defaultAgent` | `Hermes` | agent selected when the view opens |
+| `hermes.defaultWorkingDirectory` | empty | session cwd; empty = workspace folder |
+| `hermes.skipConfiguredMcp` | `true` | exports `HERMES_ACP_SKIP_CONFIGURED_MCP=1` (keeps global MCP servers from slowing `initialize` down) |
+| `hermes.permissions` | `ask` | default policy for approval responses |
 | `hermes.showReasoning` | `collapsed` | `always` \| `collapsed` \| `hidden` |
-| `hermes.queue.enabled` | `true` | fila de prompts no composer |
-| `hermes.queue.defaultAction` | `queue` | ação do envio durante um turno: `queue` \| `steer` |
-| `hermes.context.warnAt` | `80` | aviso de contexto |
-| `hermes.notifications` | `windowNotFocused` | notificações de sessões em background |
-| `hermes.logTraffic` | `false` | JSON-RPC bruto no canal `Hermes Traffic` (com redação de segredos) |
+| `hermes.queue.enabled` | `true` | composer prompt queue |
+| `hermes.queue.defaultAction` | `queue` | send action during an active turn: `queue` \| `steer` |
+| `hermes.context.warnAt` | `80` | warn when context usage passes this percentage |
+| `hermes.notifications` | `windowNotFocused` | when to notify about background session events |
+| `hermes.logTraffic` | `false` | raw JSON-RPC in the `Hermes Traffic` channel (secrets redacted) |
 
-## Ícone
+## Icon
 
-A arte do Hermes é **um** arquivo, `media/hermes-agent-vscode.svg`, usado nos dois temas:
+The Hermes art is **one** file, `media/hermes-agent-vscode.svg`, used on both themes:
 
-- **Activity Bar**: o manifesto aponta para ele em
-  `contributes.viewsContainers.activitybar[0].icon`. O schema do VS Code exige `icon` do tipo
-  **string** (o par `{light, dark}` **não** é aceito: o container é descartado inteiro e as views
-  caem em `Explorer`). O VS Code também não recolore o ícone de view container — a cor vem do
-  arquivo, então uma cor só precisa servir aos dois fundos.
-- **Loja**: `media/icon.png`, 128×128 RGBA com fundo transparente, gerado a partir de
-  `media/icon-source.svg`.
-  O `vsce` **recusa publicar com `icon` em SVG** ("the icon provided in `package.json` may not be an
-  SVG"), por isso o PNG — o SVG continua valendo para a Activity Bar, que é manifesto.
+- **Activity Bar**: the manifest points at it in
+  `contributes.viewsContainers.activitybar[0].icon`. The VS Code schema requires `icon` to be a
+  **string** (the `{light, dark}` pair is **not** accepted: the whole container is dropped and its
+  views fall back to `Explorer`). VS Code also does not recolor view container icons — the color
+  comes from the file, so a single color has to work on both backgrounds.
+- **Marketplace**: `media/icon.png`, 128×128 RGBA with a transparent background, exported from
+  `media/icon-source.svg`. `vsce` **refuses to publish an SVG `icon`** ("the icon provided in
+  `package.json` may not be an SVG"), hence the PNG — the SVG is still valid for the Activity Bar,
+  which is manifest-driven.
 
-Contraste medido (WCAG para elemento não-textual, mínimo 3:1):
+Measured contrast (WCAG for non-text elements, 3:1 minimum):
 
-| Arquivo | Cor | Onde | Contraste |
+| File | Color | Where | Contrast |
 |---|---|---|---|
-| `hermes-agent-vscode.svg` | `#2B8AD9` | Activity Bar, tema claro e escuro | 3,66:1 sobre branco · 3,45:1 sobre `#333` · 4,51:1 sobre `#1F1F1F` |
-| `icon.png` (`icon-source.svg`) | `#1E88E5` | card da loja, nos dois temas | 3,68:1 claro · 3,43:1 escuro |
+| `hermes-agent-vscode.svg` | `#2B8AD9` | Activity Bar, light and dark themes | 3.66:1 on white · 3.45:1 on `#333` · 4.51:1 on `#1F1F1F` |
+| `icon.png` (`icon-source.svg`) | `#1E88E5` | marketplace card, both themes | 3.68:1 light · 3.43:1 dark |
 
-O azul original do par (`#007ACC` no claro, `#3B9EFF` no escuro) não sobrevive ao schema: uma cor só
-tem de servir aos dois fundos, e o `#007ACC` dava **2,80:1** sobre a Activity Bar `#333`. Daí o
-`#2B8AD9`, mesma família, acima de 3:1 nos dois — e 4,5:1 no fundo mais escuro, já que a barra reduz
-a opacidade do item inativo.
+The original pair of blues (`#007ACC` for light, `#3B9EFF` for dark) does not survive the schema: one
+color has to serve both backgrounds, and `#007ACC` measured **2.80:1** on the `#333` Activity Bar.
+Hence `#2B8AD9`, same family, above 3:1 on both — and 4.5:1 on the darkest background, since the bar
+draws the inactive item at reduced opacity.
 
-Nota honesta sobre tamanho: a arte tem detalhe fino e, no tamanho real da Activity Bar (16–24px),
-os traços internos ficam em ~0,2px e ela lê como silhueta. É uma escolha de marca legítima; se
-preferir mais nitidez ali, o glifo `agent` do `@vscode/codicons` é a alternativa imediata.
+Honest note on size: the art carries fine detail, and at the Activity Bar's real size (16–24px) the
+inner strokes land around 0.2px and it reads as a silhouette. That is a legitimate brand choice; if
+you want more definition there, the `agent` glyph from `@vscode/codicons` is the immediate
+alternative.
 
-Para regerar o PNG: exporte `media/icon-source.svg` em **128×128, RGBA, fundo transparente**. O
-`vsce` recusa SVG e exige PNG no `icon`.
+To regenerate the PNG: export `media/icon-source.svg` at **128×128, RGBA, transparent background**.
+`vsce` refuses SVG and requires a PNG in `icon`.
 
-## Publicar na loja
+## Publishing to the Marketplace
 
 ```bash
-npx vsce package                  # gera o .vsix (sem avisos)
-npx vsce publish                  # exige publisher + PAT (ou Entra ID)
+npx vsce package                  # produces the .vsix (no warnings)
+npx vsce publish                  # needs a publisher + PAT (or Entra ID)
 ```
 
-O que ainda depende de você:
+What still depends on you:
 
-1. **`publisher`** — hoje é `hermes-agent`; tem de ser exatamente o id do seu publisher no
-   Marketplace.
-2. **Token** — PAT do Azure DevOps com escopo *Marketplace → Manage*, ou autenticação por Entra ID
-   (`vsce publish --azure-credential`). Os PATs globais do Azure DevOps são aposentados em
-   01/12/2026, então o caminho por Entra ID é o recomendado pela própria Microsoft.
+1. **`publisher`** — currently `hermes-agent`; it must match your Marketplace publisher id exactly.
+2. **Token** — an Azure DevOps PAT with the *Marketplace → Manage* scope, or Entra ID authentication
+   (`vsce publish --azure-credential`). Global Azure DevOps PATs are retired on 2026-12-01, so Entra
+   ID is Microsoft's own recommendation.
 
-O `repository` já está no manifesto (`github.com/Danil0ws/hermes-agent-vscode`), e é ele que faz o
-`vsce` resolver a arte local do README: com o campo preenchido, `vsce package` passa com a imagem no
-topo; sem ele, **falha** (não é aviso). O `icon` da loja vem de `package.json > icon`
-(`media/icon.png`) e independe disso.
+`repository` is already in the manifest (`github.com/Danil0ws/hermes-agent-vscode`), and it is what
+lets `vsce` resolve the local art in this README: with the field present, `vsce package` rewrites the
+image to the absolute GitHub URL and passes; without it, packaging **fails** (not a warning). The
+store icon comes from `package.json > icon` (`media/icon.png`) and is independent of that.
 
-Checado agora: `hermes-agent.hermes-agent-vscode` **está livre** no Marketplace (nome e display name
-têm de ser únicos; se já existisse, o publish falharia com "already exists").
+Checked: `hermes-agent.hermes-agent-vscode` is **still free** on the Marketplace (name and display
+name have to be unique; if it were taken, publishing would fail with "already exists").
 
-O ícone da página da loja vem de `package.json > icon` (`media/icon.png`), e o `repository` já está
-no manifesto — é ele que permite a imagem local no topo do README (ver `CONTRIBUTING.md › Ícone`).
+## Auto-approve (YOLO)
 
-## Aprovação automática (YOLO)
-
-Por padrão o Hermes **pergunta** antes de executar comandos e editar arquivos. A política vive em
-`hermes.permissions` e tem três valores: `ask` (padrão), `allowSession` (repete nesta sessão o que
-você já autorizou uma vez) e `allowAll` (não pergunta nunca).
+By default Hermes **asks** before running commands and editing files. The policy lives in
+`hermes.permissions` and takes three values: `ask` (default), `allowSession` (repeats, for this
+session, what you already approved once) and `allowAll` (never asks).
 
 ```jsonc
-// settings.json — equivalente ao comando da palette
+// settings.json — same as the palette command
 { "hermes.permissions": "allowAll" }
 ```
 
-A extensão responde com as opções que o **agente** ofereceu — nunca inventa uma permissão — e nunca
-escolhe uma opção de negar. Enquanto o YOLO estiver ligado, um item fica na barra de status
-(`Hermes: aprovando tudo`, fundo de aviso) e clicar nele desliga. O workspace em modo restrito
-(Workspace Trust) continua valendo: nada executa.
+The extension answers with the options the **agent** offered — it never invents a permission — and
+never picks a deny option. While YOLO is on, an item sits in the status bar (`Hermes: approving
+everything`, warning background) and clicking it turns it off. A restricted workspace (Workspace
+Trust) still wins: nothing runs.
 
-## Idiomas
+## Languages
 
-O idioma da extensão segue o **idioma de exibição do VS Code** (não há seletor próprio): troque em
-`Ctrl+Shift+P` → *Configure Display Language* e recarregue a janela.
+The extension language follows the **VS Code display language** (there is no picker of its own):
+change it in `Ctrl+Shift+P` → *Configure Display Language* and reload the window.
 
-| Idioma | Manifesto / Command Palette | UI das webviews | Host (avisos, pickers, barra de status) |
+| Language | Manifest / Command Palette | Webview UI | Host (notices, pickers, status bar) |
 |---|---|---|---|
-| English (`en`) | padrão | ✅ | ✅ |
-| Português (`pt-BR`) | ✅ | ✅ (idioma de origem) | ✅ (idioma de origem) |
+| English (`en`) | default | ✅ | ✅ |
+| Português (`pt-BR`) | ✅ | ✅ (source language) | ✅ (source language) |
 | Русский (`ru`) | ✅ | ✅ | ✅ |
 | 简体中文 (`zh-CN`) | ✅ | ✅ | ✅ |
 
-Como funciona: o manifesto usa `package.nls.*.json` (58 chaves por idioma, a mecanismo nativo do
-VS Code) e o runtime usa dois dicionários — `webview/*/i18n.<locale>.ts` (tipados por `Strings`, o
-compilador garante paridade de chaves) e `src/l10n.<locale>.ts` (mapa texto pt-BR → tradução).
+How it works: the manifest uses `package.nls.*.json` (VS Code's native mechanism, one entry per
+command/setting string) and the runtime uses two dictionaries — `webview/*/i18n.<locale>.ts` (typed
+by `Strings`, so the compiler enforces key parity) and `src/l10n.<locale>.ts` (a pt-BR text →
+translation map).
 
-O **pt-BR é o idioma de origem**: é o texto-fonte, e uma string sem tradução cai nele em vez de
-mostrar uma chave crua. Não é `vscode.l10n` + language pack: o idioma entra por
-`vscode.env.language`, o que reflete os language packs instalados sem exigir empacotamento de
-`bundle.l10n.*.json` (`docs/ARCHITECTURE.md` §11.18 explica a escolha).
+**pt-BR is the source language**: it holds the original strings, and a string with no translation
+falls back to it instead of showing a raw key. This is not `vscode.l10n` plus a language pack: the
+language comes from `vscode.env.language`, which reflects the installed language packs without
+shipping `bundle.l10n.*.json` files (`docs/ARCHITECTURE.md` §11.18 explains the choice).
 
-## Contribuindo
+## Contributing
 
-Ver `CONTRIBUTING.md` (ambiente, gates obrigatórios, arquitetura em uma tela, o padrão de lanes
-paralelas e as regras de documentação). Licença **MIT** — ver `LICENSE`.
-Falta apenas uma URL de repositório público para `vsce publish`.
+See `CONTRIBUTING.md` (environment, mandatory gates, one-screen architecture, the parallel-lanes
+pattern and the documentation rules). **MIT** licensed — see `LICENSE`.
 
-## Desenvolvimento
+## Development
 
 ```bash
-npm run compile     # tsc --noEmit (o gate de tipos)
-npm run build       # tudo
-npm test            # 45 testes; a integração spawna o `hermes acp` de verdade
-npm run watch       # esbuild em watch (extension host)
+npm run compile     # tsc --noEmit (the type gate)
+npm run build       # everything
+npm test            # unit + integration; the integration ones spawn the real `hermes acp`
+npm run watch       # esbuild in watch mode (extension host)
 ```
 
-Os testes de integração usam o Hermes real e são **skipados** se `hermes` não estiver no PATH —
-nunca fingem passar.
+The integration tests use the real Hermes and are **skipped** when `hermes` is not on the PATH —
+they never pretend to pass. Test and command counts are deliberately absent here: they drift, and
+`npm test` counts itself.
 
 ## Troubleshooting
 
-| Sintoma | Causa provável | O que fazer |
+| Symptom | Likely cause | What to do |
 |---|---|---|
-| "A conexão com o Hermes caiu" | `hermes` saiu (PATH, credenciais, WSL) | `hermes acp --check`, `hermes doctor`; ver o canal `Hermes` |
-| Nenhum modelo na lista | provider sem credencial no Hermes | `hermes model` (ou pelo menu "Executar comando da CLI…") |
-| Modo/picker vazio | o agente não anunciou modos | normal em versões antigas; a UI degrada em vez de inventar |
-| Windows | Hermes não roda nativo | use WSL2 e `hermes.cliPath = "wsl hermes"` |
-| `npm install` não instala nada | `NODE_ENV=production` no shell pula devDeps | `export NODE_ENV=development` |
-| `Cannot find module .../dist/extension.js` | o `dist/` estava vazio: o build começa limpando e um build que falhou (ou ficou em voo) deixou nada lá | rode `npm run build`; no F5 o `preLaunchTask` builda antes. O typecheck roda **antes** do `clean`, então erro de tipo não apaga mais o `dist/` |
-| UI em português e eu quero inglês | o idioma segue o VS Code | *Configure Display Language* → English → recarregar a janela |
-| Tradução faltando numa string | string nova sem entrada no dicionário | cai no pt-BR de propósito; adicione a entrada em `src/l10n.<locale>.ts` ou `webview/*/i18n.<locale>.ts` |
-| `command 'hermes.x' not found` | comando declarado no manifesto que ninguém registrou (normalmente um registro duplicado lançando e sendo engolido) | o canal `Hermes` diz `comandos: N/M registrados` na ativação; `npm test` tem a invariante do manifesto |
-| Extensão não acha o Hermes | `hermes.cliPath` errado, CLI fora do PATH ou instalação via WSL | `Hermes: Verificar / instalar o Hermes`; no Windows o valor tem de ser `wsl hermes` — o primeiro token é o executável |
-| YOLO ligado e você esqueceu | `hermes.permissions = allowAll` | item `Hermes: aprovando tudo` na barra de status; clique para desligar |
+| "The connection to Hermes dropped" | `hermes` exited (PATH, credentials, WSL) | `hermes acp --check`, `hermes doctor`; check the `Hermes` channel |
+| No models in the list | provider without credentials in Hermes | `hermes model` (or the "Run CLI Command…" menu) |
+| Mode/model picker empty | the agent announced no modes and no catalog | in this build the **Start** button creates the session; without a session there is nothing to announce |
+| Windows | Hermes does not run natively | use WSL2 with `hermes.cliPath = "wsl hermes"` |
+| `npm install` installs nothing | `NODE_ENV=production` in the shell skips devDeps | `export NODE_ENV=development` |
+| `Cannot find module .../dist/extension.js` | `dist/` was empty: the build starts by cleaning, so a failed (or interrupted) build leaves nothing behind | run `npm run build`; on F5 the `preLaunchTask` builds first. The typecheck runs **before** `clean`, so a type error no longer wipes `dist/` |
+| The UI is in a language I do not want | the language follows VS Code | *Configure Display Language* → pick one → reload the window |
+| A string has no translation | a new string without a dictionary entry | it falls back to pt-BR on purpose; add the entry in `src/l10n.<locale>.ts` or `webview/*/i18n.<locale>.ts` |
+| `command 'hermes.x' not found` | a command declared in the manifest that nobody registered (usually a duplicate registration throwing and being swallowed) | the `Hermes` channel logs `comandos: N/M registrados` on activation; `npm test` enforces the manifest invariant |
+| The extension cannot find Hermes | wrong `hermes.cliPath`, CLI off the PATH, or a WSL install | `Hermes: Check / install Hermes`; on Windows the value must be `wsl hermes` — the first token is the executable |
+| YOLO is on and you forgot | `hermes.permissions = allowAll` | the `Hermes: approving everything` status bar item; click to turn it off |
 
-## Documentação
+## Documentation
 
-- `docs/ARCHITECTURE.md` — transporte, mapa capability→UI, fluxo do turno, segurança, marcos e
-  **lacunas verificadas** (modos, fila, skills, MCP, esforço, custo, checkpoints).
-- `docs/UX.md` — wireframes do composer, pickers, medidor de contexto, painel Gerenciar e sessões,
-  cada elemento mapeado à sua fonte de dados, mais a lista de estados degradados.
+- `docs/ARCHITECTURE.md` — transport, capability→UI map, turn flow, security, milestones and the
+  **verified gaps** (modes, queue, skills, MCP, effort, cost, checkpoints). (pt-BR)
+- `docs/UX.md` — wireframes for the composer, pickers, context meter, Manage panel and sessions,
+  each element mapped to its data source, plus the degraded states. (pt-BR)
