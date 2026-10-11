@@ -5,6 +5,7 @@
 import { useState } from 'preact/hooks';
 import { manageState, sendManage } from './store';
 import { t } from './i18n';
+import { Icon } from '../shared/icon';
 
 const nf = (n: number) => n.toLocaleString('pt-BR');
 
@@ -61,13 +62,13 @@ export function ModelsTab() {
                   <button class="star" title={fav ? t.models.unstar : t.models.star}
                     aria-label={fav ? t.models.unstar : t.models.star} aria-pressed={fav}
                     onClick={() => sendManage({ type: 'manage/model/favorite', modelId: x.modelId, on: !fav })}>
-                    {fav ? '★' : '☆'}
+                    <Icon name={fav ? 'star-full' : 'star-empty'} />
                   </button>
                   <button class="grow" title={x.description} onClick={() => sendManage({ type: 'manage/model/set', modelId: x.modelId })}>
                     {x.name}
                   </button>
                   <span class="kind">{x.modelId}</span>
-                  {active && <span class="badge" aria-label={t.models.active}>✓ {t.models.active}</span>}
+                  {active && <span class="badge" aria-label={t.models.active}><Icon name="check" /> {t.models.active}</span>}
                 </div>
               );
             })}
@@ -195,7 +196,7 @@ export function ToolsTab() {
             <summary>{g.kind === 'builtin' ? t.tools.builtin : t.tools.plugin} <span class="kind">({g.items.length})</span></summary>
             {g.items.map((it) => (
               <div class="item" role="listitem" key={it.name}>
-                <span class={`dot ${it.enabled ? 'on' : 'off'}`} aria-hidden="true">{it.enabled ? '✓' : '✗'}</span>
+                <Icon name={it.enabled ? 'check' : 'close'} cls={`dot ${it.enabled ? 'on' : 'off'}`} />
                 <span class="mono">{it.name}</span>
                 <span class="hint">{it.label}</span>
               </div>
@@ -209,7 +210,7 @@ export function ToolsTab() {
       <div class="list" role="list">
         {tl.mcp.map((srv) => (
           <div class="item" role="listitem" key={srv.name}>
-            <span class={`dot ${srv.enabled ? 'on' : 'off'}`} aria-hidden="true">{srv.enabled ? '✓' : '✗'}</span>
+            <Icon name={srv.enabled ? 'check' : 'close'} cls={`dot ${srv.enabled ? 'on' : 'off'}`} />
             <strong>{srv.name}</strong>
             <span class="hint mono">{srv.transport}</span>
             <span class="spacer" />
@@ -234,7 +235,7 @@ export function InstructionsTab() {
       <div class="list" role="list">
         {ins.files.map((f) => (
           <div class="item" role="listitem" key={`${f.scope}:${f.path}`}>
-            <span class={`dot ${f.found ? 'on' : 'off'}`} aria-hidden="true">{f.found ? '✓' : '·'}</span>
+            <Icon name={f.found ? 'check' : 'circle-outline'} cls={`dot ${f.found ? 'on' : 'off'}`} />
             <strong>{f.label}</strong>
             <span class="badge">{f.scope === 'workspace' ? t.instructions.workspace : t.instructions.profile}</span>
             <span class="spacer" />
@@ -319,7 +320,7 @@ export function AgentsTab() {
       <div class="list" role="list">
         {a.profiles.map((p) => (
           <div class="item" role="listitem" key={p.name}>
-            <span class={`dot ${p.active ? 'on' : 'off'}`} aria-hidden="true">{p.active ? '✓' : '·'}</span>
+            <Icon name={p.active ? 'check' : 'circle-outline'} cls={`dot ${p.active ? 'on' : 'off'}`} />
             <strong>{p.name}</strong>
             <span class="spacer" />
             <span class="kind mono">{p.model}</span>

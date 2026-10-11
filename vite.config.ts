@@ -6,6 +6,10 @@ import { resolve } from 'node:path';
 // CSP da webview bloqueia script remoto; tudo entra por nonce (ver ChatViewProvider.html).
 export default defineConfig({
   plugins: [preact()],
+  // Caminhos relativos: os assets do CSS (codicon.ttf) têm de resolver ao lado do próprio CSS.
+  // Com a base padrão o codicon.css referencia `/codicon.ttf`, que na webview aponta para a raiz
+  // do vscode-webview e dá 404 — os ícones viram tofu.
+  base: './',
   build: {
     outDir: 'dist',
     emptyOutDir: false,

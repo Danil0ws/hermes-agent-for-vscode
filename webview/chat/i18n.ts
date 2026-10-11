@@ -26,7 +26,8 @@ export const S = {
     pending: 'Pendente', cancelled: 'Cancelado',
   } as Record<string, string>,
   statusGlyph: {
-    completed: '✓', failed: '✕', in_progress: '◐', pending: '○', cancelled: '⊘',
+    completed: 'check', failed: 'close', in_progress: 'circle-filled', pending: 'circle-outline',
+    cancelled: 'circle-slash',
   } as Record<string, string>,
 
   /* ───── raciocínio ───── */
@@ -198,11 +199,12 @@ export const S = {
 
   /* ───── ícones por tipo (sem emoji — símbolos + aria-label) ───── */
   icon: {
-    file: '▤', folder: '▦', symbol: '⟨⟩', selection: '▭', diagnostic: '⚑', terminal: '▷',
-    git: '⑂', url: '↗', image: '▨', skill: 'ϟ',
-    read: '▤', edit: '✎', delete: '⊗', move: '→', search: '⌕', execute: '▷',
-    think: '✧', fetch: '⇣', switch_mode: '⇄', other: '❖',
-    showOlder: '▴',
+    file: 'file', folder: 'folder', symbol: 'symbol-method', selection: 'selection',
+    diagnostic: 'warning', terminal: 'terminal', git: 'git-branch', url: 'link-external',
+    image: 'file-media', skill: 'symbol-event',
+    read: 'book', edit: 'edit', delete: 'trash', move: 'arrow-right', search: 'search',
+    execute: 'terminal', think: 'lightbulb', fetch: 'cloud-download', switch_mode: 'arrow-swap',
+    other: 'tools', showOlder: 'chevron-up',
   } as Record<string, string>,
 };
 

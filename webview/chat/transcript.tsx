@@ -9,17 +9,16 @@ import { splitFenced, visibleTurns } from './logic';
 import { changed, chips, draft, focusComposer, plan, state, tools, turns } from './store';
 import type { Turn } from './store';
 import type { PlanEntry, ToolView } from '../../src/core/types';
+import { Icon } from '../shared/icon';
 
 /** Quantos turnos renderizamos de cada vez (a janela cresce sob demanda). */
 const RENDER_LIMIT = 200;
 
 const elapsed = (ms: number) => (ms / 1000).toFixed(1);
 
-function Icon({ kind, label }: { kind: string; label: string }) {
-  const g = S.icon[kind] ?? S.icon.other;
-  return label
-    ? <span class="ic" role="img" aria-label={label}>{g}</span>
-    : <span class="ic" aria-hidden="true">{g}</span>;
+/** Ícone do tool call: traduz o `kind` do ACP para o nome do Codicon. */
+function KindIcon({ kind, label }: { kind: string; label?: string }) {
+  return <Icon name={S.icon[kind] ?? S.icon.other} label={label} cls="ic" />;
 }
 
 /* ─────────── bloco de código ─────────── */
@@ -75,7 +74,7 @@ function Thought({ turn }: { turn: Turn }) {
     <details class="thought" open={state.value.showReasoning === 'always'}
       aria-label={`${S.thought.summary} · ${st}`}>
       <summary>
-        <span aria-hidden="true">{turn.streaming ? '◐' : '✓'}</span>
+        <Icon name={turn.streaming ? 'loading' : 'check'} spin={turn.streaming} />
         <span>{S.thought.summary}</span>
         <span class="muted">· {S.thought.elapsed(elapsed(ms))} · {st}</span>
       </summary>
@@ -93,7 +92,7 @@ function ToolItem({ tool }: { tool: ToolView }) {
   return (
     <details class="tool">
       <summary aria-label={`${label}: ${tool.title} — ${S.status[tool.status] ?? tool.status}`}>
-        <Icon kind={kind} label={label} />
+        <KindIcon kind={kind} label={label} />
         <span class="tool-title">{tool.title || S.tool.titleFallback}</span>
         <span class={`status ${tool.status}`}>{S.statusGlyph[tool.status] ?? tool.status}</span>
         {dur && <span class="muted">{dur}</span>}
@@ -125,7 +124,7 @@ function TurnView({ turn, prevUser }: { turn: Turn; prevUser?: string }) {
       {turn.text && <div class={`bubble ${turn.role}`}><Body text={turn.text} /></div>}
       {isUser && turn.chips && turn.chips.length > 0 && (
         <div class="chips static">{turn.chips.map((c) => (
-          <span class="chip" key={c.id}><Icon kind={c.kind} label={c.kind} />{c.label}</span>
+          <span class="chip" key={c.id}><KindIcon kind={c.kind} label={c.kind} />{c.label}</span>
         ))}</div>
       )}
       {isUser ? (
@@ -171,7 +170,7 @@ function Plan({ entries }: { entries: PlanEntry[] }) {
       </header>
       {entries.map((p, i) => (
         <div class="plan-row" key={i}>
-          <span class={`status ${p.status}`} aria-hidden="true">{S.statusGlyph[p.status] ?? '○'}</span>
+          <Icon name={S.statusGlyph[p.status] ?? 'circle-outline'} cls={`status ${p.status}`} />
           <span>{p.content}</span>
         </div>
       ))}
@@ -234,7 +233,7 @@ export function Transcript() {
       {offset > 0 && (
         <button class="secondary show-older"
           onClick={() => setLimit((n) => n + RENDER_LIMIT)}>
-          <Icon kind="showOlder" label="" /> {num(offset)}
+          <KindIcon kind="showOlder" label="" /> {num(offset)}
         </button>
       )}
       {shown.map((t, k) => (

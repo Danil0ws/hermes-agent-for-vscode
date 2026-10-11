@@ -106,7 +106,9 @@ Interface nativa do Hermes Agent no VS Code sobre ACP. 50 arquivos TypeScript (~
   medido (vem do `usage` do turno).
 - **`session/list` precisa de conexão viva**; sem sessão ativa a view de sessões mostra vazio.
 - **Pendências são atribuídas à sessão ativa** — os eventos do ACP não trazem `sessionId`.
-- **Ícones**: sem `@vscode/codicons` como dependência, as webviews usam símbolos tipográficos com
-  `aria-label`; o extension host usa Codicon/ThemeIcon onde a API nativa oferece.
+- **Ícones**: as duas webviews usam **Codicons** (`@vscode/codicons`, o conjunto oficial), servidos
+  por `codicon.css` + `codicon.ttf` com base relativa no Vite — dentro da webview o `url(/…)` padrão
+  aponta para a raiz do `vscode-webview` e daria 404. O extension host usa `ThemeIcon`/Codicon onde a
+  API nativa oferece.
 - **L10n de runtime** (`vscode.l10n.t`) e as strings das webviews (`i18n.ts` pt-BR) não estão
   integradas ao `package.nls` — o manifesto está internacionalizado, o runtime ainda não.

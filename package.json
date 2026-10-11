@@ -511,7 +511,8 @@
     "compile": "tsc -p tsconfig.json --noEmit",
     "build:extension": "node scripts/build-extension.mjs",
     "build:webview": "vite build",
-    "build": "npm run compile && npm run build:extension && npm run build:webview",
+    "clean": "rm -rf dist dist-test",
+    "build": "npm run clean && npm run compile && npm run build:extension && npm run build:webview",
     "watch": "node scripts/build-extension.mjs --watch",
     "test": "node scripts/build-tests.mjs && node --test dist-test/",
     "package": "npm run build && vsce package --no-dependencies"
@@ -523,6 +524,7 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.17.0",
     "@types/vscode": "^1.100.0",
+    "@vscode/codicons": "^0.0.46-24",
     "@vscode/vsce": "^3.2.1",
     "esbuild": "^0.25.0",
     "preact": "^10.25.0",

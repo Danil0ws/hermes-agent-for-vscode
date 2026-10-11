@@ -269,6 +269,7 @@ export class ManageViewProvider implements vscode.Disposable {
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'none'; img-src ${w.cspSource} data:; style-src ${w.cspSource} 'unsafe-inline'; font-src ${w.cspSource}; script-src 'nonce-${nonce}';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="${base}/codicon.css">
 <link rel="stylesheet" href="${base}/manage.css">
 <title>${t.title}</title>
 </head>

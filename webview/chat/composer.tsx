@@ -12,6 +12,7 @@ import {
   turns, usage, userHistory,
 } from './store';
 import type { ContextChip, QueueItem } from '../../src/core/types';
+import { Icon } from '../shared/icon';
 
 /** Fontes de contexto do popover `#` — as mesmas do QuickPick do host (§4.2). */
 const HASH_SOURCES = ['file', 'folder', 'symbol', 'selection', 'diagnostic', 'terminal', 'git', 'url', 'image'] as const;
@@ -19,7 +20,7 @@ const HASH_SOURCES = ['file', 'folder', 'symbol', 'selection', 'diagnostic', 'te
 function glyph(kind: string): string { return S.icon[kind] ?? S.icon.other; }
 
 function ChipIcon({ kind }: { kind: string }) {
-  return <span class="ic" aria-hidden="true">{glyph(kind)}</span>;
+  return <Icon name={glyph(kind)} cls="ic" />;
 }
 
 /* ─────────── aprovação inline (§5.3) ─────────── */
@@ -227,14 +228,14 @@ function Queue() {
             <button class="secondary" aria-label={S.queue.nowTip} title={S.queue.nowTip}
               onClick={() => send({ type: 'queue/sendNow', id: q.id })}>▶ {S.queue.now}</button>
             <button class="secondary" aria-label={S.queue.edit} title={S.queue.editTip}
-              onClick={() => { draft.value = q.text; focusComposer.value++; send({ type: 'queue/remove', id: q.id }); }}>✎</button>
+              onClick={() => { draft.value = q.text; focusComposer.value++; send({ type: 'queue/remove', id: q.id }); }}><Icon name="edit" /></button>
             <button class="secondary" aria-label={S.queue.remove} title={S.queue.remove}
               onClick={() => send({ type: 'queue/remove', id: q.id })}>×</button>
             <span class="kb">
               <button class="secondary" aria-label={S.queue.up} tabindex={0}
-                onClick={() => send({ type: 'queue/move', id: q.id, delta: -1 })}>↑</button>
+                onClick={() => send({ type: 'queue/move', id: q.id, delta: -1 })}><Icon name="arrow-up" /></button>
               <button class="secondary" aria-label={S.queue.down}
-                onClick={() => send({ type: 'queue/move', id: q.id, delta: 1 })}>↓</button>
+                onClick={() => send({ type: 'queue/move', id: q.id, delta: 1 })}><Icon name="arrow-down" /></button>
             </span>
           </span>
         </div>
@@ -476,7 +477,7 @@ export function Composer() {
           </select>
         </label>
         <button class="icon-btn" title={S.composer.toolsTip} aria-label={S.composer.tools}
-          onClick={() => send({ type: 'openManage', tab: 'tools' })}>⚙</button>
+          onClick={() => send({ type: 'openManage', tab: 'tools' })}><Icon name="gear" /></button>
         <span class="spacer" />
         <Meter />
         <SendButton onSubmit={submit} />

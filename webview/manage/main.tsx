@@ -14,6 +14,7 @@ import {
   AdvancedTab, AgentsTab, ApprovalsTab, ContextTab, InstructionsTab, ModelsTab, SkillsTab, ToolsTab,
 } from './tabs';
 import type { ManageTab } from './protocol';
+import '@vscode/codicons/dist/codicon.css';
 import './styles.css';
 
 const TABS: ManageTab[] = ['models', 'skills', 'tools', 'instructions', 'context', 'agents', 'approvals', 'advanced'];

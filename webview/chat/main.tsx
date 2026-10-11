@@ -15,6 +15,7 @@ import { S } from './i18n';
 import { Transcript } from './transcript';
 import { Composer } from './composer';
 import type { HostToWebview } from '../../src/core/types';
+import '@vscode/codicons/dist/codicon.css';
 import './styles.css';
 
 /* ─────────── roteador de mensagens do host ─────────── */

@@ -468,8 +468,10 @@ passar por teclado/leitor de tela em cada superfície. Registrado como pendênci
 14. **Pendências por sessão não existem**: as notificações de `session/update` não trazem
     `sessionId` no nosso nível de roteamento, então o contador de pendências é atribuído à sessão
     ativa. Um `sessionId` por notificação resolveria.
-15. **Codicons na webview**: sem `@vscode/codicons` como dependência, as webviews usam símbolos
-    tipográficos com `aria-label`. O extension host usa Codicon/ThemeIcon onde a API nativa oferece.
+15. **Codicons**: resolvido — as webviews usam `@vscode/codicons` (classe + fonte) e o extension host
+    usa `ThemeIcon`. Pegadinha registrada: o Vite precisa de `base: './'`, senão o `@font-face` do
+    `codicon.css` referencia `/codicon.ttf`, que na webview resolve para a raiz do `vscode-webview` e
+    devolve 404 (ícones viram tofu).
 16. **L10n de runtime**: o manifesto está em `package.nls` (en + pt-BR, 58 chaves verificadas), mas
     as strings das webviews vivem em `webview/*/i18n.ts` (pt-BR) — migrar para `vscode.l10n` é uma
     passada separada.
