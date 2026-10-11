@@ -60,14 +60,21 @@ body {
   border: 1px solid var(--vscode-panel-border, transparent);
   border-radius: var(--hermes-radius);
   padding: 8px 10px;
-  font-family: var(--vscode-editor-font-family);
-  font-size: var(--vscode-editor-font-size, var(--vscode-font-size));
+  /* Prosa na fonte/altura da UI; a monoespaçada do editor fica para `<pre>` (código, tool, raciocínio).
+     Antes o balão inteiro era editor-font-size: a resposta parecia bloco de código e brigava de
+     escala com os rótulos pequenos de VOCÊ/HERMES. */
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.5;
   word-break: break-word;
 }
-.bubble.user { background: var(--vscode-input-background); }
+/* "quem falou" se lê de relance: o turno do usuário ganha a barra de acento, o do agente não. */
+.bubble.user { background: var(--vscode-input-background); border-left: 2px solid var(--vscode-button-background); }
 .seg-text { white-space: pre-wrap; display: inline; }
 
-.actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; opacity: 0; transition: opacity 120ms ease; }
+/* visíveis em repouso (0.6) e cheias no hover/foco: as ações da resposta existiam só em hover e
+   ninguém descobria que copiar/reenviar/inserir estavam ali */
+.actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; opacity: 0.6; transition: opacity 120ms ease; }
 .turn:hover .actions, .turn:focus-within .actions { opacity: 1; }
 .actions button { font-size: 0.82em; }
 
@@ -123,6 +130,7 @@ details.thought pre { white-space: pre-wrap; margin: 4px 0 0; font-family: var(-
 
 /* estado vazio */
 .empty { padding: 16px; color: var(--vscode-descriptionForeground); }
+.empty .starting { display: flex; gap: 6px; align-items: center; }
 .empty ul { list-style: none; padding: 0; }
 .empty li { margin: 4px 0; }
 .empty button { text-align: left; }
@@ -200,13 +208,25 @@ textarea.input:focus { outline: 1px solid var(--vscode-focusBorder); outline-off
 .menu .opt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .menu .opt:hover, .menu .opt:focus-visible { background: var(--vscode-list-hoverBackground); }
 
-/* barra inferior */
-.toolbar { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
-.sel { display: inline-flex; min-width: 0; max-width: 46%; }
+/* barra inferior em DUAS METADES, nunca botão a botão:
+   - `.toolbar-line`  = '+' | Modo | Modelo | engrenagem (o que se configura)
+   - `.toolbar-actions` = medidor | primário, alinhados à DIREITA
+   A quebra acontece só ENTRE os grupos. Em painel largo tudo cabe numa linha e os selects absorvem
+   a sobra (o de modelo com o dobro: os ids são longos). Em painel estreito os dois selects ficam com
+   o piso de `min-width` (~30px antes — o rótulo sumia por completo) e as ações descem para a linha
+   de baixo, ainda no canto direito. Antes, com `flex-wrap: wrap` solto sobre os botões, cada item
+   escorregava de linha conforme o rótulo do modelo e o Enviar mudava de posição. */
+.toolbar { display: flex; flex-wrap: wrap; gap: 6px 6px; row-gap: 4px; align-items: center; margin-top: 6px; min-width: 0; }
+.toolbar-line { display: flex; flex: 1 1 auto; gap: 6px; align-items: center; min-width: 0; }
+.toolbar-actions { display: flex; flex: 1 1 auto; gap: 6px; align-items: center; justify-content: flex-end; }
+.sel { display: inline-flex; min-width: 72px; flex: 1 1 0; }
+.sel-model { min-width: 132px; flex: 2 1 0; }
 /* select nativo trunca o texto sem reticências: limita a largura e tenta o ellipsis (o Chromium
    moderno honra em select; onde não honrar, o title do controle continua explicando) */
-.sel select { max-width: 100%; min-width: 0; text-overflow: ellipsis; }
-.icon-btn { min-width: 28px; }
+.sel select { width: 100%; max-width: none; min-width: 0; text-overflow: ellipsis; }
+.icon-btn { min-width: 28px; flex: 0 0 auto; }
+/* ícone dentro de botão: herda a cor do botão (o .ic é cinza de descrição) */
+.btn-ic { color: inherit; font-size: 1em; line-height: 1; vertical-align: -0.125em; margin-right: 4px; }
 
 button {
   color: var(--vscode-button-foreground);
@@ -224,7 +244,7 @@ select {
   background: var(--vscode-dropdown-background);
   border: 1px solid var(--vscode-dropdown-border, transparent);
   border-radius: var(--hermes-radius);
-  padding: 2px 4px; max-width: 42vw;
+  padding: 2px 4px;
 }
 
 /* medidor */

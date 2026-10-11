@@ -6,6 +6,13 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Adicionado
 
+- **Botão Iniciar + loading no chat**: enquanto não existe sessão, o botão primário do composer é
+  `Iniciar` (`WebviewToHost.start` → `ChatViewProvider.start`), com spinner e rótulo "Iniciando…".
+  É o clique que faz o `session/new` **anunciar** modos, modelos e comandos — antes disso os dois
+  selects do composer abriam em "sem modos"/"sem modelos" (correto, e lido como painel carregado
+  pela metade) e só se enchiam no primeiro envio. O estado vazio mostra o progresso enquanto o
+  handshake corre e ganhou a dica do botão; `starting` entrou no `ChatState`. Idempotente: clique
+  duplo não abre duas sessões.
 - **Código aberto**: `LICENSE` (MIT) e `CONTRIBUTING.md` (ambiente, gates obrigatórios, arquitetura
   em uma tela, o padrão de lanes paralelas e as regras de documentação). `private: true` saiu do
   manifesto, com `license` e `author` declarados.
@@ -18,6 +25,25 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
   saber que existe mais de um idioma.
 - `num()` passa a formatar pelo idioma corrente (pt-BR `1.218`, en/zh `1,218`, ru com espaço
   estreito) — antes era fixo em pt-BR.
+
+### Alterado
+
+- **Entrada e saída do chat: escala e posições.** A barra inferior do composer não quebra mais linha
+  (`flex-wrap: nowrap`): os dois selects dividem a sobra — o de modelo com o dobro do espaço, porque
+  ids como `OpenCode Go · deepseek-v4.1-flash` são longos — e o primário fica colado à direita em
+  qualquer largura de painel. Antes, com `wrap` mais `max-width: 46%`/`42vw` (unidade de *viewport*
+  dentro de um painel), o rótulo do modelo empurrava os botões de linha e o Enviar mudava de lugar
+  conforme o modelo escolhido.
+- A prosa do balão usa a fonte da UI (`font-family: inherit`, `line-height: 1.5`): a monoespaçada do
+  editor ficou para `<pre>` (código, tool, raciocínio), que é onde ela informa. O balão inteiro em
+  `editor-font-size` fazia a resposta parecer bloco de código e brigava de escala com os rótulos de
+  VOCÊ/HERMES.
+- O turno do usuário ganhou barra de acento (`border-left` com `--vscode-button-background`): quem
+  falou se lê de relance em vez de depender de dois cinzas parecidos.
+- As ações da resposta (copiar/reenviar/inserir/diff) ficam visíveis em repouso a 0.6 e cheias no
+  hover/foco — estavam em `opacity: 0` e ninguém descobria que existiam.
+- Guarda: teste de CSS falha se o toolbar voltar a quebrar linha, se os selects perderem a divisão
+  da sobra, se aparecer unidade `vw` no CSS do chat ou se a prosa do balão sair da fonte da UI.
 
 ### Corrigido
 

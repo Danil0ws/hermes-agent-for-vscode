@@ -15,6 +15,8 @@ export const ptBR = {
       ['Planejar uma mudança', 'Planeje, passo a passo, a mudança que eu descrever.'],
     ],
     manage: 'Gerenciar modelos, skills e MCP…',
+    startHint: 'Clique em Iniciar para carregar modos, modelos e comandos.',
+    starting: 'Iniciando o agente…',
   },
 
   /* ───── papéis ───── */
@@ -110,6 +112,10 @@ export const ptBR = {
     noModels: 'sem modelos',
     tools: 'Ferramentas',
     toolsTip: 'Configurar ferramentas (Gerenciar)',
+    start: 'Iniciar',
+    starting: 'Iniciando…',
+    startTip: 'Criar a sessão e carregar modos, modelos e comandos',
+    loading: 'carregando…',
     attach: 'Anexar',
     dropHint: 'Solte arquivos aqui para anexar como contexto',
     removeChip: (label: string) => `Remover ${label}`,

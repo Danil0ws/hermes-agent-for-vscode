@@ -583,8 +583,14 @@ passar por teclado/leitor de tela em cada superfície. Registrado como pendênci
     Guarda: o teste de integração passou a exigir que a sessão **emita** `modes` e `models` ao ser
     criada (afirmava só que o snapshot os continha, que era verdade e não pegava nada). Verificado
     que o teste falha sem a emissão: `AssertionError: sessão não emitiu 'modes' ao ser criada`.
+    Depois disso o caminho popular deixou de ser implícito: a webview tem um botão **Iniciar**
+    (`WebviewToHost.start` → `ChatViewProvider.start`) que cria a sessão por um clique declarado,
+    com `starting` no `ChatState` para o loading — quem abre o painel vê "Iniciar", não dois selects
+    vazios. O `send()` continua sendo o caminho de quem digita sem iniciar, coberto pelo `emitScope`.
 31. **View aberta sem sessão continua sem modos/modelos.** Não há o que anunciar antes de existir
     sessão (o catálogo é por sessão no ACP, não global). Os seletores mostram o estado vazio até o
     primeiro prompt ou "Nova conversa" criarem a sessão. Criar sessão ao abrir a view resolveria,
     mas custa um processo do `hermes acp` para quem só olhou o painel — decisão: manter preguiçoso e
-    deixar o vazio explícito.
+    deixar o vazio explícito. O botão **Iniciar** é a versão declarada disso: um clique, não um
+    efeito colateral de abrir o painel; enquanto ele corre, os selects mostram "carregando…" em vez
+    de "sem modos"/"sem modelos", e o primário fica indisponível (sem duplo início).

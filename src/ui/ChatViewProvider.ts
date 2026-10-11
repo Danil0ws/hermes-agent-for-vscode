@@ -23,6 +23,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
   private running = false;
   private chips: ContextChip[] = [];
   private last: HostToWebview[] = [];
+  private starting = false;
 
   constructor(
     private readonly ctx: vscode.ExtensionContext,
@@ -72,6 +73,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
         case 'ready':
           this.post({ type: 'init', state: this.initialState() });
           for (const m of this.last) this.post(m);
+          return;
+        case 'start':
+          await this.start();
           return;
         case 'prompt':
           await this.send(msg.text, msg.chips, msg.action);
@@ -188,6 +192,34 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     }
   }
 
+  /**
+   * Botão "Iniciar": cria a sessão SEM enviar prompt. É o handshake que ANUNCIA modos, modelos e
+   * comandos — sem ele o `init` que a webview recebeu foi montado quando `snapshot` ainda estava
+   * vazio, e os seletores só se enchem no primeiro envio (o usuário vê "sem modos"/"sem modelos").
+   * Idempotente: clique duplo não abre duas sessões.
+   */
+  async start(): Promise<void> {
+    // `existing` numa const: ler `this.agents.session` dentro do guard faz o TS estreitar a
+    // propriedade (aliasing) e a leitura seguinte virar `never`.
+    const existing = this.agents.session;
+    if (this.starting || existing) return;
+    this.starting = true;
+    this.post({ type: 'init', state: this.initialState() });
+    try {
+      const s = settings();
+      // a sessão devolvida pelo `newSession` é a que vale — não reler `this.agents.session`
+      const session = await this.agents.newSession(activeAgent(s).cfg, workingDirectory(s), activeAgent(s).name);
+      this.post({ type: 'session', sessionId: session.sessionId });
+      this.log('info', `sessão iniciada: ${session.sessionId}`);
+    } catch (err) {
+      this.log('error', `falha ao iniciar a sessão: ${String(err)}`);
+      this.post({ type: 'error', text: String(err) });
+    } finally {
+      this.starting = false;
+      this.post({ type: 'init', state: this.initialState() });
+    }
+  }
+
   async newConversation(): Promise<void> {
     this.running = false;
     this.chips = [];
@@ -254,6 +286,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
       sessionId: sess?.sessionId ?? null,
       agent: activeAgent(s).name,
       busy: this.running,
+      starting: this.starting,
       modes: sess?.snapshot.modes ?? [],
       currentMode: sess?.snapshot.currentMode,
       models: sess?.snapshot.models ?? [],

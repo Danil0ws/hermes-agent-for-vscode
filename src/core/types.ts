@@ -110,6 +110,8 @@ export interface ChatState {
   sessionId: string | null;
   agent: string;
   busy: boolean;
+  /** o botão "Iniciar" está criando a sessão (handshake em andamento) — só o host seta */
+  starting?: boolean;
   modes: ModeInfo[];
   currentMode?: string;
   models: ModelInfo[];
@@ -161,6 +163,8 @@ export type SendAction = 'send' | 'queue' | 'steer' | 'interrupt';
 
 export type WebviewToHost =
   | { type: 'ready' }
+  /** botão "Iniciar": cria a sessão sem prompt, para os seletores receberem modos/modelos */
+  | { type: 'start' }
   | { type: 'prompt'; text: string; chips: ContextChip[]; action: SendAction }
   /** arquivo/pasta soltos na webview (drag & drop do Explorer) */
   | { type: 'addPath'; path: string }

@@ -283,6 +283,8 @@ function Listbox({ id, label, items, active, onPick, listRef }: {
 
 function SendButton({ onSubmit }: { onSubmit: (a: 'send' | 'queue' | 'steer' | 'interrupt') => void }) {
   const busy = state.value.busy;
+  const starting = state.value.starting;
+  const started = state.value.sessionId !== null;
   const qEnabled = state.value.queueEnabled;
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -304,6 +306,21 @@ function SendButton({ onSubmit }: { onSubmit: (a: 'send' | 'queue' | 'steer' | '
     else if (e.key === 'Escape') { e.preventDefault(); setOpen(false); }
     // Enter/Espaço: o próprio <button> ativa — sem handler manual (evita duplo disparo).
   };
+
+  // Sem sessão o botão primário é "Iniciar": é esse clique que faz o handshake ANUNCIAR modos,
+  // modelos e comandos. Antes dele os dois seletores ficam vazios ("sem modos"/"sem modelos"), que
+  // é o que fazia o painel parecer carregado pela metade. Depois de iniciada, volta a ser Enviar.
+  if (!started) {
+    return (
+      <span class="send">
+        <button class="primary" disabled={starting} title={S.composer.startTip}
+          onClick={() => send({ type: 'start' })}>
+          <Icon name={starting ? 'loading' : 'play'} spin={starting} cls="btn-ic" />
+          {starting ? S.composer.starting : S.composer.start}
+        </button>
+      </span>
+    );
+  }
 
   return (
     <span class="send">
@@ -466,32 +483,39 @@ export function Composer() {
             items={menu.items} active={active} onPick={pick} />
         )}
       </div>
+      {/* Duas METADES: os controles de contexto (linha própria, que encolhe) e as ações (medidor +
+          primário, alinhadas à direita). A quebra acontece entre os grupos, nunca entre os botões:
+          em painel estreito os selects ganham uma linha inteira em vez de colapsarem a ~30px, e o
+          primário continua no mesmo canto. */}
       <div class="toolbar">
-        <button class="icon-btn" title={S.composer.addContextTip} aria-label={S.composer.addContext}
-          onClick={() => send({ type: 'addContext' })}>+</button>
-        <label class="sel">
-          <span class="sr-only">{S.composer.mode}</span>
-          <select title={S.composer.modeTip} aria-label={S.composer.mode}
-            value={state.value.currentMode ?? ''}
-            onChange={(e) => send({ type: 'setMode', modeId: (e.target as HTMLSelectElement).value })}>
-            {modes.value.length === 0 && <option value="">{S.composer.noModes}</option>}
-            {modes.value.map((m) => <option key={m.id} value={m.id} title={m.description}>{m.name}</option>)}
-          </select>
-        </label>
-        <label class="sel">
-          <span class="sr-only">{S.composer.model}</span>
-          <select title={S.composer.modelTip} aria-label={S.composer.model}
-            value={state.value.currentModel ?? ''}
-            onChange={(e) => send({ type: 'setModel', modelId: (e.target as HTMLSelectElement).value })}>
-            {models.value.length === 0 && <option value="">{S.composer.noModels}</option>}
-            {models.value.map((m) => <option key={m.modelId} value={m.modelId} title={m.description}>{m.name}</option>)}
-          </select>
-        </label>
-        <button class="icon-btn" title={S.composer.toolsTip} aria-label={S.composer.tools}
-          onClick={() => send({ type: 'openManage', tab: 'tools' })}><Icon name="gear" /></button>
-        <span class="spacer" />
-        <Meter />
-        <SendButton onSubmit={submit} />
+        <div class="toolbar-line">
+          <button class="icon-btn" title={S.composer.addContextTip} aria-label={S.composer.addContext}
+            onClick={() => send({ type: 'addContext' })}>+</button>
+          <label class="sel">
+            <span class="sr-only">{S.composer.mode}</span>
+            <select title={S.composer.modeTip} aria-label={S.composer.mode}
+              value={state.value.currentMode ?? ''}
+              onChange={(e) => send({ type: 'setMode', modeId: (e.target as HTMLSelectElement).value })}>
+              {modes.value.length === 0 && <option value="">{state.value.starting ? S.composer.loading : S.composer.noModes}</option>}
+              {modes.value.map((m) => <option key={m.id} value={m.id} title={m.description}>{m.name}</option>)}
+            </select>
+          </label>
+          <label class="sel sel-model">
+            <span class="sr-only">{S.composer.model}</span>
+            <select title={S.composer.modelTip} aria-label={S.composer.model}
+              value={state.value.currentModel ?? ''}
+              onChange={(e) => send({ type: 'setModel', modelId: (e.target as HTMLSelectElement).value })}>
+              {models.value.length === 0 && <option value="">{state.value.starting ? S.composer.loading : S.composer.noModels}</option>}
+              {models.value.map((m) => <option key={m.modelId} value={m.modelId} title={m.description}>{m.name}</option>)}
+            </select>
+          </label>
+          <button class="icon-btn" title={S.composer.toolsTip} aria-label={S.composer.tools}
+            onClick={() => send({ type: 'openManage', tab: 'tools' })}><Icon name="gear" /></button>
+        </div>
+        <div class="toolbar-actions">
+          <Meter />
+          <SendButton onSubmit={submit} />
+        </div>
       </div>
     </div>
   );

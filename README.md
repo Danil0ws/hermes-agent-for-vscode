@@ -39,8 +39,10 @@ code --install-extension hermes-agent-vscode-0.1.0.vsix
 ## Uso
 
 1. Clique no ícone do Hermes na Activity Bar → view **Chat**.
-2. Digite e envie (`Enter`; `Shift+Enter` quebra linha; `Esc` cancela o turno).
-3. Menus nativos na barra de título da view: nova conversa, histórico, reiniciar sessão, abrir em
+2. **Iniciar** cria a sessão e carrega modos, modelos e comandos — enquanto não há sessão ele é o
+   botão primário (com spinner); depois volta a ser **Enviar**.
+3. Digite e envie (`Enter`; `Shift+Enter` quebra linha; `Esc` cancela o turno).
+4. Menus nativos na barra de título da view: nova conversa, histórico, reiniciar sessão, abrir em
    editor, Gerenciar e o menu "…" com **Abrir CLI completa**, **Executar comando da CLI…**,
    diagnóstico, log e tráfego.
 

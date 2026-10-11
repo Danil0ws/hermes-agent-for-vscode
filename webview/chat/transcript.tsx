@@ -249,9 +249,19 @@ export function Transcript() {
 /* ─────────── estado vazio ─────────── */
 
 function Empty() {
+  // Enquanto o handshake do "Iniciar" corre, o estado vazio mostra o progresso em vez das
+  // sugestões: clicar numa sugestão antes disso iniciaria a sessão por outro caminho.
+  if (state.value.starting) {
+    return (
+      <div class="empty">
+        <p class="starting"><Icon name="loading" spin cls="ic" /> {S.empty.starting}</p>
+      </div>
+    );
+  }
   return (
     <div class="empty">
       <p>{S.empty.greeting}</p>
+      <p class="hint">{S.empty.startHint}</p>
       <ul>
         {S.empty.actions.map(([label, text]) => (
           <li key={label}>

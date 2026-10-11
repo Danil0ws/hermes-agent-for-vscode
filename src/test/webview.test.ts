@@ -203,3 +203,18 @@ test('css: menu de envio e popover do medidor não têm largura fixa em px', () 
 test('css: os selects do composer truncam com reticências (indicador visível)', () => {
   assert.match(rule('.sel select'), /text-overflow:\s*ellipsis/);
 });
+
+test('css: a barra inferior quebra só ENTRE os grupos, e o primário fica à direita', () => {
+  // o defeito medido: `flex-wrap: wrap` solto sobre os botões + `max-width: 42vw` no select. Rótulo
+  // de modelo longo (ids reais: "OpenCode Go · deepseek-v4.1-flash") empurrava cada botão para outra
+  // linha, e o Enviar aparecia num lugar diferente conforme o modelo escolhido.
+  assert.match(rule('.toolbar'), /flex-wrap:\s*wrap/);
+  assert.match(rule('.toolbar-line'), /flex:\s*1 1 auto/, 'grupo dos controles sem encolher');
+  assert.match(rule('.toolbar-actions'), /justify-content:\s*flex-end/, 'ações fora do canto direito');
+  assert.match(rule('.sel-model'), /flex:\s*2 1 0/, 'o select de modelo precisa de mais espaço que o de modo');
+  assert.match(rule('.sel select'), /text-overflow:\s*ellipsis/);
+  const piso = Number(rule('.sel').match(/min-width:\s*(\d+)px/)?.[1] ?? 0);
+  assert.ok(piso >= 60, `piso do select de modo pequeno demais (${piso}px): em sidebar estreita o rótulo some`);
+  assert.doesNotMatch(css, /\dvw/, 'unidade de viewport no CSS do chat (resolve contra a janela, não contra o painel)');
+  assert.match(rule('.bubble'), /font-family:\s*inherit/, 'prosa do balão fora da fonte da UI (vira bloco de código)');
+});

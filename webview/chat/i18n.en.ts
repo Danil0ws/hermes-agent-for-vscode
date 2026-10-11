@@ -16,6 +16,8 @@ export const en: Strings = {
       ['Plan a change', 'Plan, step by step, the change I describe.'],
     ] as const,
     manage: 'Manage models, skills and MCP…',
+    startHint: 'Click Start to load modes, models and commands.',
+    starting: 'Starting the agent…',
   },
 
   /* ───── roles ───── */
@@ -111,6 +113,10 @@ export const en: Strings = {
     noModels: 'no models',
     tools: 'Tools',
     toolsTip: 'Configure tools (Manage)',
+    start: 'Start',
+    starting: 'Starting…',
+    startTip: 'Create the session and load modes, models and commands',
+    loading: 'loading…',
     attach: 'Attach',
     dropHint: 'Drop files here to attach as context',
     removeChip: (label: string) => `Remove ${label}`,

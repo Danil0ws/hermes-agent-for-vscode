@@ -17,6 +17,8 @@ export const zhCN: Strings = {
       ['规划一项改动', '为我描述的改动制定分步计划。'],
     ] as const,
     manage: '管理模型、技能和 MCP…',
+    startHint: '点击“启动”以加载模式、模型和命令。',
+    starting: '正在启动代理…',
   },
 
   /* ───── papéis ───── */
@@ -112,6 +114,10 @@ export const zhCN: Strings = {
     noModels: '无模型',
     tools: '工具',
     toolsTip: '配置工具（管理）',
+    start: '启动',
+    starting: '正在启动…',
+    startTip: '创建会话并加载模式、模型和命令',
+    loading: '加载中…',
     attach: '附加',
     dropHint: '把文件拖到这里，作为上下文附加',
     removeChip: (label: string) => `移除 ${label}`,

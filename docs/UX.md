@@ -29,7 +29,8 @@ de contexto dentro do composer). Ver `docs/ARCHITECTURE.md §2.5`.
 ## 2. View de chat
 
 Local padrão: **Secondary Side Bar**. Também abre como aba de editor ("Abrir em editor").
-Estado vazio: saudação curta + 4 ações + atalho para Gerenciar. Sem arte.
+Estado vazio: saudação curta + dica do `Iniciar` + 4 ações + atalho para Gerenciar. Sem arte.
+Enquanto o `Iniciar` corre, o estado vazio mostra o progresso (spinner + rótulo) em vez das ações.
 
 ### 2.1 Esqueleto
 
@@ -87,10 +88,28 @@ Estado vazio: saudação curta + 4 ações + atalho para Gerenciar. Sem arte.
 │  │ Pergunte ao Hermes, # para contexto, / para comandos             │ │
 │  │                                                                   │ │
 │  └───────────────────────────────────────────────────────────────────┘ │
-│   [+]  [⚙ Permissões ▾]  [Modelo ▾]  [Esforço ▾]  [🔧 Ferramentas]     │
-│                                       ◔ 34%      [ Enviar ▾ ]          │
+│   [+]  [ Modo ▾ ]      [ Modelo ▾ ]       [⚙]     ◔ 34%   [ Enviar ▾ ]  │
 └───────────────────────────────────────────────────────────────────────┘
 ```
+
+A barra inferior é **uma linha só, sem quebra**: `+` · Modo · Modelo · engrenagem · medidor ·
+Enviar ▾. Os dois selects dividem a sobra da linha (o de modelo com o dobro do espaço, porque os
+ids são longos) e o primário fica colado à direita em qualquer largura de painel — com `wrap` os
+botões escorregavam de linha conforme o rótulo do modelo, e a posição do Enviar mudava junto.
+
+Antes de existir sessão, o primário é **Iniciar** (com spinner e rótulo "Iniciando…" enquanto o
+handshake corre):
+
+```
+sem sessão:  [ ▶ Iniciar ]     ← cria a sessão: session/new + anúncio de modos/modelos/comandos
+iniciando:   [ ⟳ Iniciando… ]  ← botão indisponível: clique duplo não abre duas sessões
+com sessão:  [ Enviar ▾ ]      ← Enter (o menu ▾ só existe com a fila ligada)
+```
+
+É esse clique que enche os dois selects: antes dele não há sessão e o `session/new` ainda não
+devolveu modos nem catálogo de modelos, então "sem modos"/"sem modelos" era o estado normal do
+painel recém-aberto — não um erro. Clicar numa sugestão do estado vazio continua funcionando
+(cria a sessão no primeiro prompt), mas o caminho explícito é o botão.
 
 ### 2.2 Barra de título — nativa (`contributes.menus.view/title`)
 
@@ -146,12 +165,14 @@ Texto obrigatório no rodapé do cartão (o escopo precisa ser explícito):
    - turno ativo: `Enfileirar ou dar direção ao turno em andamento`
    - com chip: `Pergunte sobre os N itens anexados`
    Histórico ↑/↓, `#` e `/` com popover, colar imagem (capability `image`).
-4. **Barra inferior**: `+` · Permissões/Modo · Modelo · Esforço · Ferramentas · *(flexível)* ·
-   medidor de contexto · Enviar ▾.
+4. **Barra inferior** (uma linha, sem quebra): `+` · Modo · Modelo · Ferramentas · *(os dois selects
+   dividem a sobra)* · medidor de contexto · Enviar ▾ — ou **Iniciar** enquanto não há sessão.
 
 ### 3.1 Botão de envio (idêntico ao do VS Code)
 
 ```
+sem sessão: [ ▶ Iniciar ]      ← session/new: anuncia modos, modelos e comandos
+iniciando:  [ ⟳ Iniciando… ]   ← indisponível até o handshake terminar
 ocioso:   [ Enviar ]           ← Enter
 turno:    [ ■ Parar ]  ▾       ← Esc
                 ├ Enviar agora (interromper)   session/cancel + prompt
