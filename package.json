@@ -151,7 +151,18 @@
         "command": "hermes.showContext",
         "title": "Ver contexto e uso",
         "category": "Hermes"
-      }
+      },
+      { "command": "hermes.plan.implement", "title": "Implementar plano", "category": "Hermes" },
+      { "command": "hermes.context.manage", "title": "Gerenciar contexto", "category": "Hermes" },
+      { "command": "hermes.agents.test", "title": "Testar conexão do agente", "category": "Hermes" },
+      { "command": "hermes.mcp.add", "title": "Adicionar servidor MCP", "category": "Hermes" },
+      { "command": "hermes.skill.open", "title": "Abrir SKILL.md", "category": "Hermes" },
+      { "command": "hermes.instructions.open", "title": "Abrir instruções do projeto", "category": "Hermes" },
+      { "command": "hermes.approvals.open", "title": "Abrir aprovações do Hermes", "category": "Hermes" },
+      { "command": "hermes.queue.toggle", "title": "Ligar/desligar a fila de prompts", "category": "Hermes" },
+      { "command": "hermes.keepFile", "title": "Manter arquivo", "category": "Hermes" },
+      { "command": "hermes.undoFile", "title": "Desfazer alterações do arquivo", "category": "Hermes" },
+      { "command": "hermes.copyResponse", "title": "Copiar resposta", "category": "Hermes" }
     ],
     "menus": {
       "view/title": [

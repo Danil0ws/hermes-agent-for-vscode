@@ -4,6 +4,7 @@ import { AgentManager } from './core/AgentManager';
 import { ChatViewProvider } from './ui/ChatViewProvider';
 import { CliRunner } from './cli/CliRunner';
 import { activeAgent, onSettingsChanged, settings, workingDirectory } from './config/Settings';
+import { FEATURES } from './features';
 
 let diagnostics: vscode.DiagnosticCollection;
 
@@ -68,10 +69,33 @@ export function activate(ctx: vscode.ExtensionContext): void {
 
   // Comandos cujas superfícies chegam nos próximos marcos: registrados como no-op
   // para os menus não quebrarem enquanto isso.
-  for (const id of ['hermes.fixProblem', 'hermes.diff.open', 'hermes.sessions.pick', 'hermes.manage.open', 'hermes.plan.focus', 'hermes.export']) {
+  for (const id of [
+    'hermes.fixProblem', 'hermes.diff.open', 'hermes.sessions.pick', 'hermes.manage.open',
+    'hermes.plan.focus', 'hermes.export', 'hermes.plan.implement', 'hermes.context.manage',
+    'hermes.agents.test', 'hermes.mcp.add', 'hermes.skill.open', 'hermes.instructions.open',
+    'hermes.approvals.open', 'hermes.queue.toggle', 'hermes.keepFile', 'hermes.undoFile',
+    'hermes.copyResponse',
+  ]) {
     ctx.subscriptions.push(vscode.commands.registerCommand(id, (...args: unknown[]) => {
       log.warn(`comando ${id} ainda não implementado (args: ${JSON.stringify(args)})`);
     }));
+  }
+
+  // Features dos marcos M2–M9: cada uma é dona do seu arquivo em src/features/.
+  const featureDeps = {
+    agents, provider, log: (level: 'info' | 'warn' | 'error', text: string) => log[level](text),
+    traffic: trafficLog,
+    openCli: async (opts?: { command?: string; args?: string[]; sessionId?: string }) => {
+      await cli.openFullCli(opts);
+    },
+  };
+  for (const feature of FEATURES) {
+    try {
+      const r = feature.register(ctx, featureDeps);
+      if (r instanceof Promise) void r.catch((e: unknown) => log.error(`feature ${feature.id}: ${String(e)}`));
+    } catch (e) {
+      log.error(`feature ${feature.id} falhou ao registrar: ${String(e)}`);
+    }
   }
 
   ctx.subscriptions.push(onSettingsChanged(() => log.info('configuração do Hermes alterada')));
