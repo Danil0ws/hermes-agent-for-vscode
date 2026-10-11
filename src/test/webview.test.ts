@@ -11,6 +11,7 @@ import {
   meterLevel, moveDeltas, percent, replaceToken, splitFenced, triggerToken, visibleTurns,
 } from '../../webview/chat/logic.ts';
 import { S, num } from '../../webview/chat/i18n.ts';
+import { setCurrentLocale } from '../../webview/shared/l10n.ts';
 import type { ContextChip } from '../core/types.ts';
 
 /* ─────────── tokens / limiares ─────────── */
@@ -146,7 +147,18 @@ test('i18n: placeholder contextual troca por estado do composer', () => {
   assert.match(S.composer.placeholderBusy, /direção/);
   assert.equal(S.composer.placeholderChips(1), 'Pergunte sobre o item anexado');
   assert.match(S.composer.placeholderChips(3), /3 itens/);
+});
+
+test('num formata pelo idioma corrente (pt-BR usa ponto, en usa vírgula)', () => {
+  // o idioma é detectado do `<html lang>` da webview; fora do navegador o padrão é en
+  assert.equal(num(12400), '12,400');
+  setCurrentLocale('pt-br');
   assert.equal(num(12400), '12.400');
+  setCurrentLocale('zh-cn');
+  assert.equal(num(12400), '12,400');
+  setCurrentLocale('ru');
+  assert.equal(num(12400), '12\u00a0400', 'ru usa espaço estreito como separador de milhar');
+  setCurrentLocale('en');
 });
 
 test('i18n: rótulos reais de status e opções de aprovação vêm do agente', () => {

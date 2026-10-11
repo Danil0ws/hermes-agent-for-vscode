@@ -6,7 +6,7 @@
  * não sabem que existe mais de um idioma.
  */
 import { detectLocale, localeProxy, type Locale } from '../shared/l10n';
-import { ptBR, num, type Strings } from './i18n.pt-br';
+import { ptBR, type Strings } from './i18n.pt-br';
 import { en } from './i18n.en';
 import { ru } from './i18n.ru';
 import { zhCN } from './i18n.zh-cn';
