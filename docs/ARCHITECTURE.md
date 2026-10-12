@@ -191,8 +191,13 @@ camada de contexto/tokens.
 2. **`HERMES_ACP_SKIP_CONFIGURED_MCP=1`** por padrão no subprocesso. O startup global de MCP
    atrasa `initialize`; se o usuário quiser os MCP globais, o flag é desligado na config do agente.
 3. **Modos**: o picker de "Modo" lista os modos **reais** do agente (`availableModes`) — que no
-   Hermes são política de aprovação de edição. Não inventamos Ask/Plan/Agent. O picker de
+   Hermes são política de aprovação de edição (`default` = pergunta, `accept_edits` = libera edição no
+   workspace, `dont_ask` = libera na sessão). Não inventamos Ask/Plan/Agent. O picker de
    **Permissões** e o de **Modo** são o mesmo controle, apresentado uma vez.
+   **O agente NÃO emite `current_mode_update`** ao trocar de modo: `session/set_mode` grava
+   `state.mode`, salva a sessão e responde `{}` (verificado no adaptador e por probe direto no
+   `hermes acp` — as únicas notificações depois da troca são `available_commands_update` e
+   `usage_update`). Quem conta à webview é a nossa `HermesSession.setMode` (ver §12.6).
 4. **Estados de aprovação**: `ask` | `allowSession` | `allowAll` na config da extensão apenas
    *pré-selecionam* a resposta do cliente; a autoridade continua sendo as opções que o agente manda
    em cada `session/request_permission`.
@@ -328,7 +333,7 @@ Notas de implementação:
 | Aprovação inline | `session/request_permission` (`allow_once`/`allow_session`/`allow_always`/`deny`) | ✅ |
 | Plano | `session/update` `plan` (entradas `content`/`priority`/`status`) | ✅ |
 | Slash commands + autocomplete | `available_commands_update` (9 comandos) | ✅ |
-| Seletor de MODO | `modes.availableModes` + `session/set_mode` + `current_mode_update` | ✅ (3 modos: política de edição) |
+| Seletor de MODO | `modes.availableModes` + `session/set_mode`; a escolha é lembrada e reaplicada | ✅ (3 modos: política de edição) |
 | Seletor de MODELO | `models.availableModels` + `session/set_model` | ✅ (id/nome/provider; sem janela, capacidade ou custo) |
 | Medidor de contexto (usado/total) | `usage_update {size, used}` | ✅ |
 | Detalhamento por categoria | ❌ protocolo → estimativa local por grupo | ⚠️ rotulado "estimado" |
@@ -715,7 +720,45 @@ Pedido do usuário (12/10): "falta um botão para parar, pausar e retornar as ex
   nova. Na webview não há mensagem nova no contrato: `paused` viaja dentro de `tabs`/`init`, que já
   existem (adicionar campo é compatível; `PROTOCOL` continua 1).
 
+### 12.6 Modo de edição: quem anuncia o que o agente não anuncia
+
+Defeito relatado: "seleciono Accept Edits, dou Enter e volta para o default".
+
+- **Fato do agente (verificado)**: `session/set_mode` grava `state.mode` e salva a sessão, mas **não
+  emite `current_mode_update`** — as notificações que chegam depois da troca são só
+  `available_commands_update` e `usage_update` (probe direto no `hermes acp`; no adaptador, a função
+  responde `{}`). A escolha **é** persistida: `session/load` devolve `currentModeId: accept_edits`.
+- **Consequência**: a webview só sabia do modo pelos `session/new`/`session/load`. Como o
+  `setMode` do cliente não emitia nada, o estado dela ficava no modo velho e o `<select>` — que é
+  controlado por `state.currentMode` — voltava a `Default` no `init`/re-render seguinte, com o agente
+  já em `accept_edits`.
+- **Correção em duas partes**: (1) `HermesSession.setMode` emite `modes` num `finally` (sucesso →
+  modo novo; falha → modo antigo, que é a verdade; o erro continua subindo); (2) a webview adota o
+  valor escolhido de forma **otimista** (`setMode`/`setModel` no `composer.tsx`), porque o host é a
+  fonte da verdade mas a confirmação só chega depois do round-trip. O mesmo tratamento foi dado ao
+  seletor de **modelo**, que tem a mesma janela (ver §12.7 abaixo, sobre a memória).
+- **Guarda**: `src/test/acp.integration.test.ts` troca o modo numa sessão real e falha se o `modes`
+  não for emitido (verificado falhando com o `setMode` antigo: "setMode não emitiu `modes`") e
+  confirma que `session/load` devolve o modo salvo.
+
+### 12.7 A escolha do modo vale para as sessões seguintes (`ModeMemory`)
+
+O agente persiste o modo **por sessão**; toda sessão NOVA nasce em `default`. Quem escolhia "Accept
+Edits" reescolhia a cada conversa — e o estado atual do editor também é por sessão.
+
+- `src/core/ModeMemory.ts` guarda o id escolhido em `globalState` (`hermes.mode`, por perfil do VS
+  Code, como o `hermes.permissions` da config). Guarda o **id**, não o índice: o seletor é montado a
+  partir do que o agente anuncia.
+- `ChatViewProvider.openSession` é agora o **ponto único de criação de sessão** (primeiro prompt,
+  `Iniciar`, nova conversa, aba nova) e reaplica o modo lembrado quando ele existe na lista anunciada
+  e difere do atual. Id que o agente não anuncie mais é ignorado em silêncio — modo renomeado numa
+  versão futura não vira `set_mode` inválido.
+- A escolha só é lembrada **depois** de o agente aceitar: um `set_mode` que falhou não vira
+  preferência. Ela fica visível no próprio seletor (nada silencioso, como o indicador de YOLO na
+  barra de status).
+
 ## 13. Anexos: uma fonte de chips, `draft/insert` e corte por teto
+
 - **Chips têm UM dono.** O `ContextManager` é quem manda na lista e publica por `deps.publish`; o
   provider passa a ser o ponto de escrita (`setChips`) e o único a postar `{type:'chips'}` para a
   webview. Antes havia DUAS listas (a do provider, usada em `send`/`initialState`, e a da sessão) e a

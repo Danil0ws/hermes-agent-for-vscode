@@ -72,6 +72,17 @@ test('ACP real: initialize negocia protocolo 1 e as capabilities do Hermes', { s
     assert.ok(modelsMsg, 'sessão não emitiu `models` ao ser criada');
     assert.equal(modelsMsg.models.length, session.snapshot.models.length);
 
+    // Troca de modo: o agente NÃO emite `current_mode_update` (verificado no adaptador: ele grava
+    // `state.mode`, salva a sessão e responde `{}`), então quem conta à webview é a NOSSA sessão.
+    // Sem este emit o seletor do composer ficava com o modo velho e voltava para "Default" — era o
+    // defeito relatado ("seleciono Accept Edits, dou Enter e volta para o default").
+    events.length = 0;
+    await session.setMode('accept_edits');
+    const modeMsg = events.find((e) => e.type === 'modes') as { current?: string } | undefined;
+    assert.ok(modeMsg, 'setMode não emitiu `modes`: a webview fica com o modo velho');
+    assert.equal(modeMsg.current, 'accept_edits', 'emit de `modes` com o modo errado');
+    assert.equal(session.snapshot.currentMode, 'accept_edits');
+
     // prompt curto: o streaming tem de produzir texto e um stop reason
     const stop = await session.prompt('Responda apenas: ok');
     assert.equal(stop, 'end_turn', `stop_reason inesperado: ${stop}`);
@@ -84,6 +95,13 @@ test('ACP real: initialize negocia protocolo 1 e as capabilities do Hermes', { s
     await session.cancel();
     const cancelled = await pending;
     assert.ok(['cancelled', 'end_turn'].includes(cancelled), `stop_reason após cancel: ${cancelled}`);
+
+    // O modo é PERSISTIDO pelo agente: reabrir a sessão devolve `accept_edits`. É esta metade que
+    // faz a escolha sobreviver a reload e a trocar de aba (o `session/load` é o caminho do
+    // histórico). Fica por último: o replay do histórico polui `events` de propósito.
+    const reloaded = await HermesSession.load(conn.connection, cwd, session.sessionId, makeDeps(events), () => {}, 'Hermes');
+    assert.equal(reloaded?.snapshot.currentMode, 'accept_edits', 'session/load não devolveu o modo salvo');
+    assert.deepEqual(reloaded?.snapshot.modes.map((m) => m.id), ['default', 'accept_edits', 'dont_ask']);
   } finally {
     conn.stop();
   }

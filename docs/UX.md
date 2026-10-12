@@ -181,6 +181,11 @@ Texto obrigatório no rodapé do cartão (o escopo precisa ser explícito):
 4. **Barra inferior** (uma linha, sem quebra): `+` · Modo · Modelo · Ferramentas · *(os dois selects
    dividem a sobra)* · controles de execução (§3.2) · medidor de contexto · Enviar ▾ — ou **Iniciar**
    enquanto não há sessão.
+5. **Modo (política de edição)**: o seletor lista os modos que o **agente** anuncia — no Hermes,
+   `Default` (pergunta antes de editar), `Accept Edits` (libera edição no workspace) e `Don't Ask`
+   (libera na sessão). A escolha **fica marcada** e é lembrada por perfil: conversas novas já nascem
+   nela (o agente persiste o modo por sessão, não entre sessões). O seletor adota o valor escolhido no
+   mesmo clique — a confirmação do host chega depois do round-trip e o campo não pisca.
 
 ### 3.1 Botão de envio (idêntico ao do VS Code)
 

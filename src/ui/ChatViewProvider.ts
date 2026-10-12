@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { AgentManager } from '../core/AgentManager';
 import type { HermesSession } from '../core/HermesSession';
 import { QueueManager, drainAllowed } from '../core/QueueManager';
+import { ModeMemory } from '../core/ModeMemory';
 import { activeAgent, settings, workingDirectory } from '../config/Settings';
 import { estimateTokens } from '../utils/Tokens';
 import {
@@ -26,6 +27,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
 
   private view?: vscode.WebviewView | vscode.WebviewPanel;
   private queue: QueueManager;
+  /** Modo de edição escolhido pelo usuário, reaplicado em toda sessão nova (ver `openSession`). */
+  private modes: ModeMemory;
   private chips: ContextChip[] = [];
   /** ContextManager (dono da lista), instalado pela feature "context". */
   private contextManager?: { add(draft: DraftChip): ContextChip; clear(): void };
@@ -42,6 +45,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     private readonly log: (level: 'info' | 'warn' | 'error', text: string) => void,
   ) {
     this.queue = new QueueManager(ctx.workspaceState);
+    this.modes = new ModeMemory(ctx.globalState);
     this.agents.onEvent((m) => this.onAgentEvent(m));
     this.agents.onAuthRequired(() => void this.runAuthTerminal());
   }
@@ -101,7 +105,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           await this.resumeTab(msg.tab);
           return;
         case 'setMode':
-          await this.sessionFor(msg.tab)?.setMode(msg.modeId);
+          await this.setMode(msg.modeId, msg.tab);
           return;
         case 'setModel':
           await this.sessionFor(msg.tab)?.setModel(msg.modelId);
@@ -199,6 +203,41 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     }
   }
 
+  /**
+   * Cria a sessão da aba e REAPLICA o modo de edição lembrado.
+   *
+   * Ponto ÚNICO de criação de sessão. O agente persiste o modo dentro de uma sessão, mas toda
+   * sessão NOVA nasce em `default` (verificado: `session/set_mode` grava, `session/load` devolve o
+   * modo salvo, `session/new` volta ao default) — sem isto, quem escolheu "Accept Edits" reescolhia
+   * a cada conversa. Aplicar aqui cobre as três portas de nascimento: primeiro prompt, Iniciar,
+   * nova conversa e aba nova.
+   */
+  private async openSession(t: TabInfo): Promise<HermesSession> {
+    const s = settings();
+    const a = activeAgent(s);
+    const session = await this.agents.newSession(a.cfg, t.cwd, a.name, t.id);
+    t.sessionId = session.sessionId;
+    const mode = this.modes.applyTo(session.snapshot.modes, session.snapshot.currentMode);
+    if (mode) {
+      try {
+        await session.setMode(mode);
+        this.log('info', `modo lembrado aplicado (aba ${t.id}): ${mode}`);
+      } catch (e) {
+        this.log('warn', `modo lembrado não pôde ser aplicado (aba ${t.id}): ${String(e)}`);
+      }
+    }
+    return session;
+  }
+
+  /** Troca o modo da aba e LEMBRA a escolha — é ela que as sessões novas recebem (`openSession`). */
+  private async setMode(modeId: string, tab?: string): Promise<void> {
+    const session = this.sessionFor(tab);
+    if (!session) return;
+    // lembrar SÓ depois do agente aceitar: um `set_mode` que falhou não vira preferência.
+    await session.setMode(modeId);
+    await this.modes.remember(modeId);
+  }
+
   private async send(text: string, action: SendAction, tab?: string, force = false): Promise<void> {
     const s = settings();
     // FONTE ÚNICA: o que vai ao modelo é a lista do host (nunca uma cópia que a webview mandou).
@@ -223,8 +262,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     if (busy && action === 'interrupt') await session?.cancel();
 
     if (!session) {
-      session = await this.agents.newSession(activeAgent(s).cfg, t.cwd, activeAgent(s).name, t.id);
-      t.sessionId = session.sessionId;
+      session = await this.openSession(t);
     }
 
     this.post({ type: 'user/message', text, chips, tab: t.id });
@@ -287,10 +325,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     t.starting = true;
     this.announce();
     try {
-      const s = settings();
       // a sessão devolvida pelo `newSession` é a que vale — não reler por sessionId
-      const session = await this.agents.newSession(activeAgent(s).cfg, t.cwd, activeAgent(s).name, t.id);
-      t.sessionId = session.sessionId;
+      const session = await this.openSession(t);
       this.post({ type: 'session', sessionId: session.sessionId, tab: t.id });
       this.log('info', `sessão iniciada (aba ${t.id}): ${session.sessionId}`);
     } catch (err) {
@@ -311,9 +347,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     t.sessionId = null;
     t.busy = false;
     t.waiting = false;
-    const s = settings();
-    const session = await this.agents.newSession(activeAgent(s).cfg, t.cwd, activeAgent(s).name, t.id);
-    t.sessionId = session.sessionId;
+    const session = await this.openSession(t);
     this.post({ type: 'session', sessionId: session.sessionId, tab: t.id });
     this.announce();
     this.log('info', `nova sessão (aba ${t.id}): ${session.sessionId}`);
@@ -340,8 +374,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     this.activeTabId = id;
     this.announce();
     try {
-      const session = await this.agents.newSession(activeAgent(s).cfg, dir, activeAgent(s).name, id);
-      tab.sessionId = session.sessionId;
+      const session = await this.openSession(tab);
       this.log('info', `aba ${id} → sessão ${session.sessionId} (cwd ${dir})`);
     } catch (err) {
       this.log('error', `newTab: falha ao criar a sessão — ${String(err)}`);

@@ -17,6 +17,25 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Corrigido
 
+- **Seleção de modo (política de edição) voltava para `Default`** — "seleciono Accept Edits, dou Enter
+  e volta para o default". Duas causas somadas: (1) o agente **não emite** `current_mode_update` ao
+  trocar de modo (`session/set_mode` grava `state.mode`, salva a sessão e responde `{}` — verificado no
+  adaptador e por probe direto no `hermes acp`: as únicas notificações pós-troca foram
+  `available_commands_update` e `usage_update`), e o `HermesSession.setMode` não emitia nada — a
+  webview ficava com o modo velho no estado e o `<select>` voltava a `Default` no `init`/re-render
+  seguinte mesmo com o agente já em `accept_edits`; (2) o `select` é controlado pelo estado, então
+  qualquer re-render dentro da janela do round-trip devolvia o valor antigo. Agora `setMode` emite
+  `modes` (no `finally`: numa falha emite o valor antigo, que é a verdade) e o seletor adota o valor
+  escolhido de forma otimista, com o host sobrepondo o real logo em seguida. Mesmo tratamento no
+  seletor de modelo.
+- **Modo escolhido não valia para as sessões seguintes**: o agente persiste o modo **por sessão**
+  (`session/load` devolve `accept_edits` depois da troca, verificado), mas toda sessão nova nasce em
+  `default` — quem escolhia "Accept Edits" tinha de reescolher a cada conversa. A escolha passa a ser
+  lembrada por perfil do VS Code (`globalState: hermes.mode`, via `ModeMemory`) e reaplicada no ponto
+  único de criação de sessão (`ChatViewProvider.openSession`), que agora atende as quatro portas:
+  primeiro prompt, **Iniciar**, nova conversa e aba nova. Um id que o agente não anuncie mais (modo
+  renomeado numa versão futura) é ignorado em silêncio, nunca um `set_mode` inválido.
+
 - **`publisher` do manifesto era `hermes-agent`**: o upload no Marketplace recusou com "Publisher ID
   'hermes-agent' provided in the extension manifest should match the publisher ID 'Danil0ws' under
   which you are trying to publish this extension". O campo passou a ser o id real (`Danil0ws`), o

@@ -376,6 +376,26 @@ function RunControls() {
   );
 }
 
+/**
+ * Troca de modo/modelo: o estado local recebe o valor ESCOLHIDO antes de o host confirmar.
+ *
+ * Otimista de propósito. O `select` é controlado por `state.currentMode`/`currentModel`, mas quem
+ * escreve neles é a mensagem `modes`/`models` do host — e no modo isso demora de verdade, porque o
+ * agente NÃO emite `current_mode_update` (só o nosso `HermesSession.setMode` emite, depois do
+ * round-trip). Sem o valor otimista, qualquer re-render nessa janela devolvia o select ao valor
+ * velho — o defeito relatado ("seleciono Accept Edits e volta para Default"). O host continua sendo
+ * a fonte da verdade: ele emite de novo logo em seguida, com o valor real, e sobrepõe este.
+ */
+function setMode(modeId: string): void {
+  state.value = { ...state.value, currentMode: modeId };
+  send({ type: 'setMode', modeId });
+}
+
+function setModel(modelId: string): void {
+  state.value = { ...state.value, currentModel: modelId };
+  send({ type: 'setModel', modelId });
+}
+
 /* ─────────── composer ─────────── */
 
 export function Composer() {
@@ -576,7 +596,7 @@ export function Composer() {
               <span class="sr-only">{S.composer.mode}</span>
               <select title={S.composer.modeTip} aria-label={S.composer.mode}
                 value={state.value.currentMode ?? ''}
-                onChange={(e) => send({ type: 'setMode', modeId: (e.target as HTMLSelectElement).value })}>
+                onChange={(e) => setMode((e.target as HTMLSelectElement).value)}>
                 {modes.value.length === 0 && <option value="">{state.value.starting ? S.composer.loading : S.composer.noModes}</option>}
                 {modes.value.map((m) => <option key={m.id} value={m.id} title={m.description}>{m.name}</option>)}
               </select>
@@ -585,7 +605,7 @@ export function Composer() {
               <span class="sr-only">{S.composer.model}</span>
               <select title={S.composer.modelTip} aria-label={S.composer.model}
                 value={state.value.currentModel ?? ''}
-                onChange={(e) => send({ type: 'setModel', modelId: (e.target as HTMLSelectElement).value })}>
+                onChange={(e) => setModel((e.target as HTMLSelectElement).value)}>
                 {models.value.length === 0 && <option value="">{state.value.starting ? S.composer.loading : S.composer.noModels}</option>}
                 {models.value.map((m) => <option key={m.modelId} value={m.modelId} title={m.description}>{m.name}</option>)}
               </select>

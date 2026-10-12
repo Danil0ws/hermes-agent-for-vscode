@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { QueueManager, drainAllowed } from '../core/QueueManager.ts';
+import { ModeMemory } from '../core/ModeMemory.ts';
 import { estimateTokens, meterLevel, percent } from '../utils/Tokens.ts';
 import { parseUnifiedDiff } from '../core/HermesSession.ts';
 import { splitCommand } from '../core/Connection.ts';
@@ -57,6 +58,42 @@ test('pausa: a fila só drena com as execuções soltas', () => {
   assert.equal(drainAllowed(true, true), false, 'pausado: NÃO drena (o caso do pause no meio do turno)');
   assert.equal(drainAllowed(false, false), false, 'fila desligada nas configurações: nunca drena');
   assert.equal(drainAllowed(true, false), false);
+});
+
+/**
+ * Memória do modo de edição. O que ela existe para garantir: a escolha do usuário sobrevive a
+ * sessão nova — e um id que o agente não anuncia mais (modo renomeado numa versão futura) vira
+ * silêncio, nunca um `set_mode` inválido.
+ */
+test('modo: lembra a escolha e só a reaplica se o agente ainda anunciar aquele id', async () => {
+  const mem = new Map<string, unknown>();
+  const store = {
+    get: <T>(k: string) => mem.get(k) as T | undefined,
+    update: async (k: string, v: unknown) => { mem.set(k, v); },
+  };
+  const modes = [
+    { id: 'default', name: 'Default' },
+    { id: 'accept_edits', name: 'Accept Edits' },
+    { id: 'dont_ask', name: "Don't Ask" },
+  ];
+
+  const m1 = new ModeMemory(store as never);
+  assert.equal(m1.remembered, undefined, 'sem escolha ainda');
+  assert.equal(m1.applyTo(modes, 'default'), undefined, 'nada a aplicar sem escolha');
+
+  await m1.remember('accept_edits');
+  assert.equal(m1.remembered, 'accept_edits');
+  assert.equal(m1.applyTo(modes, 'default'), 'accept_edits', 'sessão nova em default: reaplica');
+  assert.equal(m1.applyTo(modes, 'accept_edits'), undefined, 'já está no modo escolhido: não mexe');
+
+  // sobrevive ao reload (o Memento é do perfil, não da janela)
+  const m2 = new ModeMemory(store as never);
+  assert.equal(m2.applyTo(modes, 'default'), 'accept_edits');
+
+  // id que o agente não anuncia mais (modo removido/renomeado): silêncio, não erro
+  await m2.remember('modo_que_nao_existe');
+  assert.equal(m2.applyTo(modes, 'default'), undefined);
+  assert.equal(m2.applyTo([], undefined), undefined);
 });
 
 test('tokens: heurística única e limiares do medidor', () => {

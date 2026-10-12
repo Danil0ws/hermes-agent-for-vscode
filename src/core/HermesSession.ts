@@ -195,8 +195,17 @@ export class HermesSession {
   }
 
   async setMode(modeId: string): Promise<void> {
-    await this.conn.setSessionMode({ sessionId: this.sessionId, modeId });
-    this.state.currentMode = modeId;
+    try {
+      await this.conn.setSessionMode({ sessionId: this.sessionId, modeId });
+      this.state.currentMode = modeId;
+    } finally {
+      // O agente NÃO emite `current_mode_update` ao trocar de modo (verificado no adaptador: ele
+      // grava `state.mode`, salva a sessão e responde `{}`), então sem este emit a webview fica com
+      // o modo VELHO no estado e o seletor do composer volta para "Default" no `init` seguinte.
+      // No `finally` porque a falha também tem de ser contada: aí o valor emitido é o antigo, que é
+      // a verdade — o erro em si sobe para quem chamou.
+      this.emit({ type: 'modes', modes: this.state.modes, current: this.state.currentMode });
+    }
   }
 
   async setModel(modelId: string): Promise<void> {

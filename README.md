@@ -51,7 +51,11 @@ code --install-extension hermes-agent-for-vscode-0.1.0.vsix
    Before that nothing else in the panel is interactive — no toolbar, the field is disabled and says
    so, and the tab strip's `+`/worktree buttons are inert.
 3. Once started the toolbar appears (`+` for context, mode and model) and typing works (`Enter`;
-   `Shift+Enter` for a newline; `Esc` cancels the turn). The send button sits **inside** the field
+   `Shift+Enter` for a newline; `Esc` cancels the turn). The **Mode** picker lists what the agent
+   announces — `Default` (ask before editing), `Accept Edits` (auto-allow workspace edits) and
+   `Don't Ask` (auto-allow for the session) — and the choice **sticks**: it is remembered per profile
+   and every new conversation starts in it, because the agent persists the mode per session only. The
+   send button sits **inside** the field
    (bottom right, text only); it opens the same menu — send, queue, steer, interrupt. Next to the
    context meter the run controls: **Stop** (`⏹`, only during a turn) cancels the current turn, and
    **Pause**/**Resume** (`⏸`/`▶`) pauses the tab — the running turn is interrupted, the queue stops
