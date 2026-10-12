@@ -27,6 +27,11 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
      anywhere`. `pre-wrap` sozinho não quebra um token comprido sem espaços (um caminho, um JSON numa
      linha) e o bloco ganhava rolagem horizontal — medido com um caminho de 150 caracteres, o `pre`
      agora fecha em `182 == 182` (200px) e `292 == 292` (310px).
+  4. **Nome acessível do cabeçalho** (achado renderizando a UI, não em teste): o `<summary>` do cartão
+     tinha `aria-label` (só o título) e os dois `<span>` colavam sem separador — o painel anunciava
+     `Arquivos alterados2 · +132 −3` e deixava a contagem de fora para quem usa leitor de tela. O
+     `aria-label` saiu, o rótulo visível virou o nome acessível (`Arquivos alterados 4 · +197 −13`) e
+     um nó de texto com espaço separa os dois spans (em flex ele não vira item: layout intacto).
 
 ### Adicionado
 

@@ -116,6 +116,10 @@ test('transcript: arquivos alterados fecham por padrão (a lista inteira ocupava
   assert.match(bloco, /<summary/, 'sem <summary> não há como abrir/fechar');
   assert.match(bloco, /S\.workingSet\.summary\(/, 'o resumo tem de mostrar a contagem');
   assert.match(bloco, /class="ws-row"/, 'as linhas de arquivo saíram do bloco');
+  // NOME acessível: `aria-label` no <summary> esconde a contagem de quem usa leitor de tela (o painel
+  // anunciava só "Arquivos alterados"), e sem separador os dois spans colam ("alterados2 · +132 −3")
+  assert.doesNotMatch(bloco, /<summary[^>]*aria-label/, 'summary com aria-label: a contagem deixa de ser anunciada');
+  assert.match(bloco, /\{' '\}/, 'faltou o separador entre o título e a contagem no nome acessível');
 });
 
 test('css: a linha de arquivo alterado quebra e o caminho encolhe (sem rolagem horizontal)', () => {

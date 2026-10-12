@@ -198,8 +198,11 @@ function WorkingSet() {
   const rem = files.reduce((a, f) => a + f.removed, 0);
   return (
     <details class="section workingset">
-      <summary aria-label={S.a11y.workingSet}>
+      <summary>
         <span>{S.workingSet.title}</span>
+        {/* O ` ` entre os spans é o separador do NOME acessível: em flex um nó de texto só com espaço
+            não vira item (layout intacto), mas o `<summary>` deixa de anunciar "alterados2". */}
+        {' '}
         <span class="muted">{S.workingSet.summary(files.length, add, rem)}</span>
       </summary>
       {files.map((f) => (

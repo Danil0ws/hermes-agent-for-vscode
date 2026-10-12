@@ -172,9 +172,12 @@ Nenhum desses é botão dentro da webview.
 
 Fonte: blocos de diff dos `tool_call`/`tool_call_update` + `ToolCallLocation.path`.
 
-**Fechado por padrão** (`<details>` nativo; o `<summary>` é o cabeçalho com `N · +A −R`). Aberto,
-cada linha: estado (`M`/`A`/`D`), caminho, `+N −M`, `[diff]`, `[Manter]`, `[↺ Desfazer]`; rodapé com
-`[Desfazer tudo]`.
+**Fechado por padrão** (`<details>` nativo; o `<summary>` é o cabeçalho com `N · +A −R` e o rótulo
+visível **é** o nome acessível — sem `aria-label`, que esconderia a contagem de quem usa leitor de
+tela). Aberto, cada linha: estado (`M`/`A`/`D`), caminho, `+N −M`, `[diff]`, `[Manter]`,
+`[↺ Desfazer]`; rodapé com `[Desfazer tudo]`. Medido renderizando (1440px e 320px): fechado o cartão
+mede 28px de altura e as linhas **não são renderizadas** (`checkVisibility() === false`); aberto mede
+163px (1440) / 205px (320), com os botões na mesma linha do caminho e sem rolagem horizontal.
 
 Por que fechado: com N arquivos, o cartão sempre aberto eram N linhas + 3 botões cada + o aviso de
 escopo — a tela toda, e a conversa saía de vista. Medido no harness (200px de painel, bundle 0.1.3):
