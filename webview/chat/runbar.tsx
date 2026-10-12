@@ -53,13 +53,23 @@ export function RunBar() {
 
   if (st.phase === 'idle' || st.phase === 'starting') return null;
 
+  // Uma linha só: o que não couber em painel estreito vira reticências, então a frase inteira (fase +
+  // contagem + tempo + aviso) viaja no `title` — truncar nunca pode APAGAR a informação.
+  const secs = elapsed(Date.now() - st.since);
+  const full = [
+    phaseText(st),
+    st.open > 1 ? S.runbar.multiple(st.open) : '',
+    S.runbar.elapsed(secs),
+    st.slow ? S.runbar.slow : '',
+  ].filter(Boolean).join(' · ');
+
   return (
-    <div class="runbar" role="status" aria-live="polite" aria-label={S.runbar.a11y}>
+    <div class="runbar" role="status" aria-live="polite" aria-label={S.runbar.a11y} title={full}>
       <Icon name="loading" spin cls="ic" />
       <span class="runbar-text">{phaseText(st)}</span>
       {st.open > 1 && <span class="runbar-more muted">{S.runbar.multiple(st.open)}</span>}
       <span class="spacer" />
-      <span class="runbar-time muted">{S.runbar.elapsed(elapsed(Date.now() - st.since))}</span>
+      <span class="runbar-time muted">{S.runbar.elapsed(secs)}</span>
       {st.slow && <span class="runbar-slow">{S.runbar.slow}</span>}
     </div>
   );

@@ -9,11 +9,15 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 - **Barra de execução no rodapé** (`webview/chat/runbar.tsx`): entre a conversa e o campo, uma linha
   diz o que está rodando — `pensando`, `escrevendo a resposta`, `Comando: npm test · 12s`,
   `aguardando sua aprovação: …`, `pausado` — com **um único** ícone animado no painel inteiro, tempo
-  sempre visível e aviso em tom de warning quando a fase passa de 60s. Escondida em `idle` e em
-  `starting` (o bloco "Iniciar" é dono do próprio giro); **sem botões** (parar/pausar seguem só no
+  sempre visível e aviso em tom de warning quando a fase passa de 60s. **Sempre em UMA linha** (o que
+  não couber termina em reticências e a frase inteira — fase · contagem · tempo · aviso — viaja no
+  `title`): com `flex-wrap` a barra virava um bloco de 3 linhas em painel estreito (medido: 63px em
+  200px contra 23px de uma linha). Escondida em `idle` e em `starting` (o bloco "Iniciar" é dono do
+  próprio giro, com o modificador PADRÃO do Codicon); **sem botões** (parar/pausar seguem só no
   composer). A leitura vem de uma função pura (`webview/chat/status.ts::runStatus`), com precedência
   fixa `starting > paused > waiting > tool > thinking/writing > working > idle` — permissão pendente é
-  **espera**, não execução. Coberta por `src/test/runstatus.test.ts`.
+  **espera**, não execução. Coberta por `src/test/runstatus.test.ts` e `src/test/ui-visual.test.ts`
+  (uma linha, sem `flex-wrap`, texto com `min-width: 0` + reticências, e giro só no bloco "Iniciar").
 - **Vínculo tool ↔ turno** (`webview/chat/items.ts`): cada tool call agora pertence ao turno em que
   nasceu (`ToolEntry.turnId`, carimbado pelo reducer) e é renderizado **sob** ele.
 
@@ -48,11 +52,21 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ### Medido (bundle composto, harness Chromium com tokens de Dark+)
 
-`npm test` 122/122 · `tsc --noEmit` limpo · `npm run build` exit 0 · `vsce package` exit 0.
-Em 900px e em 280px: sem rolagem horizontal (`scrollWidth == clientWidth`), `.runbar` visível durante
-a execução com **1** ícone girando em todo o painel, nenhum tool fora de um `.turn`, `border-width`
-`0px` em `.bubble` e `.tool`. Com duas tools abertas e 71s: `2 em execução · 71s · esta fase está
-demorando — pode estar travado`, ainda com um único giro.
+`npm test` 123/123 · `tsc --noEmit` limpo · `npm run build` exit 0 · `vsce package` exit 0.
+Em **200, 320, 390 (mobile-ish), 560, 900 e 1440px**: sem rolagem horizontal
+(`scrollWidth == clientWidth` do painel, do app e do transcript), `.runbar` com **23px = uma linha**,
+sempre acima do campo, com **1** ícone girando em todo o painel, nenhum tool fora de um `.turn`,
+`border-width` `0px` em `.bubble` e `.tool`. Em 200px o texto da barra termina em reticências (23px
+cortados) e o `title` traz a frase inteira. Com duas tools abertas e 71s a barra mostrou
+`Comando: git status · 2 em execução · 71s · esta fase está demorando — pode estar travado`, com um
+único giro. Quatro fases conferidas injetando `HostToWebview`: `idle` (barra ausente, 0 giros),
+`starting` (barra ausente, 1 giro no bloco "Iniciar" pelo modificador do Codicon), `waiting`
+(`aguardando sua aprovação: Executar comando`, cartão de aprovação como a única caixa com borda) e
+`writing`. Interação: `Escape` real (CDP `rawKeyDown`) com o turno ocupado posta `{"type":"cancel"}`;
+o detalhe do tool abre/fecha pelo caminho nativo (`summary.click()`) com o conteúdo
+`checkVisibility() === false` fechado, e um detalhe aberto à mão sobrevive ao re-render de um chunk
+novo. Cliques de MOUSE via CDP não chegaram à webview neste harness (nem um botão conhecido postou
+`copy`) — essa parte ficou sem verificação e é a checagem manual de um clique no painel real.
 
 ### Alterado
 

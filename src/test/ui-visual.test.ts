@@ -39,8 +39,20 @@ test('ui-visual: .bubble/.tool/.section sem borda de caixa nem canto arredondado
 
 /* ─────────── (b) uma animação por vez ─────────── */
 
-test('ui-visual: o transcript não anima nada e a barra é a única animação', () => {
-  assert.doesNotMatch(transcript, /spin/, 'transcript.tsx ainda gira um ícone — a barra é a única animação');
+/**
+ * UMA animação por vez, e ela é a barra — com UMA exceção: o bloco "Iniciar" do estado vazio gira
+ * enquanto a barra está escondida (fases `starting`). A guarda é por REGIÃO, não pela string no
+ * arquivo: proibir `spin` no arquivo inteiro empurrava a lane para uma `@keyframes` própria — que
+ * anima no compositor e não pode ser verificada — só para satisfazer o grep. O que importa é que
+ * nada dos TURNOS/tools anime.
+ */
+test('ui-visual: só o bloco "Iniciar" gira no transcript; turnos e tools não', () => {
+  const i = transcript.indexOf('function Empty(');
+  assert.ok(i > 0, 'não achei o bloco vazio (Empty) no transcript');
+  const antes = transcript.slice(0, i);
+  const depois = transcript.slice(i);
+  assert.doesNotMatch(antes, /spin/, 'turno/raciocínio/tool girando — a barra é a única animação da conversa');
+  assert.equal((depois.match(/spin/g) ?? []).length, 1, 'o bloco "Iniciar" precisa do próprio giro (padrão do Codicon)');
   const n = (runbar.match(/spin/g) ?? []).length;
   assert.equal(n, 1, `runbar.tsx deve ter EXATAMENTE um uso de spin (achei ${n})`);
 });
@@ -49,6 +61,20 @@ test('ui-visual: o transcript não anima nada e a barra é a única animação',
 
 test('ui-visual: .runbar declarada com flex: 0 0 auto (fora da rolagem do transcript)', () => {
   assert.match(rule('.runbar'), /flex:\s*0 0 auto/, 'a barra precisa de flex: 0 0 auto');
+});
+
+/**
+ * A barra é UMA linha em qualquer largura. Com `flex-wrap: wrap` no container, um título de
+ * ferramenta longo empurrava o ícone e o tempo para outras linhas e a barra virava um bloco de 3
+ * linhas (medido em 200px: 63px contra 23px) — e o texto ainda ficava cortado. O encolhimento tem de
+ * acontecer DENTRO da linha: texto com `min-width: 0` + reticências.
+ */
+test('ui-visual: a barra é uma linha (sem flex-wrap) e o texto encolhe com reticências', () => {
+  assert.doesNotMatch(rule('.runbar'), /flex-wrap/, 'com flex-wrap a barra vira 3 linhas em painel estreito');
+  const text = rule('.runbar-text');
+  assert.match(text, /min-width:\s*0/, 'sem min-width:0 o texto não encolhe e a barra quebra linha');
+  assert.match(text, /text-overflow:\s*ellipsis/, 'o que não couber precisa terminar em reticências');
+  assert.match(text, /flex:\s*1 1 auto/, 'o texto da fase é quem absorve (e cede) a sobra da linha');
 });
 
 /* ─────────── (d) chaves novas da barra nos 4 bundles ─────────── */
@@ -75,6 +101,9 @@ test('ui-visual: as chaves da barra existem nos 4 bundles de idioma', () => {
 
 test('ui-visual: a barra de execução não tem botões (parar/pausar só no composer)', () => {
   assert.doesNotMatch(runbar, /<button/, 'a barra não pode ter botão — dois caminhos para a mesma ação já foram defeito');
+  // Truncar não pode APAGAR informação: a frase inteira (fase · contagem · tempo · aviso) viaja no
+  // `title` do container.
+  assert.match(runbar, /title=\{full\}/, 'a barra precisa carregar a frase inteira no title');
 });
 
 /* ─────────── (4) tools sob o turno ─────────── */

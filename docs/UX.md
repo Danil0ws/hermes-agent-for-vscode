@@ -435,6 +435,11 @@ rodar nada diferente". Agora **um dono só**:
 - A leitura vem de **uma função pura** (`webview/chat/status.ts::runStatus`), com precedência fixa
   `starting > paused > waiting > tool > thinking/writing > working > idle`: permissão pendente é
   **espera**, não execução — era aí que a tela mentia. Ela é testável sem DOM (`runstatus.test.ts`).
+- **A barra é UMA linha em qualquer largura** (`flex: 0 0 auto`, sem `flex-wrap`, texto com
+  `min-width: 0` + reticências): com `wrap`, um título de ferramenta longo empurrava o ícone e o tempo
+  para outras linhas e a barra virava um bloco de 3 linhas em painel estreito (medido: 23px → 63px em
+  200px). O que não couber termina em reticências e a frase inteira (fase · contagem · tempo · aviso)
+  fica no `title` do container — truncar nunca apaga a informação.
 - O tempo decorrido é sempre visível e, passando de 60s na mesma fase, a barra acrescenta o aviso de
   que a fase está demorando. É o antídoto do "não entendi por que travou": travamento fica **visível**
   em vez de silencioso.

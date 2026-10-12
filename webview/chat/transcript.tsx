@@ -301,7 +301,7 @@ function Empty() {
   if (state.value.starting) {
     return (
       <div class="empty">
-        <p class="starting"><Icon name="loading" cls="ic rotating" /> {S.empty.starting}</p>
+        <p class="starting"><Icon name="loading" spin cls="ic" /> {S.empty.starting}</p>
       </div>
     );
   }

@@ -45,15 +45,22 @@ body {
 
 /* ─────────── barra de execução ─────────── */
 /* Rodapé entre a conversa e o campo. `flex: 0 0 auto` a deixa FORA da rolagem do `.transcript`
-   (que é `flex: 1`); sem botões — parar/pausar vivem SÓ no toolbar do composer. */
+   (que é `flex: 1`); sem botões — parar/pausar vivem SÓ no toolbar do composer.
+   SEM `flex-wrap`: com wrap, um texto de fase longo (o título de uma ferramenta real) empurrava o
+   ícone e o tempo para outras linhas e a barra virava um bloco de 3 linhas em painel estreito —
+   medido em 200px: 63px de altura contra 23px de uma linha. A barra é UMA linha sempre, e o que não
+   couber termina em reticências (o `title` da barra carrega a frase inteira). */
 .runbar {
   flex: 0 0 auto;
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0;
+  display: flex; align-items: center; gap: 6px; min-width: 0;
   padding: 3px var(--hermes-gap);
   border-top: 1px solid var(--vscode-panel-border, transparent);
   font-size: 0.85em; color: var(--vscode-descriptionForeground);
 }
-.runbar-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* O texto da fase é o que ENCOLHE (é o único dono da sobra); tempo e aviso são curtos e `min-width: 0`
+   impede que qualquer um deles force a linha a crescer. */
+.runbar-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.runbar-more, .runbar-slow { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .runbar-time { flex: 0 0 auto; }
 .runbar-slow { color: var(--vscode-editorWarning-foreground); }
 
@@ -171,9 +178,8 @@ details.section > summary .muted { text-transform: none; }
 .empty { padding: 16px; color: var(--vscode-descriptionForeground); }
 .empty .starting { display: flex; gap: 6px; align-items: center; }
 /* O bloco "Iniciar" (estado vazio) é o dono do próprio giro — a barra de execução fica escondida
-   ali. Giro por CSS (classe própria), não pela prop de giro do Codicon. */
-.starting .rotating { animation: hermes-rotate 1s linear infinite; }
-@keyframes hermes-rotate { to { transform: rotate(360deg); } }
+   ali. Giro pelo modificador PADRÃO do Codicon (`spin` no `<Icon>`), o mesmo de toda a extensão:
+   uma classe própria com `@keyframes` animava no compositor e não era verificável no harness. */
 .empty ul { list-style: none; padding: 0; }
 .empty li { margin: 4px 0; }
 .empty button { text-align: left; }
