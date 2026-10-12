@@ -35,6 +35,10 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
   único de criação de sessão (`ChatViewProvider.openSession`), que agora atende as quatro portas:
   primeiro prompt, **Iniciar**, nova conversa e aba nova. Um id que o agente não anuncie mais (modo
   renomeado numa versão futura) é ignorado em silêncio, nunca um `set_mode` inválido.
+- **Rótulo do modo escolhido ilegível em painel estreito**: o `<select>` nativo mostra `Accept…` numa
+  sidebar de 310px e `A…` em 220px (medido no harness, bundle real). O nome do modo escolhido — e o do
+  modelo — passou a ir no `title` do seletor (`Modo / política de aprovação de edição: Accept Edits`),
+  sem mudança de layout: as larguras dos dois seletores são idênticas antes e depois.
 
 - **`publisher` do manifesto era `hermes-agent`**: o upload no Marketplace recusou com "Publisher ID
   'hermes-agent' provided in the extension manifest should match the publisher ID 'Danil0ws' under

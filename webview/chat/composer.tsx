@@ -19,6 +19,11 @@ const HASH_SOURCES = ['file', 'folder', 'symbol', 'selection', 'diagnostic', 'te
 
 function glyph(kind: string): string { return S.icon[kind] ?? S.icon.other; }
 
+/** Nome legível do modo atual (o id é o que circula; o rótulo é o que o agente anunciou). */
+function modeName(current?: string): string {
+  return modes.value.find((m) => m.id === current)?.name ?? '';
+}
+
 function ChipIcon({ kind }: { kind: string }) {
   return <Icon name={glyph(kind)} cls="ic" />;
 }
@@ -594,7 +599,11 @@ export function Composer() {
               onClick={() => send({ type: 'addContext' })}>+</button>
             <label class="sel">
               <span class="sr-only">{S.composer.mode}</span>
-              <select title={S.composer.modeTip} aria-label={S.composer.mode}
+              {/* O `<select>` nativo trunca o rótulo ("Accept Edits" vira "Accept…" numa sidebar de
+                  310px, "A…" em 220px — medido no harness). O nome do modo escolhido vai no `title`
+                  para o valor não ficar ilegível: é o estado que o usuário pediu para manter. */}
+              <select title={`${S.composer.modeTip}: ${modeName(state.value.currentMode)}`}
+                aria-label={S.composer.mode}
                 value={state.value.currentMode ?? ''}
                 onChange={(e) => setMode((e.target as HTMLSelectElement).value)}>
                 {modes.value.length === 0 && <option value="">{state.value.starting ? S.composer.loading : S.composer.noModes}</option>}
@@ -603,7 +612,8 @@ export function Composer() {
             </label>
             <label class="sel sel-model">
               <span class="sr-only">{S.composer.model}</span>
-              <select title={S.composer.modelTip} aria-label={S.composer.model}
+              <select title={`${S.composer.modelTip}: ${models.value.find((m) => m.modelId === state.value.currentModel)?.name ?? ''}`}
+                aria-label={S.composer.model}
                 value={state.value.currentModel ?? ''}
                 onChange={(e) => setModel((e.target as HTMLSelectElement).value)}>
                 {models.value.length === 0 && <option value="">{state.value.starting ? S.composer.loading : S.composer.noModels}</option>}
