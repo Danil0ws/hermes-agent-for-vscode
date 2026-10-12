@@ -857,25 +857,32 @@ Três sintomas relatados pelo usuário, um só defeito de origem: **o "está rod
 
 ### 14.2 Evidência (medida no bundle composto, 0.1.5)
 
-`npm test` **122/122** · `tsc --noEmit` limpo · `npm run build` exit 0 · `vsce package` exit 0 (335 KB,
-21 arquivos) · paridade dos 4 bundles de strings conferida chave a chave (230 chaves, 0 divergências).
+`npm test` **123/123** · `tsc --noEmit` limpo · `npm run build` exit 0 · `vsce package` exit 0 (337 KB,
+21 arquivos, com o código novo conferido dentro do `.vsix`) · paridade dos 4 bundles de strings
+conferida chave a chave (230 chaves, 0 divergências).
 
 Passe renderizado do bundle composto num harness (Chromium, tokens de Dark+; **não** é o painel do
 editor com o tema do usuário — os números provam o layout, o painel real é julgamento):
 
-| Medida | 900px | 280px |
-|---|---|---|
-| `scrollWidth == clientWidth` (doc/app/transcript) | sim | sim |
-| `.runbar` visível com tool em execução / `flex` | sim / `0 0 auto` | sim / `0 0 auto` |
-| ícones girando no painel inteiro | **1** (o da barra) | **1** |
-| tools fora de um `.turn` | 0 | 0 |
-| `border-width` de `.bubble` / `.tool` | `0px/0px` | `0px/0px` |
-| linha de tool | — | 20px de altura |
+| Medida | 200px | 320px | 390px | 560px | 900px | 1440px |
+|---|---|---|---|---|---|---|
+| `scrollWidth == clientWidth` (doc/app/transcript) | sim | sim | sim | sim | sim | sim |
+| `.runbar` visível rodando / altura | sim / **23px** | 23px | 23px | 23px | 23px | 23px |
+| ícones girando no painel inteiro | 1 | 1 | 1 | 1 | 1 | 1 |
+| tools fora de um `.turn` | 0 | 0 | 0 | 0 | 0 | 0 |
+| `border-width` de `.bubble` / `.tool` | `0px` | `0px` | `0px` | `0px` | `0px` | `0px` |
+| texto da barra cortado / no `title` | 23px / íntegro | 0 | 0 | 0 | 0 | 0 |
 
 Fases conferidas injetando mensagens `HostToWebview`: com duas tools abertas e 71s a barra mostrou
 `Comando: git status · 2 em execução · 71s · esta fase está demorando — pode estar travado` com **um**
-giro; em `idle` a barra some e giros = 0; em `turn/end` (com as tools fechadas pelo host) o aviso
-`✓ Foi concluído.` aparece e nada gira.
+giro; `idle` → barra ausente, 0 giros; `starting` → barra ausente, 1 giro no bloco "Iniciar" pelo
+modificador padrão do Codicon; `waiting` → `aguardando sua aprovação: Executar comando`, com o cartão
+de aprovação sendo a única caixa com borda; `turn/end` → `✓ Foi concluído.` e nada girando.
+
+Interação: `Escape` real (CDP `rawKeyDown`, campo focado, turno ocupado) posta `{"type":"cancel"}`;
+digitar entra no campo; o detalhe do tool abre/fecha pelo caminho nativo (`summary.click()`) com o
+conteúdo `checkVisibility() === false` quando fechado; um detalhe aberto à mão **sobrevive ao
+re-render** de um chunk novo.
 
 ### 14.3 O que ficou de fora (com o motivo)
 
@@ -888,3 +895,10 @@ giro; em `idle` a barra some e giros = 0; em `turn/end` (com as tools fechadas p
   Funciona (é o tool do turno corrente que interessa), mas a assinatura ainda é a antiga.
 - **Nenhum indicador por lane dentro do painel** além do spinner da aba de fundo: uma lane em
   background só se anuncia pela aba.
+- **Clique de MOUSE não foi verificado no harness**: os eventos de mouse via CDP não chegaram à
+  webview (nem um botão conhecido postou `copy`), então a alternância do detalhe foi medida pelo
+  caminho nativo do elemento (`summary.click()`) e o `Escape` pelo teclado real. Um clique no painel
+  do editor é a checagem que falta.
+- **O giro do bloco "Iniciar" por `@keyframes` próprio foi descartado** (não verificável no harness:
+  anima no compositor e o `transform` computado fica identidade) em favor do modificador padrão do
+  Codicon — a guarda que o forçava era escrita sobre o TEXTO-FONTE e foi reescopada por região.
