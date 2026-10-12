@@ -223,6 +223,15 @@ export const ptBR = {
   /* ───── avisos ───── */
   notice: { cancelled: 'Turno cancelado.', paused: 'Execuções pausadas.', copied: 'Copiado.' },
 
+  /* ───── fim de turno: uma linha por `stopReason` do ACP ───── */
+  stop: {
+    end_turn: 'Foi concluído.',
+    cancelled: 'Interrompido.',
+    max_tokens: 'Limite de tokens atingido.',
+    max_turn_requests: 'Limite de turnos atingido.',
+    refusal: 'Recusado pelo agente.',
+  } as Record<string, string>,
+
   /* ───── a11y genéricos ───── */
   a11y: {
     transcript: 'Conversa', queue: 'Fila de prompts', context: 'Contexto anexado',

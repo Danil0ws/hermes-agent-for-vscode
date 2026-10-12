@@ -57,9 +57,11 @@ Enquanto o `Iniciar` corre, o estado vazio mostra o progresso (spinner + rótulo
 │  export class QueueManager { … }                             [⧉][↧]   │  <- copiar / inserir no editor
 │  ```                                                                  │
 │                                                                       │
-│  ▾ ✓ patch  src/core/QueueManager.ts  +42 −7              1,8 s  [diff]│  <- tool_call (kind=edit)
+│  ▸ ✓ terminal  npm test -- queue                          6,1 s  [term]│  <- tool ANTERIOR: recolhido
+│  ▾ ✓ patch  src/core/QueueManager.ts  +42 −7              1,8 s  [diff]│  <- ÚLTIMO tool: aberto
 │      └ movido drain() para fora da classe                            │
-│  ▾ ✓ terminal  npm test -- queue                          6,1 s  [term]│
+│                                                                       │
+│  ✓ Foi concluído.                                                     │  <- turn/end (stop reason)
 │                                                                       │
 │  ┌ PLANO ─────────────────────────────── 2/4 ───────────────────────┐ │  <- session/update plan
 │  │ ✓ Extrair drain()                                                │ │
@@ -68,11 +70,7 @@ Enquanto o `Iniciar` corre, o estado vazio mostra o progresso (spinner + rótulo
 │  │ ○ Rodar a suíte completa                                          │ │
 │  └───────────────────────────────────────────────────────────────────┘ │
 │                                                                       │
-│  ┌ ARQUIVOS ALTERADOS ─────────────────────────── 2 arquivos  +48 −9 ┐ │  <- WorkingSet
-│  │ M  src/core/QueueManager.ts        +42 −7   [diff]  [Manter][↺]   │ │
-│  │ M  test/queue.test.ts              +6  −2   [diff]  [Manter][↺]   │ │
-│  │                              [Manter tudo]  [Desfazer tudo]       │ │
-│  └───────────────────────────────────────────────────────────────────┘ │
+│  ▸ ARQUIVOS ALTERADOS ─────────────────────────── 2 arquivos  +48 −9 │ │  <- WorkingSet, FECHADO
 │                                                                       │
 │  ┌ 2 na fila                                          [Limpar] ────┐  │  <- fila client-side
 │  │ ⠿ Rodar também o lint                          [▶ agora][✎][×]  │  │
@@ -147,6 +145,20 @@ Nenhum desses é botão dentro da webview.
 - Tool call: item compacto e expansível (ícone por `kind`, título, status, entrada/saída, duração).
   `kind` → ícone: `read`=book, `edit`=edit, `delete`=trash, `move`=arrow-right, `search`=search,
   `execute`=terminal, `think`=lightbulb, `fetch`=cloud, `switch_mode`=arrow-swap, `other`=tools.
+  **Só o ativo abre**: nasce aberto o que está rodando (`pending`/`in_progress`) e o ÚLTIMO da lista;
+  os anteriores ficam recolhidos e fecham quando um tool novo entra. Antes todos nasciam fechados —
+  inclusive o que estava rodando, que ficava invisível no meio de dezenas de itens recolhidos.
+  O aberto/fechado é escrito por efeito no `<details>`, não pelo atributo `open` controlado: com
+  `open` controlado, cada re-render (chega um por chunk) desfazia a abertura que o usuário fez à mão
+  num item antigo (medido no harness: abre à mão → re-render → continua aberto).
+  Entrada/saída e raciocínio quebram token comprido (`overflow-wrap: anywhere`): `pre-wrap` sozinho
+  não quebra um caminho sem espaços e o bloco ganhava rolagem horizontal.
+- **Fim de turno**: uma linha no fim da conversa com o `stopReason` do ACP — `✓ Foi concluído.`
+  (`end_turn`), `Interrompido.` (`cancelled`), limite de tokens/turnos ou recusa. Some na primeira
+  mensagem/chunk do turno seguinte, então só o turno recém-terminado carrega o aviso. Antes o fim do
+  turno não tinha aviso nenhum — o indicador de "pensando" só sumia, e o fim ficava indistinguível de
+  um turno em andamento. Todo turno fecha com `turn/end` (`HermesSession.prompt` emite também no
+  `catch`: sem isso um prompt que falhava deixava o "pensando" girando para sempre).
 - Diff: abrir o **diff editor nativo** (TextDocumentContentProvider). Aprovar/rejeitar por arquivo
   no cartão de arquivos alterados (§2.4).
 - Aprovação: barra inline (§5.3).
@@ -159,8 +171,18 @@ Nenhum desses é botão dentro da webview.
 ### 2.4 Cartão "Arquivos alterados" (working set)
 
 Fonte: blocos de diff dos `tool_call`/`tool_call_update` + `ToolCallLocation.path`.
-Cada linha: estado (`M`/`A`/`D`), caminho, `+N −M`, `[diff]`, `[Manter]`, `[↺ Desfazer]`.
-Rodapé: `[Manter tudo]` `[Desfazer tudo]`.
+
+**Fechado por padrão** (`<details>` nativo; o `<summary>` é o cabeçalho com `N · +A −R`). Aberto,
+cada linha: estado (`M`/`A`/`D`), caminho, `+N −M`, `[diff]`, `[Manter]`, `[↺ Desfazer]`; rodapé com
+`[Desfazer tudo]`.
+
+Por que fechado: com N arquivos, o cartão sempre aberto eram N linhas + 3 botões cada + o aviso de
+escopo — a tela toda, e a conversa saía de vista. Medido no harness (200px de painel, bundle 0.1.3):
+a linha do arquivo media `scrollWidth 209` contra `clientWidth 170` e os botões passavam da borda do
+painel, com rolagem horizontal no transcript inteiro (`scrollWidth 230` > `clientWidth 200`). Agora a
+linha **quebra** (`flex-wrap: wrap`), o caminho encolhe com reticências (`flex: 1 1 8ch`,
+`min-width: 0`, sem `max-width` em `%`) e o transcript fecha em `200 == 200` nas quatro larguras
+medidas (200/310/560/1440px), com zero elementos fora da largura do painel.
 
 Texto obrigatório no rodapé do cartão (o escopo precisa ser explícito):
 > O Hermes já escreveu estes arquivos no disco. "Desfazer" aplica o diff inverso. Restaurar o turno

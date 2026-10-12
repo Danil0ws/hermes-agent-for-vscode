@@ -5,8 +5,8 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { send } from '../shared/bridge';
 import { S, num } from './i18n';
-import { splitFenced, visibleTurns } from './logic';
-import { changed, chips, draft, focusComposer, plan, state, tools, turns } from './store';
+import { splitFenced, toolDetailOpen, visibleTurns } from './logic';
+import { changed, chips, draft, focusComposer, plan, state, tools, turnEnd, turns } from './store';
 import type { Turn } from './store';
 import type { PlanEntry, ToolView } from '../../src/core/types';
 import { Icon } from '../shared/icon';
@@ -85,12 +85,19 @@ function Thought({ turn }: { turn: Turn }) {
 
 /* ─────────── tool call ─────────── */
 
-function ToolItem({ tool }: { tool: ToolView }) {
+function ToolItem({ tool, index, count }: { tool: ToolView; index: number; count: number }) {
   const kind = tool.kind || 'other';
   const label = S.tool.kind[kind] ?? S.tool.kind.other;
   const dur = tool.endedAt ? S.tool.duration(elapsed(tool.endedAt - tool.startedAt)) : null;
+  // O ABERTO é do <details>, escrito por efeito — e não pelo atributo `open={...}`. Com `open`
+  // controlado, cada re-render (chega um a cada chunk) desfazia a abertura manual do usuário num
+  // item antigo. O `open` inicial só vale no mount; daí em diante quem manda é `shouldOpen`.
+  const shouldOpen = toolDetailOpen(index, count, tool.status);
+  const ref = useRef<HTMLDetailsElement>(null);
+  const [mountedOpen] = useState(() => shouldOpen);
+  useEffect(() => { const el = ref.current; if (el) el.open = shouldOpen; }, [shouldOpen]);
   return (
-    <details class="tool">
+    <details class="tool" ref={ref} open={mountedOpen}>
       <summary aria-label={`${label}: ${tool.title} — ${S.status[tool.status] ?? tool.status}`}>
         <KindIcon kind={kind} label={label} />
         <span class="tool-title">{tool.title || S.tool.titleFallback}</span>
@@ -180,13 +187,21 @@ function Plan({ entries }: { entries: PlanEntry[] }) {
 
 /* ─────────── arquivos alterados ─────────── */
 
+/**
+ * FECHADO por padrão. Antes esta lista era sempre aberta: com N arquivos, eram N linhas + 3 botões
+ * cada + o aviso de escopo — a tela toda, e a conversa saía de vista. O `<summary>` já carrega o que
+ * se precisa saber de relance (quantos arquivos, +linhas/−linhas); abrir é para quem vai agir.
+ */
 function WorkingSet() {
   const files = changed.value;
   const add = files.reduce((a, f) => a + f.added, 0);
   const rem = files.reduce((a, f) => a + f.removed, 0);
   return (
-    <div class="section" aria-label={S.a11y.workingSet}>
-      <header><span>{S.workingSet.title}</span><span class="muted">{S.workingSet.summary(files.length, add, rem)}</span></header>
+    <details class="section workingset">
+      <summary aria-label={S.a11y.workingSet}>
+        <span>{S.workingSet.title}</span>
+        <span class="muted">{S.workingSet.summary(files.length, add, rem)}</span>
+      </summary>
       {files.map((f) => (
         <div class="ws-row" key={f.path}>
           <span class="badge-status">{f.status}</span>
@@ -202,7 +217,22 @@ function WorkingSet() {
         <button class="secondary" onClick={() => files[0] && send({ type: 'undoFile', path: files[0].path })}>{S.workingSet.undoAll}</button>
       </div>
       <p class="hint">{S.workingSet.scopeNote}</p>
-    </div>
+    </details>
+  );
+}
+
+/* ─────────── fim de turno ─────────── */
+
+/** Uma linha dizendo que o turno acabou (o que o agente fez e o "pensando" pareciam a mesma coisa). */
+function TurnEnd() {
+  const end = turnEnd.value;
+  if (!end || state.value.busy) return null;
+  const ok = end.stopReason === 'end_turn';
+  return (
+    <p class={`turn-end ${ok ? 'ok' : 'warn'}`} role="status">
+      <Icon name={ok ? 'check' : 'circle-slash'} cls="ic" />
+      <span>{S.stop[end.stopReason] ?? S.stop.end_turn}</span>
+    </p>
   );
 }
 
@@ -239,7 +269,10 @@ export function Transcript() {
       {shown.map((t, k) => (
         <TurnView key={t.id} turn={t} prevUser={t.role === 'agent' ? prevUserFor(offset + k) : undefined} />
       ))}
-      {tools.value.map((tool) => <ToolItem key={tool.id} tool={tool} />)}
+      {tools.value.map((tool, i) => (
+        <ToolItem key={tool.id} tool={tool} index={i} count={tools.value.length} />
+      ))}
+      <TurnEnd />
       {plan.value.length > 0 && <Plan entries={plan.value} />}
       {changed.value.length > 0 && <WorkingSet />}
     </div>

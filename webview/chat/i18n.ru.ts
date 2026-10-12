@@ -227,6 +227,15 @@ export const ru: Strings = {
   /* ───── avisos ───── */
   notice: { cancelled: 'Ход отменён.', paused: 'Выполнение на паузе.', copied: 'Скопировано.' },
 
+  /* ───── конец хода: по строке на каждый `stopReason` ACP ───── */
+  stop: {
+    end_turn: 'Готово.',
+    cancelled: 'Прервано.',
+    max_tokens: 'Достигнут лимит токенов.',
+    max_turn_requests: 'Достигнут лимит ходов.',
+    refusal: 'Отклонено агентом.',
+  } as Record<string, string>,
+
   /* ───── a11y genéricos ───── */
   a11y: {
     transcript: 'Диалог', queue: 'Очередь запросов', context: 'Прикреплённый контекст',

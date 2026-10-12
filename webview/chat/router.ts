@@ -11,7 +11,7 @@ import type { ChatState, HostToWebview, TabInfo } from '../../src/core/types';
 import { coerceTurns } from './logic';
 import {
   caret, changed, chips, commands, draft, focusComposer, lastStop, models, modes, notice,
-  permission, plan, queue, state, tools, turns, usage,
+  permission, plan, queue, state, tools, turnEnd, turns, usage,
 } from './store';
 import { captureActive, restoreTranscript, routeBackground, snapshotOf } from './store';
 
@@ -28,9 +28,11 @@ function reduce(m: HostToWebview): void {
       state.value = { ...state.value, busy: m.value };
       break;
     case 'user/message':
+      turnEnd.value = null;
       turns.value = [...turns.value, { id: `u${Date.now()}`, role: 'user', text: m.text, chips: m.chips, startedAt: Date.now() }];
       break;
     case 'agent/chunk': {
+      turnEnd.value = null;
       const list = turns.value;
       const last = list[list.length - 1];
       if (last && last.role === 'agent' && last.id === m.messageId) {
@@ -41,9 +43,11 @@ function reduce(m: HostToWebview): void {
       break;
     }
     case 'agent/message':
+      turnEnd.value = null;
       turns.value = [...turns.value, { id: m.messageId, role: 'agent', text: m.text, startedAt: Date.now() }];
       break;
     case 'thought/chunk': {
+      turnEnd.value = null;
       const list = turns.value;
       const last = list[list.length - 1];
       if (last && last.role === 'agent') {
@@ -63,6 +67,9 @@ function reduce(m: HostToWebview): void {
     }
     case 'turn/end': {
       lastStop.value = m.stopReason;
+      // Aviso de fim de turno: o transcript mostra em uma linha que acabou ("Foi concluído.") —
+      // antes o fim e o "pensando" eram visualmente iguais.
+      turnEnd.value = { stopReason: m.stopReason, at: Date.now() };
       const now = Date.now();
       turns.value = turns.value.map((t) => ({
         ...t, streaming: false,

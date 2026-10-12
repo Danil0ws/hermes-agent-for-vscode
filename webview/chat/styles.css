@@ -88,7 +88,7 @@ body {
 /* raciocínio */
 details.thought { margin: 4px 0; border-left: 2px solid var(--vscode-panel-border, transparent); padding-left: 6px; color: var(--vscode-descriptionForeground); }
 details.thought summary { cursor: pointer; font-size: 0.9em; display: flex; gap: 6px; align-items: center; }
-details.thought pre { white-space: pre-wrap; margin: 4px 0 0; font-family: var(--vscode-editor-font-family); }
+details.thought pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 4px 0 0; font-family: var(--vscode-editor-font-family); }
 
 /* tool calls */
 .tool { border: 1px solid var(--vscode-panel-border, transparent); border-radius: var(--hermes-radius); margin: 4px 0; background: var(--vscode-editorWidget-background, transparent); }
@@ -100,7 +100,7 @@ details.thought pre { white-space: pre-wrap; margin: 4px 0 0; font-family: var(-
 .tool .status.failed { color: var(--vscode-errorForeground); }
 .tool .status.in_progress { color: var(--vscode-charts-yellow); }
 .tool .io-label { padding: 2px 6px; font-size: 0.78em; text-transform: uppercase; color: var(--vscode-descriptionForeground); }
-.tool pre { margin: 0; padding: 4px 6px; white-space: pre-wrap; font-family: var(--vscode-editor-font-family); max-height: 220px; overflow: auto; border-top: 1px solid var(--vscode-panel-border, transparent); }
+.tool pre { margin: 0; padding: 4px 6px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--vscode-editor-font-family); max-height: 220px; overflow: auto; border-top: 1px solid var(--vscode-panel-border, transparent); }
 .tool .row { padding: 4px 6px; }
 
 .show-older { display: block; width: 100%; margin-bottom: 8px; font-size: 0.85em; }
@@ -108,15 +108,31 @@ details.thought pre { white-space: pre-wrap; margin: 4px 0 0; font-family: var(-
 /* cartões */
 .section { border: 1px solid var(--vscode-panel-border, transparent); border-radius: var(--hermes-radius); margin: var(--hermes-gap) 0; padding: 6px; background: var(--vscode-editorWidget-background, transparent); }
 .section > header { display: flex; gap: 6px; align-items: center; font-size: 0.85em; text-transform: uppercase; color: var(--vscode-descriptionForeground); margin-bottom: 4px; }
+/* Cartão que abre/fecha (arquivos alterados): o `<summary>` é o cabeçalho, então herda o mesmo
+   tratamento. O marcador nativo da lista é o triângulo do sistema — some para não competir com o
+   layout em flex. */
+details.section > summary { display: flex; gap: 6px; align-items: center; cursor: pointer; list-style: none; font-size: 0.85em; text-transform: uppercase; color: var(--vscode-descriptionForeground); }
+details.section > summary::-webkit-details-marker { display: none; }
+details.section[open] > summary { margin-bottom: 4px; }
+/* o resumo (contagem e +/−) não é rótulo: volta ao caixa normal */
+details.section > summary .muted { text-transform: none; }
 .plan-row { display: flex; gap: 6px; align-items: baseline; }
 .plan-row .status.pending { color: var(--vscode-descriptionForeground); }
 .plan-row .status.in_progress { color: var(--vscode-charts-yellow); }
 .plan-row .status.completed { color: var(--vscode-charts-green); text-decoration: line-through; }
 
-.ws-row { display: flex; gap: 6px; align-items: center; font-size: 0.9em; }
-.ws-row .path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; max-width: 40%; }
+/* Linha de arquivo alterado: quebra em vez de estourar. Antes era uma linha só com o caminho
+   (max-width: 40%) + contadores + 3 botões, e numa sidebar estreita isso empurrava rolagem
+   horizontal no painel inteiro. Agora o caminho encolhe com reticências e os botões descem. */
+.ws-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 0.9em; }
+.ws-row .path { flex: 1 1 8ch; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
 .badge-status { display: inline-block; min-width: 14px; text-align: center; color: var(--vscode-badge-foreground); background: var(--vscode-badge-background); border-radius: 3px; font-size: 0.8em; }
 .ws-row button { font-size: 0.8em; }
+
+/* Fim de turno: uma linha, não um cartão — o aviso de que acabou não pode competir com a resposta. */
+.turn-end { display: flex; gap: 6px; align-items: center; margin: 4px 0 10px; font-size: 0.85em; color: var(--vscode-descriptionForeground); }
+.turn-end.ok { color: var(--vscode-charts-green); }
+.turn-end.warn { color: var(--vscode-editorWarning-foreground); }
 
 /* aprovação */
 .permission { border: 1px solid var(--vscode-focusBorder); border-radius: var(--hermes-radius); padding: 6px; margin: var(--hermes-gap) 0; }

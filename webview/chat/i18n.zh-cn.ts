@@ -225,6 +225,15 @@ export const zhCN: Strings = {
   /* ───── avisos ───── */
   notice: { cancelled: '回合已取消。', paused: '执行已暂停。', copied: '已复制。' },
 
+  /* ───── 回合结束：每个 ACP `stopReason` 一行 ───── */
+  stop: {
+    end_turn: '已完成。',
+    cancelled: '已中断。',
+    max_tokens: '已达令牌上限。',
+    max_turn_requests: '已达回合上限。',
+    refusal: '代理拒绝了请求。',
+  } as Record<string, string>,
+
   /* ───── a11y genéricos ───── */
   a11y: {
     transcript: '对话', queue: '提示队列', context: '已附加的上下文',

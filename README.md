@@ -75,6 +75,14 @@ code --install-extension hermes-agent-for-vscode-0.1.0.vsix
 6. Native menus in the view title bar: new conversation, history, restart session, open in editor,
    Manage (the gear), and a "…" menu with **Open Full CLI**, **Run CLI Command…**, diagnostics, log
    and traffic.
+7. **Transcript stays out of the way.** Tool calls are compact and only the *active* one is expanded
+   — the running tool and the last one; the earlier ones collapse as new ones arrive (opening an old
+   one by hand sticks, a re-render will not close it). **Changed files** is a collapsed card: the
+   header carries the count and `+adds/−dels`, and the per-file `diff` / `Keep` / `Undo` buttons are
+   one click away instead of filling the panel. When a turn ends a single line says so —
+   `✓ Done.`, `Interrupted.`, token/turn limit or refusal, from the ACP stop reason — and it clears
+   as soon as the next turn starts. Long paths, tool output and reasoning wrap inside the box: no
+   horizontal scrolling at any panel width (measured 200–1440px).
 
 ## Commands
 

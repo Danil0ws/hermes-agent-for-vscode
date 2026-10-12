@@ -224,6 +224,15 @@ export const en: Strings = {
   /* ───── notices ───── */
   notice: { cancelled: 'Turn cancelled.', paused: 'Runs paused.', copied: 'Copied.' },
 
+  /* ───── end of turn: one line per ACP `stopReason` ───── */
+  stop: {
+    end_turn: 'Done.',
+    cancelled: 'Interrupted.',
+    max_tokens: 'Token limit reached.',
+    max_turn_requests: 'Turn limit reached.',
+    refusal: 'Refused by the agent.',
+  } as Record<string, string>,
+
   /* ───── generic a11y ───── */
   a11y: {
     transcript: 'Conversation', queue: 'Prompt queue', context: 'Attached context',

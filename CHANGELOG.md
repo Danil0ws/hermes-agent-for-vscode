@@ -4,6 +4,55 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ## [Não publicado]
 
+### Alterado
+
+- **Transcript: só o tool call ATIVO abre, e os arquivos alterados recolhem.** Três mudanças na mesma
+  área, medidas no harness com o bundle real (200/310/560/1440px de painel, `lang=pt-br`):
+  1. **Tool call** — nasce aberto o que está **rodando** (`pending`/`in_progress`) e o **último** da
+     lista; os anteriores ficam recolhidos e fecham quando um tool novo entra. No bundle anterior os
+     três eram fechados (`[false,false,false]` medido): o tool em andamento ficava invisível no meio
+     de dezenas de itens recolhidos. O aberto/fechado é escrito **por efeito** no `<details>`, não por
+     `open={...}` controlado — com o atributo controlado, cada re-render (chega um por chunk) desfazia
+     a abertura que o usuário fez à mão num item antigo; verificado no harness que a abertura à mão
+     sobrevive ao re-render.
+  2. **Arquivos alterados** virou um `<details>` **fechado por padrão**, com o resumo (`N · +A −R`) no
+     cabeçalho. Sempre aberto, com N arquivos eram N linhas + 3 botões cada + o aviso de escopo — a
+     tela toda, e a conversa saía de vista. Medido no bundle 0.1.3 em painel de 200px: a linha do
+     arquivo media `scrollWidth 209` contra `clientWidth 170` e os botões passavam da borda do painel,
+     com **rolagem horizontal no transcript inteiro** (`scrollWidth 230` > `clientWidth 200`). Agora a
+     linha quebra (`flex-wrap: wrap`), o caminho encolhe com reticências (`flex: 1 1 8ch`,
+     `min-width: 0`, sem `max-width` em `%`) e o transcript fecha em `200 == 200` nas quatro larguras,
+     com zero elementos fora da largura do painel.
+  3. **Texto que cabe na caixa**: entrada/saída de tool e o raciocínio ganharam `overflow-wrap:
+     anywhere`. `pre-wrap` sozinho não quebra um token comprido sem espaços (um caminho, um JSON numa
+     linha) e o bloco ganhava rolagem horizontal — medido com um caminho de 150 caracteres, o `pre`
+     agora fecha em `182 == 182` (200px) e `292 == 292` (310px).
+
+### Adicionado
+
+- **Aviso de fim de turno**: uma linha no fim da conversa com o `stopReason` do ACP — `✓ Foi
+  concluído.` (`end_turn`), `Interrompido.` (`cancelled`), limite de tokens, limite de turnos ou
+  recusa (`S.stop`, nos 4 idiomas; `role="status"` para leitor de tela). Some na primeira
+  mensagem/chunk do turno seguinte, então só o turno recém-terminado carrega o aviso. Antes o fim do
+  turno **não tinha aviso nenhum** na webview: o indicador de "pensando" apenas parava, e o fim
+  ficava indistinguível de um turno em andamento.
+
+### Corrigido
+
+- **"Depois de concluído ele continua pensando"**: `HermesSession.prompt` só emitia `turn/end` no
+  caminho feliz. Um turno que terminava com erro emitia `error` e nada mais — e como `turn/end` é o
+  ÚNICO evento que limpa o `streaming` na webview, o raciocínio do turno ficava com o spinner girando
+  para sempre. Agora o `catch` também fecha o turno (`stopReason: 'cancelled'`, que é a verdade: o
+  turno não terminou pelo caminho normal).
+
+### Adicionado
+
+- **`src/test/transcript.test.ts`** — guardas das três mudanças acima: o fim de turno para o
+  "pensando" e publica o aviso (comportamento, via `applyHost`), `toolDetailOpen` (lógica pura),
+  `S.stop` cobrindo todos os `stopReason`, o cartão de arquivos como `<details>` e o CSS do texto que
+  quebra. Cada guarda foi verificada **falhando** com o defeito reintroduzido (uma remoção de
+  `overflow-wrap`, um `max-width: 40%` de volta, o `turn/end` fora do `catch`).
+
 ### Adicionado
 
 - **Parar, pausar e retomar as execuções** (barra inferior do composer, ao lado do medidor): `⏹ Parar`

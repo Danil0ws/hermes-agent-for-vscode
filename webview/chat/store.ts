@@ -34,6 +34,14 @@ export const tools = signal<ToolView[]>([]);
 export const permission = signal<PermissionRequest | null>(null);
 export const notice = signal<{ level: string; text: string } | null>(null);
 export const lastStop = signal<StopReason | null>(null);
+/**
+ * Fim do último turno (`turn/end`) — é o que o chat mostra como "Foi concluído.".
+ *
+ * Antes o fim do turno não tinha aviso NENHUM na webview: o indicador de "pensando" simplesmente
+ * parava e a conversa ficava igual a um turno em andamento. Some na primeira mensagem/chunk do
+ * turno seguinte (`router.ts`), então só o turno recém-terminado carrega o aviso.
+ */
+export const turnEnd = signal<{ stopReason: StopReason; at: number } | null>(null);
 export const usage = signal<{ size: number; used: number; turn?: TurnUsage } | undefined>(undefined);
 export const plan = signal<PlanEntry[]>([]);
 export const changed = signal<ChangedFile[]>([]);
@@ -90,6 +98,7 @@ export interface Snapshot {
   permission: PermissionRequest | null;
   notice: { level: string; text: string } | null;
   lastStop: StopReason | null;
+  turnEnd: { stopReason: StopReason; at: number } | null;
 }
 
 const snapshots = new Map<string, Snapshot>();
@@ -105,7 +114,7 @@ function blank(id: string): Snapshot {
       tabs: base.tabs, activeTab: id,
     },
     turns: [], tools: [], plan: [], changed: [], usage: undefined,
-    queue: [], chips: [], permission: null, notice: null, lastStop: null,
+    queue: [], chips: [], permission: null, notice: null, lastStop: null, turnEnd: null,
   };
 }
 
@@ -120,6 +129,7 @@ export function readSnapshot(): Snapshot {
     state: state.value, turns: turns.value, tools: tools.value, plan: plan.value,
     changed: changed.value, usage: usage.value, queue: queue.value, chips: chips.value,
     permission: permission.value, notice: notice.value, lastStop: lastStop.value,
+    turnEnd: turnEnd.value,
   };
 }
 
@@ -128,6 +138,7 @@ function applySnapshot(s: Snapshot): void {
   turns.value = s.turns; tools.value = s.tools; plan.value = s.plan; changed.value = s.changed;
   usage.value = s.usage; queue.value = s.queue; chips.value = s.chips;
   permission.value = s.permission; notice.value = s.notice; lastStop.value = s.lastStop;
+  turnEnd.value = s.turnEnd;
 }
 
 /** Guarda o estado vivo na aba ativa (antes de trocar de aba). */
@@ -155,4 +166,5 @@ export function restoreTranscript(s: Snapshot): void {
   turns.value = s.turns; tools.value = s.tools; plan.value = s.plan; changed.value = s.changed;
   usage.value = s.usage; queue.value = s.queue; chips.value = s.chips;
   permission.value = s.permission; notice.value = s.notice; lastStop.value = s.lastStop;
+  turnEnd.value = s.turnEnd;
 }

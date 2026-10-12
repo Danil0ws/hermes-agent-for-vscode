@@ -80,6 +80,17 @@ export function visibleTurns<T>(all: T[], limit: number): T[] {
   return all.slice(all.length - limit);
 }
 
+/* ─────────── tool calls: só o ATIVO abre em detalhe ─────────── */
+
+/**
+ * Um tool call nasce ABERTO quando ainda corre ou quando é o ÚLTIMO da lista; os anteriores ficam
+ * recolhidos. O transcript do Hermes acumula dezenas de tool calls por conversa: com todos fechados
+ * o turno em andamento ficava invisível, com todos abertos o chat era empurrado para fora da tela.
+ */
+export function toolDetailOpen(index: number, count: number, status: string): boolean {
+  return status === 'pending' || status === 'in_progress' || index === count - 1;
+}
+
 /* ─────────── markdown mínimo: cercas ``` ─────────── */
 
 export type Segment =

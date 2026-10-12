@@ -177,6 +177,11 @@ export class HermesSession {
     } catch (err) {
       this.deps.log?.('error', `prompt falhou: ${String(err)}`);
       this.emit({ type: 'error', text: String(err) });
+      // `turn/end` TAMBÉM aqui: é o ÚNICO evento que limpa o `streaming` na webview. Sem ele, um
+      // turno que terminou com erro deixava o indicador de "pensando" girando para sempre — o
+      // sintoma relatado ("depois de concluído ele fica pensando"). `cancelled` é a verdade: o
+      // turno não chegou ao fim pelo caminho normal.
+      this.emit({ type: 'turn/end', stopReason: 'cancelled' });
       return 'error';
     } finally {
       this.state.busy = false;
