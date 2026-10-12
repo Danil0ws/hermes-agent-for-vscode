@@ -36,6 +36,7 @@ export const zhCN: Strings = {
     noSession: '无会话',
     busy: '工作中',
     waiting: '等待批准',
+    paused: '已暂停',
     laneTip: (path: string) => `lane：${path}`,
   },
 
@@ -117,6 +118,7 @@ export const zhCN: Strings = {
   /* ───── composer ───── */
   composer: {
     placeholderIdle: '向 Hermes 提问，# 引用上下文，/ 使用命令',
+    placeholderPaused: '执行已暂停 — 恢复后可发送',
     locked: "启动代理后才能输入",
     placeholderBusy: '加入队列，或为进行中的回合提供指引',
     placeholderChips: (n: number) =>
@@ -146,6 +148,13 @@ export const zhCN: Strings = {
     noQueueTip: '队列已在设置中关闭；这里会变成对当前回合的指引。',
   },
 
+  /* ───── 执行控制 ───── */
+  run: {
+    label: '执行',
+    pause: '暂停', pauseTip: '暂停：中断当前回合并挂起队列',
+    resume: '恢复', resumeTip: '恢复执行与队列',
+    stop: '停止', stopTip: '停止当前回合（Esc）',
+  },
   /* ───── envio ───── */
   send: {
     send: '发送', sendTip: '发送（Enter）',
@@ -214,7 +223,7 @@ export const zhCN: Strings = {
   },
 
   /* ───── avisos ───── */
-  notice: { cancelled: '回合已取消。', copied: '已复制。' },
+  notice: { cancelled: '回合已取消。', paused: '执行已暂停。', copied: '已复制。' },
 
   /* ───── a11y genéricos ───── */
   a11y: {

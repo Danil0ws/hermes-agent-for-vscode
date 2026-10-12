@@ -25,6 +25,7 @@ function App() {
   }, []);
   const n = notice.value;
   const cancelled = lastStop.value === 'cancelled';
+  const paused = state.value.paused;
   return (
     <div class="app">
       <TabBar
@@ -37,6 +38,7 @@ function App() {
         onNewWorktree={() => send({ type: 'newTab', worktree: {} })}
       />
       {cancelled && <div class="notice info" role="status">{S.notice.cancelled}</div>}
+      {paused && <div class="notice warning" role="status">{S.notice.paused}</div>}
       {n && <div class={`notice ${n.level}`} role="status">{n.text}</div>}
       <Transcript />
       <Composer />

@@ -4,6 +4,17 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ## [Não publicado]
 
+### Adicionado
+
+- **Parar, pausar e retomar as execuções** (barra inferior do composer, ao lado do medidor): `⏹ Parar`
+  (aparece só durante um turno) = `session/cancel`, interrompe o turno atual e deixa a fila como está;
+  `⏸ Pausar` / `▶ Retomar` = portão da aba — pausar interrompe o turno **e** segura a fila (nada vai ao
+  agente até retomar; um envio durante a pausa é recusado com `Execuções pausadas — retome para
+  enviar.`), retomar solta e **puxa o próximo da fila**. O aviso `Execuções pausadas.` aparece abaixo
+  das abas e a aba pausada troca o spinner pelo ícone de pausa. O ACP não tem `pause`: quem segura é o
+  cliente (`TabInfo.paused` + `drainAllowed`), e o `▶ agora` da fila passa mesmo pausado (é ordem
+  explícita). O botão de retomar fica na cor de aviso enquanto pausado.
+
 ### Corrigido
 
 - **`publisher` do manifesto era `hermes-agent`**: o upload no Marketplace recusou com "Publisher ID

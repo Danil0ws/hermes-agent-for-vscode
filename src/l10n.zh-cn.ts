@@ -30,6 +30,7 @@ export const zhCN: Record<string, string> = {
   "Corrigir problema com o Hermes": "用 Hermes 修复问题",
   "Escolher modelo e provider padrão": "选择默认模型和 provider",
   "Executar comando do Hermes": "运行 Hermes 命令",
+  "Execuções pausadas — retome para enviar.": "执行已暂停 — 恢复后可发送。",
   "Exportar conversa do Hermes": "导出 Hermes 对话",
   "Ferramentas / MCP": "工具 / MCP",
   "Histórico da conversa": "对话历史",

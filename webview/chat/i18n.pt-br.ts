@@ -34,6 +34,7 @@ export const ptBR = {
     noSession: 'sem sessão',
     busy: 'trabalhando',
     waiting: 'aguardando aprovação',
+    paused: 'pausado',
     laneTip: (path: string) => `lane em ${path}`,
   },
 
@@ -115,6 +116,7 @@ export const ptBR = {
   /* ───── composer ───── */
   composer: {
     placeholderIdle: 'Pergunte ao Hermes, # para contexto, / para comandos',
+    placeholderPaused: 'Execuções pausadas — retome para enviar',
     locked: "Inicie o agente para escrever",
     placeholderBusy: 'Enfileirar ou dar direção ao turno em andamento',
     placeholderChips: (n: number) =>
@@ -144,6 +146,13 @@ export const ptBR = {
     noQueueTip: 'A fila está desativada nas configurações; isto vira direção ao turno.',
   },
 
+  /* ───── controles de execução ───── */
+  run: {
+    label: 'Execuções',
+    pause: 'Pausar', pauseTip: 'Pausar: interrompe o turno atual e segura a fila',
+    resume: 'Retomar', resumeTip: 'Retomar as execuções e a fila',
+    stop: 'Parar', stopTip: 'Parar o turno atual (Esc)',
+  },
   /* ───── envio ───── */
   send: {
     send: 'Enviar', sendTip: 'Enviar (Enter)',
@@ -212,7 +221,7 @@ export const ptBR = {
   },
 
   /* ───── avisos ───── */
-  notice: { cancelled: 'Turno cancelado.', copied: 'Copiado.' },
+  notice: { cancelled: 'Turno cancelado.', paused: 'Execuções pausadas.', copied: 'Copiado.' },
 
   /* ───── a11y genéricos ───── */
   a11y: {

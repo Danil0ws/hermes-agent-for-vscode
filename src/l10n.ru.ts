@@ -29,6 +29,7 @@ export const ru: Record<string, string> = {
   "Corrigir problema com o Hermes": "Устранить проблему с Hermes",
   "Escolher modelo e provider padrão": "Выбрать модель и провайдера по умолчанию",
   "Executar comando do Hermes": "Выполнить команду Hermes",
+  "Execuções pausadas — retome para enviar.": "Выполнение на паузе — возобновите, чтобы отправить.",
   "Exportar conversa do Hermes": "Экспортировать диалог Hermes",
   "Ferramentas / MCP": "Инструменты / MCP",
   "Histórico da conversa": "История диалога",

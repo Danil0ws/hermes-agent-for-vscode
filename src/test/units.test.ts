@@ -1,7 +1,7 @@
 /** Testes unitários da lógica que não depende do VS Code. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { QueueManager } from '../core/QueueManager.ts';
+import { QueueManager, drainAllowed } from '../core/QueueManager.ts';
 import { estimateTokens, meterLevel, percent } from '../utils/Tokens.ts';
 import { parseUnifiedDiff } from '../core/HermesSession.ts';
 import { splitCommand } from '../core/Connection.ts';
@@ -45,6 +45,18 @@ test('fila: persiste e reidrata do Memento', () => {
   const q2 = new QueueManager(store as never);
   assert.equal(q2.size, 1);
   assert.equal(q2.all[0].text, 'sobrevive ao reload');
+});
+
+/**
+ * O portão da pausa. O caso que ele existe para pegar: pausar NO MEIO de um turno — o turno é
+ * interrompido, o `prompt()` volta e o drain roda em seguida. Sem a guarda, o próximo da fila era
+ * enviado logo depois de o usuário pedir pausa, e a pausa não valia nada.
+ */
+test('pausa: a fila só drena com as execuções soltas', () => {
+  assert.equal(drainAllowed(false, true), true, 'solto + fila ligada: drena');
+  assert.equal(drainAllowed(true, true), false, 'pausado: NÃO drena (o caso do pause no meio do turno)');
+  assert.equal(drainAllowed(false, false), false, 'fila desligada nas configurações: nunca drena');
+  assert.equal(drainAllowed(true, false), false);
 });
 
 test('tokens: heurística única e limiares do medidor', () => {

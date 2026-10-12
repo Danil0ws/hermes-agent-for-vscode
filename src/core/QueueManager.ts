@@ -48,7 +48,6 @@ export class QueueManager {
     void this.persist();
     return it;
   }
-
   /** remove do meio para "enviar agora" */
   take(id: string): QueueItem | undefined {
     const it = this.items.find((x) => x.id === id);
@@ -57,4 +56,15 @@ export class QueueManager {
   }
 
   private persist(): Thenable<void> | undefined { return this.store?.update(KEY, this.items); }
+}
+
+/**
+ * A fila drena só com a fila ligada E as execuções soltas.
+ *
+ * O caso que importa é pausar NO MEIO de um turno: o `pause` interrompe o turno e o `prompt()`
+ * que volta passa pelo drain — sem esta guarda o próximo da fila seria enviado logo depois de o
+ * usuário mandar pausar, e a pausa não valeria nada.
+ */
+export function drainAllowed(paused: boolean, enabled: boolean): boolean {
+  return enabled && !paused;
 }

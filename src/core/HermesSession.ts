@@ -85,6 +85,7 @@ export class HermesSession {
       sessionId: res.sessionId ?? '',
       agent,
       busy: false,
+      paused: false, // a pausa é do PROVIDER (aba), não da sessão: aqui só existe o campo
       modes: toModes(res.modes),
       currentMode: res.modes?.currentModeId ?? undefined,
       models: toModels(res.models),
@@ -125,7 +126,7 @@ export class HermesSession {
     const res = (await conn.loadSession({ cwd, sessionId, mcpServers: [] })) as unknown as SessionResponseLite | null;
     if (!res) return undefined;
     const session = new HermesSession(conn, sessionId, deps, emit, {
-      sessionId, agent, busy: false, modes: toModes(res.modes), currentMode: res.modes?.currentModeId ?? undefined,
+      sessionId, agent, busy: false, paused: false, modes: toModes(res.modes), currentMode: res.modes?.currentModeId ?? undefined,
       models: toModels(res.models), currentModel: res.models?.currentModelId ?? undefined,
       commands: [], chips: [], queue: [], plan: [], workingSet: [],
       showReasoning: 'collapsed', contextWarnAt: 80, queueEnabled: true, queueDefaultAction: 'queue',

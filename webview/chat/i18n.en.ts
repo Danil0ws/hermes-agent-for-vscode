@@ -35,6 +35,7 @@ export const en: Strings = {
     noSession: 'no session',
     busy: 'working',
     waiting: 'waiting for approval',
+    paused: 'paused',
     laneTip: (path: string) => `lane in ${path}`,
   },
 
@@ -116,6 +117,7 @@ export const en: Strings = {
   /* ───── composer ───── */
   composer: {
     placeholderIdle: 'Ask Hermes, # for context, / for commands',
+    placeholderPaused: 'Runs paused — resume to send',
     locked: "Start the agent to type",
     placeholderBusy: 'Queue or steer the turn in progress',
     placeholderChips: (n: number) =>
@@ -145,6 +147,13 @@ export const en: Strings = {
     noQueueTip: 'The queue is disabled in settings; this becomes turn steering.',
   },
 
+  /* ───── run controls ───── */
+  run: {
+    label: 'Runs',
+    pause: 'Pause', pauseTip: 'Pause: interrupts the current turn and holds the queue',
+    resume: 'Resume', resumeTip: 'Resume runs and the queue',
+    stop: 'Stop', stopTip: 'Stop the current turn (Esc)',
+  },
   /* ───── send ───── */
   send: {
     send: 'Send', sendTip: 'Send (Enter)',
@@ -213,7 +222,7 @@ export const en: Strings = {
   },
 
   /* ───── notices ───── */
-  notice: { cancelled: 'Turn cancelled.', copied: 'Copied.' },
+  notice: { cancelled: 'Turn cancelled.', paused: 'Runs paused.', copied: 'Copied.' },
 
   /* ───── generic a11y ───── */
   a11y: {

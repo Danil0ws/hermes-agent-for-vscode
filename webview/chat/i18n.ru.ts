@@ -38,6 +38,7 @@ export const ru: Strings = {
     noSession: 'нет сессии',
     busy: 'работает',
     waiting: 'ожидает подтверждения',
+    paused: 'пауза',
     laneTip: (path: string) => `lane в ${path}`,
   },
 
@@ -119,6 +120,7 @@ export const ru: Strings = {
   /* ───── composer ───── */
   composer: {
     placeholderIdle: 'Спросите Hermes, # — контекст, / — команды',
+    placeholderPaused: 'Выполнение на паузе — возобновите, чтобы отправить',
     locked: "Запустите агента, чтобы писать",
     placeholderBusy: 'Поставить в очередь или задать направление текущему ходу',
     placeholderChips: (n: number) =>
@@ -148,6 +150,13 @@ export const ru: Strings = {
     noQueueTip: 'Очередь отключена в настройках; это станет указанием для хода.',
   },
 
+  /* ───── управление выполнением ───── */
+  run: {
+    label: 'Выполнение',
+    pause: 'Пауза', pauseTip: 'Пауза: прерывает текущий ход и удерживает очередь',
+    resume: 'Продолжить', resumeTip: 'Возобновить выполнение и очередь',
+    stop: 'Стоп', stopTip: 'Остановить текущий ход (Esc)',
+  },
   /* ───── envio ───── */
   send: {
     send: 'Отправить', sendTip: 'Отправить (Enter)',
@@ -216,7 +225,7 @@ export const ru: Strings = {
   },
 
   /* ───── avisos ───── */
-  notice: { cancelled: 'Ход отменён.', copied: 'Скопировано.' },
+  notice: { cancelled: 'Ход отменён.', paused: 'Выполнение на паузе.', copied: 'Скопировано.' },
 
   /* ───── a11y genéricos ───── */
   a11y: {

@@ -22,7 +22,7 @@ export interface Turn {
 }
 
 export const state = signal<ChatState>({
-  sessionId: null, agent: '', busy: false, modes: [], models: [], commands: [],
+  sessionId: null, agent: '', busy: false, paused: false, modes: [], models: [], commands: [],
   chips: [], queue: [], plan: [], workingSet: [], showReasoning: 'collapsed',
   contextWarnAt: 80, queueEnabled: true, queueDefaultAction: 'queue',
   // preenchidos pelo primeiro `init`/`tabs` do host (o estado por aba vive em `snapshots`)
@@ -99,7 +99,7 @@ function blank(id: string): Snapshot {
   const base = state.value;
   return {
     state: {
-      ...base, sessionId: null, busy: false, starting: false,
+      ...base, sessionId: null, busy: false, starting: false, paused: false,
       modes: [], currentMode: undefined, models: [], currentModel: undefined, commands: [],
       chips: [], queue: [], plan: [], workingSet: [], usage: undefined, turnUsage: undefined,
       tabs: base.tabs, activeTab: id,

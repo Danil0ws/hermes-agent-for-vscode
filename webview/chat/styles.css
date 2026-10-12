@@ -252,6 +252,10 @@ textarea.input:focus { outline: 1px solid var(--vscode-focusBorder); outline-off
    moderno honra em select; onde não honrar, o title do controle continua explicando) */
 .sel select { width: 100%; max-width: none; min-width: 0; text-overflow: ellipsis; }
 .icon-btn { min-width: 28px; flex: 0 0 auto; }
+/* Controles de execução (parar/pausar/retomar) ao lado do medidor. O botão de retomar fica na cor
+   de aviso enquanto pausado: é o único caminho de volta, e o disco de pausa não diz isso sozinho. */
+.run-controls { display: inline-flex; gap: 2px; align-items: center; }
+.icon-btn.paused { color: var(--vscode-editorWarning-foreground); }
 /* Saída para o painel mais estreito que o VS Code permite (~170px de sidebar): abaixo de 220px os
    pisos não cabem nem no mínimo (medido em 200px: 28+36+18+40+80 = 202 contra 184 de painel) e a
    linha estoura — rolagem horizontal no painel. Aí os pisos saem e os selects encolhem com

@@ -25,7 +25,8 @@ export interface TabBarProps {
 function tabTip(t: TabInfo): string {
   const lane = t.lane ? ` · ${S.tabs.laneTip(t.lane.path)}` : '';
   const state = t.busy ? ` · ${S.tabs.busy}` : t.waiting ? ` · ${S.tabs.waiting}` : '';
-  return `${t.agent || 'hermes'} · ${t.cwd}${lane}${state}`;
+  const paused = t.paused ? ` · ${S.tabs.paused}` : '';
+  return `${t.agent || 'hermes'} · ${t.cwd}${lane}${state}${paused}`;
 }
 
 function RenameInput({ value, onCommit, onCancel }: {
@@ -76,6 +77,7 @@ export function TabBar({ tabs, active, onActivate, onClose, onRename, onNew, onN
             >
               {t.busy && <Icon name="loading" spin cls="tab-state" label={S.tabs.busy} />}
               {!t.busy && t.waiting && <Icon name="bell-dot" cls="tab-state warn" label={S.tabs.waiting} />}
+              {!t.busy && !t.waiting && t.paused && <Icon name="debug-pause" cls="tab-state" label={S.tabs.paused} />}
               {editing === t.id ? (
                 <RenameInput value={t.title} onCommit={(v) => commit(t.id, v)} onCancel={() => setEditing(null)} />
               ) : (

@@ -348,11 +348,40 @@ function SendInline({ onSubmit }: { onSubmit: (a: 'send' | 'queue' | 'steer' | '
   );
 }
 
+/* ─────────── controles de execução (parar / pausar / retomar) ─────────── */
+
+/**
+ * Grupo de controle do turno, ao lado do medidor.
+ *
+ *  - **Parar** (`⏹`, só durante um turno) = `session/cancel`: interrompe o que está rodando; o que
+ *    estiver na fila continua lá e o próximo envio volta ao normal.
+ *  - **Pausar/Retomar** (`⏸`/`▶`) = portão: pausar interrompe o turno E segura a fila (nada novo vai
+ *    ao agente até retomar). O ACP não tem pausa — quem implementa o "segurar" é o host.
+ */
+function RunControls() {
+  const busy = state.value.busy;
+  const paused = state.value.paused;
+  const label = paused ? S.run.resume : S.run.pause;
+  return (
+    <div class="run-controls" role="group" aria-label={S.run.label}>
+      {busy && (
+        <button class="icon-btn" title={S.run.stopTip} aria-label={S.run.stop}
+          onClick={() => send({ type: 'cancel' })}><Icon name="debug-stop" /></button>
+      )}
+      <button class={`icon-btn ${paused ? 'paused' : ''}`} title={paused ? S.run.resumeTip : S.run.pauseTip}
+        aria-label={label} onClick={() => send({ type: paused ? 'resume' : 'pause' })}>
+        <Icon name={paused ? 'debug-continue' : 'debug-pause'} />
+      </button>
+    </div>
+  );
+}
+
 /* ─────────── composer ─────────── */
 
 export function Composer() {
   const box = useRef<HTMLTextAreaElement>(null);
   const busy = state.value.busy;
+  const paused = state.value.paused;
   const started = state.value.sessionId !== null;
   const [menu, setMenu] = useState<{ tok: TriggerToken; items: Item[] } | null>(null);
   const [active, setActive] = useState(0);
@@ -446,9 +475,10 @@ export function Composer() {
   };
 
   const placeholder = !started ? S.composer.locked
-    : busy ? S.composer.placeholderBusy
-      : chips.value.length > 0 ? S.composer.placeholderChips(chips.value.length)
-        : S.composer.placeholderIdle;
+    : paused ? S.composer.placeholderPaused
+      : busy ? S.composer.placeholderBusy
+        : chips.value.length > 0 ? S.composer.placeholderChips(chips.value.length)
+          : S.composer.placeholderIdle;
 
   /**
    * Colar no campo. Três caminhos, nesta ordem:
@@ -562,6 +592,7 @@ export function Composer() {
             </label>
           </div>
           <div class="toolbar-actions">
+            <RunControls />
             <Meter />
           </div>
         </div>

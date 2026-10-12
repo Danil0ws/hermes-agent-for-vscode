@@ -35,10 +35,12 @@ const texts = (): string[] => turns.value.map((t) => t.text);
 test('abas: chaves de i18n das abas e do bloco Iniciar existem', () => {
   assert.ok(S.tabs.new && S.tabs.newTip && S.tabs.newWorktree && S.tabs.newWorktreeTip);
   assert.ok(S.tabs.close && S.tabs.closeTip && S.tabs.rename);
-  assert.ok(S.tabs.noSession && S.tabs.busy && S.tabs.waiting);
+  assert.ok(S.tabs.noSession && S.tabs.busy && S.tabs.waiting && S.tabs.paused);
   assert.equal(typeof S.tabs.laneTip, 'function');
   assert.ok(S.empty.startTitle && S.empty.startBody && S.empty.startHint && S.empty.starting);
-  assert.ok(S.composer.start);
+  assert.ok(S.composer.start && S.composer.placeholderPaused);
+  assert.ok(S.run.label && S.run.pause && S.run.pauseTip && S.run.resume && S.run.resumeTip && S.run.stop && S.run.stopTip);
+  assert.ok(S.notice.paused);
 });
 
 test('abas: mensagem com tab de FUNDO não aparece na aba ativa e fica no transcript dela', () => {
@@ -80,6 +82,25 @@ test('abas: aprovação (permission) é por aba — não vaza para a aba ativa',
 
   applyHost({ type: 'tabs', tabs: [tab('t4a'), tab('t4b')], active: 't4a' });
   assert.equal(permission.value?.id, 'p1', 'ao ativar a aba A, a aprovação dela reaparece');
+});
+
+/** `tabs`/`init` carregam a pausa: a da aba ATIVA é a que o composer mostra (botão ⏸/▶ e o aviso). */
+test('pausa: `init`/`tabs` trazem a pausa da aba ativa, e a de fundo não vaza', () => {
+  reset('t5a', 't5a', 't5b');
+  applyHost({ type: 'init', state: { ...state.value, activeTab: 't5a', paused: true } });
+  assert.equal(state.value.paused, true, 'aba ativa pausada: o composer tem de saber');
+
+  // a aba de FUNDO pausada (veio no `tabs`) não pausa o composer da ativa
+  const tabs: TabInfo[] = [{ ...tab('t5a') }, { ...tab('t5b'), paused: true }];
+  applyHost({ type: 'tabs', tabs, active: 't5a' });
+  assert.equal(state.value.tabs.find((t) => t.id === 't5b')?.paused, true);
+  assert.equal(state.value.paused, true, 'continua a pausa da ATIVA (t5a, pausada no init acima)');
+
+  // trocar para a aba sem pausa e receber o init dela solta o composer
+  applyHost({ type: 'init', state: { ...state.value, activeTab: 't5b', paused: true } });
+  assert.equal(state.value.paused, true);
+  applyHost({ type: 'init', state: { ...state.value, activeTab: 't5a', paused: false } });
+  assert.equal(state.value.paused, false, 'retomar tem de aparecer no composer');
 });
 
 test('abas: com UMA aba, mensagens com e sem `tab` caem no mesmo transcript (não regride)', () => {

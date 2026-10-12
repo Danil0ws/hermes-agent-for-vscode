@@ -9,9 +9,10 @@ memory and toolsets as the CLI. Nothing the CLI can do becomes unreachable — w
 expose falls back to the integrated terminal.
 
 Status: **milestones M1–M8 done** (ACP connection, streaming chat, reasoning, tool calls, native
-diff, approvals, pickers, context meter, chips, parallel sessions, prompt queue, Manage panel, plan,
-working set and the CLI escape hatches). M9 (visual pass across the 4 themes, keyboard/screen reader
-and Remote) is **partial** — see `docs/ARCHITECTURE.md` §10.
+diff, approvals, pickers, context meter, chips, parallel sessions, prompt queue, run controls
+(stop/pause/resume), Manage panel, plan, working set and the CLI escape hatches). M9 (visual pass
+across the 4 themes, keyboard/screen reader and Remote) is **partial** — see
+`docs/ARCHITECTURE.md` §10.
 See `docs/ARCHITECTURE.md` (milestones and verified gaps) and `docs/UX.md` (wireframes).
 
 MIT licensed · 4 languages (en, pt-BR, ru, zh-CN) · no hardcoded colors.
@@ -51,7 +52,10 @@ code --install-extension hermes-agent-for-vscode-0.1.0.vsix
    so, and the tab strip's `+`/worktree buttons are inert.
 3. Once started the toolbar appears (`+` for context, mode and model) and typing works (`Enter`;
    `Shift+Enter` for a newline; `Esc` cancels the turn). The send button sits **inside** the field
-   (bottom right, text only); it opens the same menu — send, queue, steer, interrupt.
+   (bottom right, text only); it opens the same menu — send, queue, steer, interrupt. Next to the
+   context meter the run controls: **Stop** (`⏹`, only during a turn) cancels the current turn, and
+   **Pause**/**Resume** (`⏸`/`▶`) pauses the tab — the running turn is interrupted, the queue stops
+   draining, sends are refused until you resume, and resuming pushes the next queued prompt.
 4. **Attachments**: the chips above the field carry what goes to the model. Removing one is the `×`
    (the session keeps the list, and the chip does not come back). Attaching a selection or a file
    also writes a textual reference (`` `.vscodeignore:4` ``) into the field, at the caret, so the

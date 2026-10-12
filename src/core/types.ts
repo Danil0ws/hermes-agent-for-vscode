@@ -135,6 +135,11 @@ export interface TabInfo {
   busy: boolean;
   starting?: boolean;
   waiting?: boolean;
+  /**
+   * Execuções PAUSADAS nesta aba: o turno em andamento é interrompido e a fila deixa de drenar —
+   * nenhum envio novo passa até retomar. Uma por aba (a pausa é da lane, não do editor).
+   */
+  paused?: boolean;
   lane?: { branch: string; path: string } | null;
 }
 
@@ -144,6 +149,8 @@ export interface ChatState {
   busy: boolean;
   /** o botão "Iniciar" está criando a sessão (handshake em andamento) — só o host seta */
   starting?: boolean;
+  /** execuções pausadas na aba ativa (ver `TabInfo.paused`) */
+  paused: boolean;
   /** abas abertas + qual está ativa. O resto deste estado descreve a aba ATIVA. */
   tabs: TabInfo[];
   activeTab: string;
@@ -216,6 +223,9 @@ export type WebviewToHost =
   /** imagem colada no campo (bitmap do clipboard): base64 SEM o prefixo `data:` */
   | { type: 'attachImage'; name: string; mime: string; data: string }
   | { type: 'cancel'; tab?: string }
+  /** pausa/retoma as execuções da aba: interrompe o turno e segura a fila */
+  | { type: 'pause'; tab?: string }
+  | { type: 'resume'; tab?: string }
   | { type: 'setMode'; tab?: string; modeId: string }
   | { type: 'setModel'; tab?: string; modelId: string }
   | { type: 'setReasoning'; value: 'always' | 'collapsed' | 'hidden' }

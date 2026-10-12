@@ -199,8 +199,11 @@ camada de contexto/tokens.
 5. **Fila**: implementada no cliente (lista visível, reordenável, persistida) e **com respaldo**
    no servidor: se um prompt escapar durante um turno, o `_claim_turn_or_queue` enfileira e o
    aviso textual aparece no chat. Nunca dependemos só do servidor porque não há API de leitura da fila.
-6. **Steer / Enviar agora**: "Steer" = enviar prompt **text-only** durante o turno (o adaptador
-   chama `agent.redirect`); "Enviar agora (interromper)" = `session/cancel` seguido de novo prompt.
+6. **Steer / Enviar agora / Pausar**: "Steer" = enviar prompt **text-only** durante o turno (o adaptador
+   chama `agent.redirect`); "Enviar agora (interromper)" = `session/cancel` seguido de novo prompt;
+   **"Pausar"** = `session/cancel` **e** um portão no cliente (`TabInfo.paused` + `drainAllowed`) que
+   segura a fila e recusa envios novos até "Retomar" — o protocolo não tem pause, então o "segurar" é
+   nosso e o agente só vê cancels (ver §12.5).
 7. **Working set e reverter**: o Hermes edita arquivos **server-side** com as próprias tools; o
    cliente **não** intercepta a escrita. O working set é derivado dos blocos de **diff** dos
    `tool_call`/`tool_call_update` (+ `ToolCallLocation.path`). "Desfazer" = aplicar o diff inverso;
@@ -338,6 +341,7 @@ Notas de implementação:
 | Fila de prompts | cliente-side + respaldo `_claim_turn_or_queue` / `/queue` | ✅ (sem leitura da fila do servidor) |
 | Steer (mensagem durante o turno) | `agent.redirect` disparado pelo adaptador quando o prompt é text-only | ✅ |
 | Enviar agora (interromper) | `session/cancel` + novo prompt | ✅ |
+| Parar / pausar / retomar execuções | `session/cancel` + portão no cliente (`drainAllowed`) | ✅ (pausa é do cliente: o ACP não tem `pause`) |
 | Anexar imagem | `promptCapabilities.image` | ✅ |
 | Anexar arquivo/pasta | `embeddedContext: false` → arquivo como **texto** | ⚠️ degradado p/ texto |
 | Compactar contexto | `/compress` (bloqueado durante turno) | ✅ |
@@ -689,8 +693,29 @@ dentro de `applyInit`, fora de comentários). Medido depois no harness: o mesmo 
 com `loading`/`bell-dot`, o `input-send` aparece e o medidor mostra `50%`; a aba de fundo continua
 acumulando sem vazar na ativa, e trocar de aba restaura o transcript dela.
 
-## 13. Anexos: uma fonte de chips, `draft/insert` e corte por teto
+### 12.5 Parar, pausar e retomar as execuções
 
+Pedido do usuário (12/10): "falta um botão para parar, pausar e retornar as execuções".
+
+- **Parar** é o `session/cancel` que já existia (`Esc` e a entrada "Enviar agora (interromper)" do menu
+  do envio); agora tem **botão próprio** na barra inferior, visível só durante um turno.
+- **Pausar / Retomar é do CLIENTE**, porque o ACP não tem pause: pausar = (1) interromper o turno em
+  andamento (`session/cancel`) e (2) fechar um portão que segura a fila e recusa envios novos. O estado
+  mora no **`TabInfo.paused`** (a pausa é da lane, não do editor), viaja em `tabs`/`init` como qualquer
+  outro estado de aba, e `ChatState.paused` é o da aba ATIVA — quem desenha o botão é o composer.
+- **O caso que a guarda existe para pegar: pausar NO MEIO de um turno.** O `cancel` faz o `prompt()` de
+  `send` voltar e o drain roda logo depois do `await`: sem `drainAllowed(paused, enabled)` (o mesmo
+  ponto do "fila desligada nas configurações") o próximo da fila sairia **depois** de o usuário mandar
+  pausar, e a pausa não valeria nada. Teste em `src/test/units.test.ts`.
+- **`force` no `send` é o único caminho que atravessa o portão**: é o "Enviar agora" da fila (`▶ agora`),
+  que é ordem explícita do usuário. Retomar também puxa o próximo da fila — era exatamente o que a
+  pausa segurava.
+- **Decidido**: nada de pausa na sessão (a sessão não sabe o que é pausa — o campo existe no literal de
+  `SessionState` só porque `ChatState` é o contrato), nenhum comando novo no manifesto, nenhuma config
+  nova. Na webview não há mensagem nova no contrato: `paused` viaja dentro de `tabs`/`init`, que já
+  existem (adicionar campo é compatível; `PROTOCOL` continua 1).
+
+## 13. Anexos: uma fonte de chips, `draft/insert` e corte por teto
 - **Chips têm UM dono.** O `ContextManager` é quem manda na lista e publica por `deps.publish`; o
   provider passa a ser o ponto de escrita (`setChips`) e o único a postar `{type:'chips'}` para a
   webview. Antes havia DUAS listas (a do provider, usada em `send`/`initialState`, e a da sessão) e a

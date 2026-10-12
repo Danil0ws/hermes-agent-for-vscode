@@ -179,7 +179,8 @@ Texto obrigatório no rodapé do cartão (o escopo precisa ser explícito):
    - com chip: `Pergunte sobre os N itens anexados`
    Histórico ↑/↓, `#` e `/` com popover, colar imagem (capability `image`).
 4. **Barra inferior** (uma linha, sem quebra): `+` · Modo · Modelo · Ferramentas · *(os dois selects
-   dividem a sobra)* · medidor de contexto · Enviar ▾ — ou **Iniciar** enquanto não há sessão.
+   dividem a sobra)* · controles de execução (§3.2) · medidor de contexto · Enviar ▾ — ou **Iniciar**
+   enquanto não há sessão.
 
 ### 3.1 Botão de envio (idêntico ao do VS Code)
 
@@ -196,7 +197,28 @@ Padrão configurável: `hermes.queue.defaultAction` = `queue` | `steer` (espelha
 `chat.requestQueuing.defaultAction`). `hermes.queue.enabled=false` remove o dropdown e mantém
 apenas Enviar/Parar.
 
-### 3.2 Atalhos
+### 3.2 Controles de execução (parar · pausar · retomar)
+
+Na barra inferior, à esquerda do medidor:
+
+```
+turno ativo:  [ ⏹ Parar ] [ ⏸ Pausar ]        ◔ 34%
+ocioso:                    [ ⏸ Pausar ]        ◔ 34%
+pausado:                   [ ▶ Retomar ]       ◔ 34%   ← botão na cor de aviso
+```
+
+- **Parar** (`⏹`, só durante um turno) = `session/cancel`: interrompe o turno atual. A fila continua
+  como está e o próximo envio volta ao normal. É o mesmo que `Esc`.
+- **Pausar** = portão. Interrompe o turno em andamento **e** segura a fila: nada novo vai ao agente
+  até retomar, e um envio durante a pausa é recusado com aviso (`Execuções pausadas — retome para
+  enviar.`) em vez de virar prompt. O aviso `Execuções pausadas.` aparece abaixo das abas, e a aba
+  ganha o ícone de pausa no lugar do spinner.
+- **Retomar** solta o portão e **puxa o próximo item da fila** — era exatamente isso que a pausa
+  segurava.
+- O ACP não tem "pausa" (o agente só conhece `session/cancel`); quem segura é o cliente. Por isso
+  `Enviar agora` da fila (`▶ agora`) passa mesmo pausado: é ordem explícita, não fluxo.
+
+### 3.3 Atalhos
 
 | Ação | Atalho |
 |---|---|

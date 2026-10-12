@@ -27,6 +27,7 @@ export const en: Record<string, string> = {
   "Corrigir problema com o Hermes": "Troubleshoot Hermes",
   "Escolher modelo e provider padrão": "Choose default model and provider",
   "Executar comando do Hermes": "Run Hermes command",
+  "Execuções pausadas — retome para enviar.": "Runs paused — resume to send.",
   "Exportar conversa do Hermes": "Export Hermes conversation",
   "Ferramentas / MCP": "Tools / MCP",
   "Histórico da conversa": "Conversation history",

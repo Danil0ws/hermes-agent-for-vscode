@@ -11,13 +11,13 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { AgentManager } from '../core/AgentManager';
 import type { HermesSession } from '../core/HermesSession';
-import { QueueManager } from '../core/QueueManager';
+import { QueueManager, drainAllowed } from '../core/QueueManager';
 import { activeAgent, settings, workingDirectory } from '../config/Settings';
 import { estimateTokens } from '../utils/Tokens';
 import {
   CHIP_MAX_TOKENS, MAX_IMAGE_BYTES, imageExt, isImageMime, refText, truncateChipText, type DraftChip,
 } from '../core/ContextManager';
-import type { ChatState, ContextChip, HostToWebview, TabInfo, WebviewToHost } from '../core/types';
+import type { ChatState, ContextChip, HostToWebview, SendAction, TabInfo, WebviewToHost } from '../core/types';
 import { tr } from '../l10n';
 
 export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disposable {
@@ -94,6 +94,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
         case 'cancel':
           await this.sessionFor(msg.tab)?.cancel();
           return;
+        case 'pause':
+          await this.pauseTab(msg.tab);
+          return;
+        case 'resume':
+          await this.resumeTab(msg.tab);
+          return;
         case 'setMode':
           await this.sessionFor(msg.tab)?.setMode(msg.modeId);
           return;
@@ -127,7 +133,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
           this.queue.clear(); this.post({ type: 'queue', items: this.queue.all }); return;
         case 'queue/sendNow': {
           const item = this.queue.take(msg.id);
-          if (item) { await this.sessionFor(msg.tab)?.cancel(); await this.send(item.text, 'send', msg.tab); }
+          // `force`: "enviar agora" é ordem explícita — passa mesmo com as execuções pausadas.
+          if (item) { await this.sessionFor(msg.tab)?.cancel(); await this.send(item.text, 'send', msg.tab, true); }
           this.post({ type: 'queue', items: this.queue.all });
           return;
         }
@@ -192,13 +199,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     }
   }
 
-  private async send(text: string, action: 'send' | 'queue' | 'steer' | 'interrupt', tab?: string): Promise<void> {
+  private async send(text: string, action: SendAction, tab?: string, force = false): Promise<void> {
     const s = settings();
     // FONTE ÚNICA: o que vai ao modelo é a lista do host (nunca uma cópia que a webview mandou).
     const chips = this.chips;
     if (!text.trim() && chips.length === 0) return;
 
-    const t = this.tabs.find((x) => x.id === (tab ?? this.activeTabId)) ?? this.ensureTab();
+    const t = this.tabFor(tab);
+    // Pausa = portão: com a aba pausada NADA vai ao agente. `force` é o "enviar agora" da fila, que
+    // por definição é mandar apesar da pausa (é uma ordem explícita do usuário, não o fluxo).
+    if (t.paused && !force) {
+      this.post({ type: 'notice', level: 'warning', text: tr('Execuções pausadas — retome para enviar.'), tab: t.id });
+      return;
+    }
     let session = this.sessionFor(t.id);
     const busy = session?.busy ?? false;
 
@@ -218,11 +231,45 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
     const stop = await session.prompt(text, chips);
     this.log('info', `turno terminou: ${stop}`);
 
-    if (s.queueEnabled) {
+    // `t.paused` é relido aqui de propósito: o usuário pode ter pausado DURANTE o turno (foi o que
+    // interrompeu este), e aí a fila não pode drenar.
+    if (drainAllowed(t.paused ?? false, s.queueEnabled)) {
       const nextItem = this.queue.next();
       if (nextItem) {
         this.post({ type: 'queue', items: this.queue.all });
-        await this.send(nextItem.text, 'send');
+        await this.send(nextItem.text, 'send', t.id);
+      }
+    }
+  }
+
+  /**
+   * PAUSAR as execuções da aba (botão ⏸ do composer).
+   *
+   * O ACP não tem "pausa": o agente só conhece `session/cancel`. Pausar é, então, duas coisas — o
+   * turno em andamento é INTERROMPIDO (`cancel`) e a fila deixa de drenar (`drainAllowed`), e todo
+   * envio novo é recusado com aviso. Sem a segunda metade o pause seria só um cancel mais caro.
+   */
+  async pauseTab(tab?: string): Promise<void> {
+    const t = this.tabFor(tab);
+    if (t.paused) return;
+    t.paused = true;
+    await this.sessionFor(t.id)?.cancel();
+    this.announce();
+    this.log('info', `execuções pausadas (aba ${t.id})`);
+  }
+
+  /** RETOMAR: solta o portão e puxa o próximo da fila (era exatamente isso que a pausa segurava). */
+  async resumeTab(tab?: string): Promise<void> {
+    const t = this.tabFor(tab);
+    if (!t.paused) return;
+    t.paused = false;
+    this.announce();
+    this.log('info', `execuções retomadas (aba ${t.id})`);
+    if (drainAllowed(false, settings().queueEnabled)) {
+      const nextItem = this.queue.next();
+      if (nextItem) {
+        this.post({ type: 'queue', items: this.queue.all });
+        await this.send(nextItem.text, 'send', t.id);
       }
     }
   }
@@ -234,7 +281,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
    * Idempotente: clique duplo não abre duas sessões.
    */
   async start(tab?: string): Promise<void> {
-    const t = this.tabs.find((x) => x.id === (tab ?? this.activeTabId)) ?? this.ensureTab();
+    const t = this.tabFor(tab);
     if (this.starting || t.sessionId) return;
     this.starting = true;
     t.starting = true;
@@ -401,6 +448,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
 
   private activeTab(): TabInfo | undefined { return this.tabs.find((t) => t.id === this.activeTabId); }
 
+  /** Aba alvo de uma ação (`tab` ausente = a ativa). Sem abas, cria a primeira. */
+  private tabFor(tab?: string): TabInfo {
+    return this.tabs.find((x) => x.id === (tab ?? this.activeTabId)) ?? this.ensureTab();
+  }
+
   /** Sessão viva da aba (por `sessionId`); sem aba, a ativa. */
   private sessionFor(tab?: string): HermesSession | undefined {
     const t = this.tabs.find((x) => x.id === (tab ?? this.activeTabId));
@@ -481,6 +533,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
       agent: tab.agent || activeAgent(s).name,
       busy: tab.busy,
       starting: tab.starting,
+      paused: tab.paused ?? false,
       tabs: this.tabs.map((t) => ({ ...t })),
       activeTab: this.activeTabId,
       modes: sess?.snapshot.modes ?? [],
