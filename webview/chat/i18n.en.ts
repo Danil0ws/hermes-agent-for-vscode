@@ -154,6 +154,19 @@ export const en: Strings = {
     resume: 'Resume', resumeTip: 'Resume runs and the queue',
     stop: 'Stop', stopTip: 'Stop the current turn (Esc)',
   },
+
+  /* ───── run bar (footer: what is running) ───── */
+  runbar: {
+    a11y: 'What is running',
+    thinking: 'thinking',
+    writing: 'writing the response',
+    working: 'working',
+    paused: 'paused',
+    waitingApproval: (what: string) => `waiting for your approval: ${what}`,
+    multiple: (n: number) => `${n} running`,
+    slow: 'this phase is taking a while — it may be stuck',
+    elapsed: (s: string) => `${s}s`,
+  },
   /* ───── send ───── */
   send: {
     send: 'Send', sendTip: 'Send (Enter)',

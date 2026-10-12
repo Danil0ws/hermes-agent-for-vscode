@@ -155,6 +155,19 @@ export const zhCN: Strings = {
     resume: '恢复', resumeTip: '恢复执行与队列',
     stop: '停止', stopTip: '停止当前回合（Esc）',
   },
+
+  /* ───── 执行栏（底部：正在运行什么） ───── */
+  runbar: {
+    a11y: '正在运行',
+    thinking: '正在思考',
+    writing: '正在撰写回复',
+    working: '正在工作',
+    paused: '已暂停',
+    waitingApproval: (what: string) => `等待你的批准：${what}`,
+    multiple: (n: number) => `${n} 个运行中`,
+    slow: '这个阶段耗时较长 — 可能已卡住',
+    elapsed: (s: string) => `${s}s`,
+  },
   /* ───── envio ───── */
   send: {
     send: '发送', sendTip: '发送（Enter）',

@@ -52,6 +52,10 @@ async function ext<T>(conn: acp.ClientSideConnection, method: string, params: Re
 
 const KINDS = new Set(['read', 'edit', 'delete', 'move', 'search', 'execute', 'think', 'fetch', 'switch_mode', 'other']);
 
+/** tool que ainda "está rodando": só estes dois estados; qualquer outro já terminou. Predicado local
+ *  do core — espelha `webview/chat/status.ts` sem importá-lo (o core não depende da webview). */
+const isOpen = (t: ToolView): boolean => t.status === 'pending' || t.status === 'in_progress';
+
 export class HermesSession {
   readonly sessionId: string;
   private state: SessionState;
@@ -59,6 +63,10 @@ export class HermesSession {
   private workingSet = new Map<string, ChangedFile>();
   private pending = new Map<string, (optionId: string | null) => void>();
   private permissionSeq = 0;
+  /** id do turno mais recente (1-based). `0` nunca é um id real: é o sentinel do `cancel()` sem turno. */
+  private turnSeq = 0;
+  /** turno aberto de verdade; `null` quando nenhum prompt está em andamento. */
+  private openTurn: number | null = null;
 
   constructor(
     readonly conn: acp.ClientSideConnection,
@@ -162,6 +170,9 @@ export class HermesSession {
   async prompt(text: string, chips: ContextChip[] = []): Promise<acp.StopReason | 'error'> {
     this.state.busy = true;
     this.emit({ type: 'busy', value: true });
+    const id = ++this.turnSeq;
+    this.openTurn = id;
+    let stop: acp.StopReason | 'cancelled' = 'cancelled';
     try {
       const res = await this.conn.prompt({
         sessionId: this.sessionId,
@@ -172,21 +183,45 @@ export class HermesSession {
         this.state.turnUsage = turn;
         this.emit({ type: 'usage', size: this.state.usage?.size ?? 0, used: this.state.usage?.used ?? 0, turn });
       }
-      this.emit({ type: 'turn/end', stopReason: res.stopReason });
+      stop = res.stopReason;
       return res.stopReason;
     } catch (err) {
       this.deps.log?.('error', `prompt falhou: ${String(err)}`);
       this.emit({ type: 'error', text: String(err) });
-      // `turn/end` TAMBÉM aqui: é o ÚNICO evento que limpa o `streaming` na webview. Sem ele, um
-      // turno que terminou com erro deixava o indicador de "pensando" girando para sempre — o
-      // sintoma relatado ("depois de concluído ele fica pensando"). `cancelled` é a verdade: o
-      // turno não chegou ao fim pelo caminho normal.
-      this.emit({ type: 'turn/end', stopReason: 'cancelled' });
+      // `cancelled` no catch TAMBÉM encerra o turno (via `settle` no `finally`): é o ÚNICO evento que
+      // limpa o `streaming` na webview. Sem ele, um turno que terminou com erro deixava o indicador
+      // de "pensando" girando para sempre — o sintoma relatado ("depois de concluído ele fica
+      // pensando"). `cancelled` é a verdade: o turno não chegou ao fim pelo caminho normal.
+      stop = 'cancelled';
       return 'error';
     } finally {
-      this.state.busy = false;
-      this.emit({ type: 'busy', value: false });
+      // O `finally` cobre TODOS os caminhos terminais (sucesso, erro, cancel) num só lugar: fecha as
+      // tools que ficaram abertas, emite `turn/end` e zera `busy` — inclusive quando o `cancel()` já
+      // liquidou o turno antes (aí `settle` é no-op e nada duplica).
+      this.settle(id, stop);
     }
+  }
+
+  /**
+   * Encerra um turno: fecha as tools ainda abertas, emite `turn/end` e zera `busy`.
+   *
+   * Idempotente e seguro contra corrida: só o turno ainda aberto (`openTurn === id`) é liquidado, e
+   * a primeira chamada zera `openTurn`. Assim uma segunda chamada (o `finally` do prompt depois de
+   * um cancel, ou um novo cancel) vira no-op e NÃO duplica mensagens; e o `finally` de um prompt
+   * ANTIGO não derruba um turno NOVO que já assumiu (`openTurn` aponta para o mais recente).
+   */
+  private settle(id: number, stopReason: acp.StopReason | 'cancelled'): void {
+    if (this.openTurn !== id) return;
+    this.openTurn = null;
+    const endedAt = Date.now();
+    for (const tool of this.tools.values()) {
+      if (!isOpen(tool)) continue;
+      this.tools.set(tool.id, { ...tool, status: 'cancelled', endedAt });
+      this.emit({ type: 'tool/update', id: tool.id, patch: { status: 'cancelled', endedAt } });
+    }
+    this.emit({ type: 'turn/end', stopReason });
+    this.state.busy = false;
+    this.emit({ type: 'busy', value: false });
   }
 
   async cancel(): Promise<void> {
@@ -197,6 +232,10 @@ export class HermesSession {
     }
     this.pending.clear();
     await this.conn.cancel({ sessionId: this.sessionId });
+    // Liquidar o turno NA HORA, sem esperar a resposta do agente ao cancel: ele pode nunca responder
+    // e a UI ficaria girando para sempre com a tool "rodando" e `busy` ligado. `?? 0` cobre o cancel
+    // sem turno aberto — `settle(0)` cai no guard (openTurn é `null` por construção) e é no-op.
+    this.settle(this.openTurn ?? 0, 'cancelled');
   }
 
   async setMode(modeId: string): Promise<void> {

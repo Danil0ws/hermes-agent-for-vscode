@@ -75,7 +75,9 @@ export function TabBar({ tabs, active, onActivate, onClose, onRename, onNew, onN
               onClick={() => onActivate(t.id)}
               onDblClick={() => setEditing(t.id)}
             >
-              {t.busy && <Icon name="loading" spin cls="tab-state" label={S.tabs.busy} />}
+              {/* Só a aba de FUNDO gira: a aba ATIVA já é explicada pela barra de execução — o
+                  spinner dela seria uma SEGUNDA animação para o mesmo evento. */}
+              {t.busy && !isActive && <Icon name="loading" spin cls="tab-state" label={S.tabs.busy} />}
               {!t.busy && t.waiting && <Icon name="bell-dot" cls="tab-state warn" label={S.tabs.waiting} />}
               {!t.busy && !t.waiting && t.paused && <Icon name="debug-pause" cls="tab-state" label={S.tabs.paused} />}
               {editing === t.id ? (

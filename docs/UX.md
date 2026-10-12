@@ -142,9 +142,16 @@ Nenhum desses é botão dentro da webview.
   `inserir no editor`. Barra de ações por resposta: copiar · reexecutar · inserir · abrir diff.
 - Raciocínio: bloco colapsável com streaming e tempo decorrido (`agent_thought_chunk`).
   Config `hermes.showReasoning`: `always` | `collapsed` | `hidden`.
-- Tool call: item compacto e expansível (ícone por `kind`, título, status, entrada/saída, duração).
-  `kind` → ícone: `read`=book, `edit`=edit, `delete`=trash, `move`=arrow-right, `search`=search,
+- Tool call: **uma linha plana** (ícone do `kind` · título · glifo de status · duração) e o detalhe
+  (entrada/saída/diffs) dentro do `<details>` — a caixa com borda saiu. `kind` → ícone: `read`=book,
+  `edit`=edit, `delete`=trash, `move`=arrow-right, `search`=search,
   `execute`=terminal, `think`=lightbulb, `fetch`=cloud, `switch_mode`=arrow-swap, `other`=tools.
+  **O tool nasce DENTRO do turno em que apareceu** (`ToolEntry.turnId`, escrito pelo reducer via
+  `ownerTurnId`): antes a lista só crescia e TODOS os tools ficavam num bloco depois de todos os
+  turnos, com o último (que nasce aberto) parecendo atividade nova embaixo da conversa — o defeito
+  relatado como "está aparecendo coisa que não está rodando". O vínculo é o contrato de
+  `webview/chat/items.ts` (`toolsOfTurn`); tool sem dono (chegou antes de qualquer turno) cai no
+  último turno, porque sumir seria pior.
   **Só o ativo abre**: nasce aberto o que está rodando (`pending`/`in_progress`) e o ÚLTIMO da lista;
   os anteriores ficam recolhidos e fecham quando um tool novo entra. Antes todos nasciam fechados —
   inclusive o que estava rodando, que ficava invisível no meio de dezenas de itens recolhidos.
@@ -153,6 +160,8 @@ Nenhum desses é botão dentro da webview.
   num item antigo (medido no harness: abre à mão → re-render → continua aberto).
   Entrada/saída e raciocínio quebram token comprido (`overflow-wrap: anywhere`): `pre-wrap` sozinho
   não quebra um caminho sem espaços e o bloco ganhava rolagem horizontal.
+  **Nada aqui anima**: o raciocínio e as linhas de tool usam glifos estáticos — o único elemento que
+  gira no painel é a barra de execução (§5.5).
 - **Fim de turno**: uma linha no fim da conversa com o `stopReason` do ACP — `✓ Foi concluído.`
   (`end_turn`), `Interrompido.` (`cancelled`), limite de tokens/turnos ou recusa. Some na primeira
   mensagem/chunk do turno seguinte, então só o turno recém-terminado carrega o aviso. Antes o fim do
@@ -396,6 +405,53 @@ Popover ao hover/foco:
 - "Implementar plano" (aparece quando o agente está em modo que pede aprovação e há plano pendente):
   envia o plano como prompt de implementação e, se o modo atual não permitir edição, sugere
   `accept_edits` em vez de mudar sozinho.
+
+### 5.5 Barra de execução (o que está rodando)
+
+```
+┌ conversa ───────────────────────────────────────────────────────┐
+│ ...                                                             │
+└─────────────────────────────────────────────────────────────────┘
+  ◐ Comando: npm test · 12s                          ← .runbar (flex: 0 0 auto)
+┌ campo ──────────────────────────────────────────────────────────┐
+```
+
+Rodapé entre a conversa e o campo, **sempre no mesmo lugar** (fora da rolagem do `.transcript`), com
+uma linha: `glifo animado · fase em palavras · [tempo] · [aviso]`. Antes o "está rodando" era dito
+por quatro coisas independentes ao mesmo tempo — spinner do raciocínio, glifo do tool call, spinner
+da aba ativa e o placeholder do campo — e a soma dava o relato "aparece rodando três coisas sem
+rodar nada diferente". Agora **um dono só**:
+
+| Fase | Texto da barra | Dono da animação |
+|---|---|---|
+| `starting` | *(barra escondida)* | bloco "Iniciar" do estado vazio |
+| `waiting` | `aguardando sua aprovação: <título>` | barra |
+| `tool` | `Comando: npm test · 12s` (+ `2 em execução`) | barra |
+| `thinking` / `writing` | `pensando` / `escrevendo a resposta` | barra |
+| `working` | `trabalhando` | barra |
+| `paused` | `pausado` | nada gira (não há o que girar) |
+| `idle` | *(barra escondida)* | nada |
+
+- A leitura vem de **uma função pura** (`webview/chat/status.ts::runStatus`), com precedência fixa
+  `starting > paused > waiting > tool > thinking/writing > working > idle`: permissão pendente é
+  **espera**, não execução — era aí que a tela mentia. Ela é testável sem DOM (`runstatus.test.ts`).
+- O tempo decorrido é sempre visível e, passando de 60s na mesma fase, a barra acrescenta o aviso de
+  que a fase está demorando. É o antídoto do "não entendi por que travou": travamento fica **visível**
+  em vez de silencioso.
+- **Sem botões na barra.** Parar/pausar continuam SÓ nos controles de execução do composer (§3.2):
+  dois caminhos para a mesma ação já foram relatados como defeito.
+- A aba ATIVA não gira mais; só a aba de FUNDO (lane em background) tem spinner — a aba ativa é
+  explicada pela barra.
+- Quem **fecha** o que ficou preso é o host, não a UI: `HermesSession.settle()` roda em todo caminho
+  terminal do turno (sucesso, erro, cancelamento) e marca toda tool ainda aberta como `cancelled`
+  com `endedAt`, além de emitir `turn/end` e `busy:false`. `cancel()` liquida na hora, sem esperar a
+  resposta do agente ao cancel — ele pode nunca responder, e era isso que deixava a tela girando. O
+  reducer da webview faz a mesma limpeza de forma **defensiva** em `turn/end` (no-op quando o host já
+  fechou): a renderização não depende de o host estar atualizado.
+- Cor/estilo: nada literal. Borda de caixa só em superfície de entrada (`.input`, `select`,
+  `.popover`, `.chip`) e no cartão de aprovação; o resto agrupa por **barra de acento à esquerda**
+  (`.turn.user`, `details.thought`, `.section`) — é o que tirou as bordas de entre todas as
+  requisições sem perder o agrupamento.
 
 ---
 

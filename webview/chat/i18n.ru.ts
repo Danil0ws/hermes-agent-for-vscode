@@ -157,6 +157,19 @@ export const ru: Strings = {
     resume: 'Продолжить', resumeTip: 'Возобновить выполнение и очередь',
     stop: 'Стоп', stopTip: 'Остановить текущий ход (Esc)',
   },
+
+  /* ───── полоса выполнения (внизу: что выполняется) ───── */
+  runbar: {
+    a11y: 'Что выполняется',
+    thinking: 'думает',
+    writing: 'пишет ответ',
+    working: 'работает',
+    paused: 'пауза',
+    waitingApproval: (what: string) => `ожидание вашего подтверждения: ${what}`,
+    multiple: (n: number) => `${n} выполняется`,
+    slow: 'эта фаза затянулась — возможно, зависла',
+    elapsed: (s: string) => `${s}с`,
+  },
   /* ───── envio ───── */
   send: {
     send: 'Отправить', sendTip: 'Отправить (Enter)',

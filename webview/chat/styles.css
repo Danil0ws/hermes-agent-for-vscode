@@ -43,12 +43,31 @@ body {
 /* ─────────── transcript ─────────── */
 .transcript { flex: 1; overflow-y: auto; padding: var(--hermes-gap); scrollbar-gutter: stable; }
 
+/* ─────────── barra de execução ─────────── */
+/* Rodapé entre a conversa e o campo. `flex: 0 0 auto` a deixa FORA da rolagem do `.transcript`
+   (que é `flex: 1`); sem botões — parar/pausar vivem SÓ no toolbar do composer. */
+.runbar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0;
+  padding: 3px var(--hermes-gap);
+  border-top: 1px solid var(--vscode-panel-border, transparent);
+  font-size: 0.85em; color: var(--vscode-descriptionForeground);
+}
+.runbar-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.runbar-time { flex: 0 0 auto; }
+.runbar-slow { color: var(--vscode-editorWarning-foreground); }
+
 .turn {
   margin-bottom: 14px;
+  /* Barra de acento à esquerda — a MESMA linguagem de `details.thought`: agrupa sem caixa. O turno
+     do usuário pinta a barra; o do agente fica com a calha transparente (mesmo alinhamento). */
+  border-left: 2px solid transparent;
+  padding-left: 8px;
   /* virtualização nativa: o navegador pula a pintura fora da viewport */
   content-visibility: auto;
   contain-intrinsic-size: auto 90px;
 }
+.turn.user { border-left-color: var(--vscode-button-background); }
 
 .turn-role {
   font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.06em;
@@ -57,19 +76,16 @@ body {
 
 .bubble {
   background: var(--vscode-editor-background);
-  border: 1px solid var(--vscode-panel-border, transparent);
-  border-radius: var(--hermes-radius);
   padding: 8px 10px;
   /* Prosa na fonte/altura da UI; a monoespaçada do editor fica para `<pre>` (código, tool, raciocínio).
-     Antes o balão inteiro era editor-font-size: a resposta parecia bloco de código e brigava de
-     escala com os rótulos pequenos de VOCÊ/HERMES. */
+     Sem caixa: a borda de acento vive no `.turn`, não no balão. */
   font-family: inherit;
   font-size: inherit;
   line-height: 1.5;
   word-break: break-word;
 }
-/* "quem falou" se lê de relance: o turno do usuário ganha a barra de acento, o do agente não. */
-.bubble.user { background: var(--vscode-input-background); border-left: 2px solid var(--vscode-button-background); }
+/* "quem falou" se lê de relance: quem ganha a barra de acento é o TURNO do usuário (ver `.turn.user`). */
+.bubble.user { background: var(--vscode-input-background); }
 .seg-text { white-space: pre-wrap; display: inline; }
 
 /* visíveis em repouso (0.6) e cheias no hover/foco: as ações da resposta existiam só em hover e
@@ -90,9 +106,10 @@ details.thought { margin: 4px 0; border-left: 2px solid var(--vscode-panel-borde
 details.thought summary { cursor: pointer; font-size: 0.9em; display: flex; gap: 6px; align-items: center; }
 details.thought pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 4px 0 0; font-family: var(--vscode-editor-font-family); }
 
-/* tool calls */
-.tool { border: 1px solid var(--vscode-panel-border, transparent); border-radius: var(--hermes-radius); margin: 4px 0; background: var(--vscode-editorWidget-background, transparent); }
-.tool > summary { cursor: pointer; padding: 3px 6px; display: flex; gap: 6px; align-items: center; list-style: none; }
+/* tool calls: UMA linha plana (kind · título · status · duração); input/output/diffs vivem dentro do
+   `<details>`. Sem caixa — a barra de acento do turno já agrupa. */
+.tool { margin: 3px 0; }
+.tool > summary { cursor: pointer; padding: 2px 0; display: flex; gap: 6px; align-items: center; list-style: none; }
 .tool > summary::-webkit-details-marker { display: none; }
 .tool-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tool .status { margin-left: auto; color: var(--vscode-descriptionForeground); }
@@ -105,8 +122,9 @@ details.thought pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 4p
 
 .show-older { display: block; width: 100%; margin-bottom: 8px; font-size: 0.85em; }
 
-/* cartões */
-.section { border: 1px solid var(--vscode-panel-border, transparent); border-radius: var(--hermes-radius); margin: var(--hermes-gap) 0; padding: 6px; background: var(--vscode-editorWidget-background, transparent); }
+/* cartões (plano, fila, arquivos alterados): SEM caixa — barra de acento à esquerda + espaçamento,
+   a mesma linguagem do raciocínio. */
+.section { margin: var(--hermes-gap) 0; padding: 2px 0 2px 8px; border-left: 2px solid var(--vscode-panel-border, transparent); }
 .section > header { display: flex; gap: 6px; align-items: center; font-size: 0.85em; text-transform: uppercase; color: var(--vscode-descriptionForeground); margin-bottom: 4px; }
 /* Cartão que abre/fecha (arquivos alterados): o `<summary>` é o cabeçalho, então herda o mesmo
    tratamento. O marcador nativo da lista é o triângulo do sistema — some para não competir com o
@@ -152,6 +170,10 @@ details.section > summary .muted { text-transform: none; }
 /* estado vazio */
 .empty { padding: 16px; color: var(--vscode-descriptionForeground); }
 .empty .starting { display: flex; gap: 6px; align-items: center; }
+/* O bloco "Iniciar" (estado vazio) é o dono do próprio giro — a barra de execução fica escondida
+   ali. Giro por CSS (classe própria), não pela prop de giro do Codicon. */
+.starting .rotating { animation: hermes-rotate 1s linear infinite; }
+@keyframes hermes-rotate { to { transform: rotate(360deg); } }
 .empty ul { list-style: none; padding: 0; }
 .empty li { margin: 4px 0; }
 .empty button { text-align: left; }

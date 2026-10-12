@@ -1,11 +1,17 @@
 /**
  * Transcript do chat: turnos, raciocínio, tool calls, plano, arquivos alterados e aprovação.
  * Virtualização à mão (janela de renderização) — o transcript do Hermes pode ter milhares de turnos.
+ *
+ * NENHUM ícone daqui anima: a ÚNICA animação do painel é a barra de execução (`runbar.tsx`). O
+ * raciocínio e as linhas de tool usam glifos estáticos. Cada tool call fica SOB o turno em que
+ * nasceu (`toolsOfTurn`) — antes eles se acumulavam num bloco depois de todos os turnos e uma
+ * execução antiga parecia atividade nova.
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { send } from '../shared/bridge';
 import { S, num } from './i18n';
 import { splitFenced, toolDetailOpen, visibleTurns } from './logic';
+import { toolsOfTurn } from './items';
 import { changed, chips, draft, focusComposer, plan, state, tools, turnEnd, turns } from './store';
 import type { Turn } from './store';
 import type { PlanEntry, ToolView } from '../../src/core/types';
@@ -74,7 +80,8 @@ function Thought({ turn }: { turn: Turn }) {
     <details class="thought" open={state.value.showReasoning === 'always'}
       aria-label={`${S.thought.summary} · ${st}`}>
       <summary>
-        <Icon name={turn.streaming ? 'loading' : 'check'} spin={turn.streaming} />
+        {/* glifo ESTÁTICO: quem anima é a barra de execução, não o raciocínio */}
+        <Icon name={turn.streaming ? 'circle-filled' : 'check'} />
         <span>{S.thought.summary}</span>
         <span class="muted">· {S.thought.elapsed(elapsed(ms))} · {st}</span>
       </summary>
@@ -121,14 +128,19 @@ function ToolItem({ tool, index, count }: { tool: ToolView; index: number; count
 
 /* ─────────── turno ─────────── */
 
-function TurnView({ turn, prevUser }: { turn: Turn; prevUser?: string }) {
+function TurnView({ turn, prevUser, last }: { turn: Turn; prevUser?: string; last: boolean }) {
   const isUser = turn.role === 'user';
   const canDiff = changed.value.length > 0;
+  // Tools SOB o turno em que nasceram; um tool sem dono cai no ÚLTIMO turno (some seria pior).
+  const myTools = toolsOfTurn(tools.value, turn.id, last);
   return (
     <div class={`turn ${turn.role}`}>
       <div class="turn-role">{isUser ? S.role.user : (state.value.agent || S.role.agentFallback)}</div>
       {!isUser && turn.thought && state.value.showReasoning !== 'hidden' && <Thought turn={turn} />}
       {turn.text && <div class={`bubble ${turn.role}`}><Body text={turn.text} /></div>}
+      {myTools.map((tool) => (
+        <ToolItem key={tool.id} tool={tool} index={tools.value.indexOf(tool)} count={tools.value.length} />
+      ))}
       {isUser && turn.chips && turn.chips.length > 0 && (
         <div class="chips static">{turn.chips.map((c) => (
           <span class="chip" key={c.id}><KindIcon kind={c.kind} label={c.kind} />{c.label}</span>
@@ -247,6 +259,7 @@ export function Transcript() {
   const all = turns.value;
   const shown = visibleTurns(all, limit);
   const offset = all.length - shown.length;
+  const lastId = all[all.length - 1]?.id;
 
   useEffect(() => {
     const el = ref.current;
@@ -270,10 +283,8 @@ export function Transcript() {
         </button>
       )}
       {shown.map((t, k) => (
-        <TurnView key={t.id} turn={t} prevUser={t.role === 'agent' ? prevUserFor(offset + k) : undefined} />
-      ))}
-      {tools.value.map((tool, i) => (
-        <ToolItem key={tool.id} tool={tool} index={i} count={tools.value.length} />
+        <TurnView key={t.id} turn={t} last={t.id === lastId}
+          prevUser={t.role === 'agent' ? prevUserFor(offset + k) : undefined} />
       ))}
       <TurnEnd />
       {plan.value.length > 0 && <Plan entries={plan.value} />}
@@ -290,7 +301,7 @@ function Empty() {
   if (state.value.starting) {
     return (
       <div class="empty">
-        <p class="starting"><Icon name="loading" spin cls="ic" /> {S.empty.starting}</p>
+        <p class="starting"><Icon name="loading" cls="ic rotating" /> {S.empty.starting}</p>
       </div>
     );
   }

@@ -253,39 +253,43 @@ camada de contexto/tokens.
 ```
 hermes-for-vs-code/
 ├─ package.json            engines.vscode ^1.100, activationEvents [] (lazy), contributes.*
-├─ package.nls.json / package.nls.pt-br.json
+├─ package.nls.json / package.nls.pt-br.json / .ru.json / .zh-cn.json
 ├─ src/
 │  ├─ extension.ts                     activate/deactivate, registros de comando
 │  ├─ core/
-│  │  ├─ AcpClient.ts                  wrapper fino do SDK: initialize/handshake, backpressure, log
-│  │  ├─ ConnectionManager.ts          spawn/restart com backoff, detecção de processo morto, kill no dispose
-│  │  ├─ AgentManager.ts               agentes (comando, args, env, profile, cwd, modelo padrão)
-│  │  ├─ SessionManager.ts             sessões ACP: novo/load/resume/fork/list, estado, títulos
+│  │  ├─ Connection.ts                 spawn/restart com backoff, detecção de processo morto, kill no dispose
+│  │  ├─ AgentManager.ts               agentes (comando, args, env, profile, cwd) + sessões vivas
+│  │  ├─ HermesSession.ts              sessão ACP: prompt/cancel, roteia session/update -> HostToWebview
 │  │  ├─ QueueManager.ts               fila client-side persistida, reordenação, drain
 │  │  ├─ ContextManager.ts             chips, contagem de tokens, limites, anexos
 │  │  ├─ ModelCatalog.ts               session/new.models + cache + invalidação
+│  │  ├─ ModeMemory.ts                 modo de edição lembrado entre sessões (Memento)
 │  │  ├─ SkillCatalog.ts               ~/.hermes/skills (+ skills de projeto) — fora do ACP
 │  │  ├─ ToolCatalog.ts                config.yaml (platform_toolsets.acp, disabled_toolsets) + hermes tools
 │  │  ├─ WorkingSet.ts                 arquivos alterados por diff de tool_call, +/-, keep/revert
-│  │  └─ PlanTracker.ts                session/update plan -> tarefas
-│  ├─ handlers/
-│  │  ├─ FileSystemHandler.ts          fs/read_text_file, fs/write_text_file (confinado ao workspace)
-│  │  ├─ TerminalHandler.ts            terminal/create|output|wait_for_exit|kill|release
-│  │  ├─ PermissionHandler.ts          session/request_permission -> barra inline
-│  │  └─ SessionUpdateHandler.ts       roteia as 9 variantes para o estado
+│  │  └─ types.ts                      contrato host <-> webview (união discriminada, PROTOCOL)
+│  ├─ features/                        uma feature por arquivo, dona dos SEUS comandos
+│  │  ├─ registry.ts / index.ts        registro único; context, diagnostics, diff, editor, manage,
+│  │  │                                plan, sessions, worktree(+worktree-logic)
 │  ├─ ui/
-│  │  ├─ ChatViewProvider.ts           hospeda webview/chat, ponte postMessage tipada
+│  │  ├─ ChatViewProvider.ts           hospeda webview/chat, ponte postMessage tipada, abas/lanes
 │  │  ├─ ManageViewProvider.ts         painel "Gerenciar" (abas verticais)
 │  │  ├─ SessionTreeProvider.ts        TreeView "Hermes Sessions" + quick pick de histórico
-│  │  ├─ StatusBar.ts                  agente · modelo · estado · badge de atenção
-│  │  ├─ DiffProvider.ts               TextDocumentContentProvider para diffs de arquivo
-│  │  ├─ ContextView.ts / PlanView.ts  views auxiliares
-│  │  └─ Pickers.ts                    modo, modelo, ferramentas, contexto, comandos da CLI
+│  │  ├─ StatusBar.ts / ContextView.ts / PlanView.ts / DiagnosticsView.ts
+│  │  └─ DiffProvider.ts               TextDocumentContentProvider para diffs de arquivo
 │  ├─ cli/CliRunner.ts                 abre terminal integrado, roda comando/CLI completa
 │  ├─ config/Settings.ts               hermes.* tipado, watch, defaults
-│  └─ utils/{Logger,TrafficLog,Tokens,Dedup,Version}.ts
+│  └─ utils/Tokens.ts                  estimativa local chars/4 (rotulada na UI como estimativa)
 └─ webview/
-   ├─ chat/     (composer, transcript, fila, chips, medidor, popovers)
+   ├─ chat/     (composer, transcript, fila, chips, medidor, popovers, abas)
+   │  ├─ store.ts        signals + Snapshot por aba (o estado vivo é SEMPRE o da aba ativa)
+   │  ├─ router.ts       reducer de HostToWebview, roteia por `tab` (testável sem DOM)
+   │  ├─ logic.ts        lógica pura: tokens, medidor, virtualização, markdown por cercas, popovers
+   │  ├─ status.ts       LEITURA ÚNICA de "o que está rodando" (`runStatus`) + fechamento de tool presa
+   │  ├─ items.ts        vínculo tool <-> turno (`ToolEntry.turnId`, `ownerTurnId`, `toolsOfTurn`)
+   │  ├─ runbar.tsx      barra de execução do rodapé (a ÚNICA animação do painel)
+   │  ├─ transcript.tsx / composer.tsx / tabbar.tsx / main.tsx
+   │  └─ i18n.ts + i18n.{pt-br,en,ru,zh-cn}.ts
    └─ manage/   (abas: Modelos, Skills, Ferramentas/MCP, Instruções, Contexto e uso, Agentes, Aprovações, Avançado)
 ```
 
@@ -310,13 +314,20 @@ o extension host. Testes: `mocha` unitário (fakes ACP sobre stdio) + `@vscode/t
           ├─ session/update agent_message_chunk ..... Markdown incremental (agrupado por messageId)
           └─ session/update usage_update ............ medidor de contexto
       └─ resposta: PromptResponse{stop_reason, usage}
-          └─ turno encerra -> QueueManager drain -> próximo item
+          └─ HermesSession.settle() ... fecha tools abertas (tool/update cancelled), turn/end, busy=false
+              └─ turno encerra -> QueueManager drain -> próximo item
 ```
 
 Notas de implementação:
 - Agrupamento visual por `messageId` (chunks com o mesmo id = uma mensagem); id novo = bolha nova.
-- `Esc`/Parar → `session/cancel`; marca tool calls abertas como canceladas e responde
-  `cancelled`. O cliente **deve** responder qualquer `request_permission` pendente com `cancelled`.
+- **Todo caminho terminal passa por `settle(id, stop)`**, chamado no `finally` do `prompt`: sucesso
+  (`res.stopReason`), erro (`cancelled`) e cancelamento. Ele fecha toda tool `pending`/`in_progress`
+  (`tool/update {status:'cancelled', endedAt}`), emite `turn/end` e zera `busy`. É idempotente e só
+  liquida o turno ainda aberto (`openTurn === id`) — o `finally` de um prompt ANTIGO não derruba um
+  turno NOVO que já assumiu. `Esc`/Parar → `session/cancel`, e o `cancel()` **chama `settle` na hora**,
+  sem esperar a resposta do agente: ele pode nunca responder, e era isso que deixava a tela girando
+  com a tool "rodando". O cliente **deve** responder qualquer `request_permission` pendente com
+  `cancelled`.
 - Backpressure: coalescing por frame (≤ 60 fps) e append incremental no transcript virtualizado.
 
 ---
@@ -801,3 +812,79 @@ Edits" reescolhia a cada conversa — e o estado atual do editor também é por 
   deixado como está de propósito; (c) **chave de dicionário não cobre texto dinâmico**: o host traduz
   por `tr('<texto pt-BR>')` com a chave sendo o próprio texto, então strings com `${…}` caem no pt-BR
   por construção — resolver exigiria o dicionário aceitar função (como o `S.*(args)` da webview).
+
+---
+
+## 14. Estado de execução: uma leitura só (0.1.5)
+
+Três sintomas relatados pelo usuário, um só defeito de origem: **o "está rodando" não tinha dono.**
+
+1. *"Às vezes fica rodando várias coisas ao mesmo tempo"* — havia quatro indicadores independentes
+   (spinner do raciocínio, glifo do tool call, spinner da aba ativa, placeholder do campo), cada um
+   decidindo sozinho.
+2. *"Aparecia rodando três coisas, mas não rodava nada diferente"* — o transcript renderizava TODOS os
+   tool calls num bloco **depois** de todos os turnos (`transcript.tsx`), a lista só crescia e o
+   último card (que nasce aberto) ficava embaixo da conversa nova.
+3. *"Não entendi por que eu tinha travado"* — quando um turno morria por cancelamento, o agente não
+   mandava o `tool_call_update` terminal: a tool ficava `in_progress` para sempre e `busy` só caía
+   quando o `prompt` resolvia (que podia ser nunca).
+
+### 14.1 Como ficou
+
+- **Uma função pura responde a pergunta.** `webview/chat/status.ts::runStatus` decide a fase com
+  precedência fixa `starting > paused > waiting > tool > thinking/writing > working > idle`;
+  `closingPatch`/`isOpenTool` fecham a tool presa. Testável sem DOM (`src/test/runstatus.test.ts`).
+  A permissão pendente virou a fase `waiting` — **espera**, não execução: era ali que a tela mentia.
+- **Uma barra, no rodapé.** `webview/chat/runbar.tsx` entre `<Transcript/>` e `<Composer/>`
+  (`flex: 0 0 auto`, fora da rolagem), escondida em `idle` e em `starting` (o bloco "Iniciar" é o dono
+  do giro daquele momento), sem botões, tempo sempre visível e aviso a partir de 60s na mesma fase.
+  É a ÚNICA animação do painel: o transcript não gira (glifos estáticos) e a aba ATIVA não gira mais
+  (só a de fundo).
+- **O tool pertence ao turno em que nasceu.** `webview/chat/items.ts` (`ToolEntry.turnId`,
+  `ownerTurnId`, `toolsOfTurn`) é o contrato entre o reducer — que carimba o `turnId` no `tool/start` —
+  e o render, que desenha os tools sob o turno. Histórico preservado; tool sem dono cai no último
+  turno. `hydrate` zera a lista (o transcript foi substituído).
+- **O host fecha o turno, sempre.** `HermesSession.settle(id, stop)` roda no `finally` do `prompt`
+  (sucesso/erro/cancel), fecha tool aberta com `tool/update {status:'cancelled', endedAt}`, emite
+  `turn/end` e zera `busy`; é idempotente e só liquida o turno ainda aberto (`openTurn === id`), então
+  o `finally` de um prompt antigo não derruba um turno novo. `cancel()` chama `settle` **na hora**,
+  sem esperar o agente responder ao cancel. O reducer repete a limpeza como defesa em `turn/end`
+  (no-op quando o host já fechou) — a renderização não depende do host.
+- **Menos bordas.** Borda de caixa só em superfície de entrada (`.input`, `select`, `.popover`,
+  `.chip`) e no cartão de aprovação; `.bubble`, `.tool` e `.section` agrupam por barra de acento à
+  esquerda. O transcript ganhou uma `border-left` no `.turn` (o do usuário pinta), e o tool virou uma
+  linha plana de ~20px.
+
+### 14.2 Evidência (medida no bundle composto, 0.1.5)
+
+`npm test` **122/122** · `tsc --noEmit` limpo · `npm run build` exit 0 · `vsce package` exit 0 (335 KB,
+21 arquivos) · paridade dos 4 bundles de strings conferida chave a chave (230 chaves, 0 divergências).
+
+Passe renderizado do bundle composto num harness (Chromium, tokens de Dark+; **não** é o painel do
+editor com o tema do usuário — os números provam o layout, o painel real é julgamento):
+
+| Medida | 900px | 280px |
+|---|---|---|
+| `scrollWidth == clientWidth` (doc/app/transcript) | sim | sim |
+| `.runbar` visível com tool em execução / `flex` | sim / `0 0 auto` | sim / `0 0 auto` |
+| ícones girando no painel inteiro | **1** (o da barra) | **1** |
+| tools fora de um `.turn` | 0 | 0 |
+| `border-width` de `.bubble` / `.tool` | `0px/0px` | `0px/0px` |
+| linha de tool | — | 20px de altura |
+
+Fases conferidas injetando mensagens `HostToWebview`: com duas tools abertas e 71s a barra mostrou
+`Comando: git status · 2 em execução · 71s · esta fase está demorando — pode estar travado` com **um**
+giro; em `idle` a barra some e giros = 0; em `turn/end` (com as tools fechadas pelo host) o aviso
+`✓ Foi concluído.` aparece e nada gira.
+
+### 14.3 O que ficou de fora (com o motivo)
+
+- **`ToolEntry.turnId` não subiu para o contrato** (`src/core/types.ts`): o `turnId` é carimbado no
+  reducer da webview, então não houve campo novo no `HostToWebview` nem bump de `PROTOCOL`.
+- **O tempo da barra é o da FASE**, não o do turno inteiro (uma fase longa avisa; a soma do turno não
+  é medida em nenhum lugar).
+- **A tool continua abrindo pelo índice GLOBAL** (`toolDetailOpen(index, count, status)` com
+  `tools.indexOf`) — "o último da lista" é o último da conversa, não o último do turno em que está.
+  Funciona (é o tool do turno corrente que interessa), mas a assinatura ainda é a antiga.
+- **Nenhum indicador por lane dentro do painel** além do spinner da aba de fundo: uma lane em
+  background só se anuncia pela aba.

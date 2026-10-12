@@ -9,6 +9,8 @@
  */
 import type { ChatState, HostToWebview, TabInfo } from '../../src/core/types';
 import { coerceTurns } from './logic';
+import { ownerTurnId } from './items';
+import { closingPatch, isOpenTool } from './status';
 import {
   caret, changed, chips, commands, draft, focusComposer, lastStop, models, modes, notice,
   permission, plan, queue, state, tools, turnEnd, turns, usage,
@@ -20,6 +22,8 @@ function reduce(m: HostToWebview): void {
   switch (m.type) {
     case 'hydrate':
       turns.value = coerceTurns(m.turns).map((t) => ({ ...t, streaming: false }));
+      // O transcript do host SUBSTITUIU o que havia: a lista de tools antiga não vale mais.
+      tools.value = [];
       break;
     case 'session':
       state.value = { ...state.value, sessionId: m.sessionId };
@@ -75,10 +79,17 @@ function reduce(m: HostToWebview): void {
         ...t, streaming: false,
         thoughtMs: t.thought && !t.thoughtMs && t.thoughtStartedAt ? now - t.thoughtStartedAt : t.thoughtMs,
       }));
+      // Fecha DEFENSIVAMENTE toda tool ainda aberta. O agente deixa de mandar o `tool_call_update`
+      // terminal quando o turno morre por cancelamento; sem isto o card fica "rodando" para sempre e
+      // a webview não pode depender do host para a PRÓPRIA renderização. No-op quando o host já
+      // fechou: só as abertas (`pending`/`in_progress`) recebem o patch.
+      tools.value = tools.value.map((t) => (isOpenTool(t) ? { ...t, ...closingPatch(now) } : t));
       break;
     }
     case 'tool/start':
-      tools.value = [...tools.value, m.tool];
+      // Cada tool nasce VINCULADO ao turno em que apareceu: sem o vínculo, a lista só crescia e o
+      // card de uma execução antiga (o último, que nasce aberto) ficava embaixo da conversa nova.
+      tools.value = [...tools.value, { ...m.tool, turnId: ownerTurnId(turns.value) }];
       break;
     case 'tool/update':
       tools.value = tools.value.map((t) => (t.id === m.id ? { ...t, ...m.patch } : t));

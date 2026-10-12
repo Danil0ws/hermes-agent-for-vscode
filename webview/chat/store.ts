@@ -2,8 +2,9 @@
 import { signal } from '@preact/signals';
 import type {
   ChangedFile, ChatState, ContextChip, PlanEntry, QueueItem, SlashCommand, StopReason,
-  ToolView, TurnUsage, PermissionRequest, ModeInfo, ModelInfo,
+  TurnUsage, PermissionRequest, ModeInfo, ModelInfo,
 } from '../../src/core/types';
+import type { ToolEntry } from './items';
 
 export interface Turn {
   id: string;
@@ -30,7 +31,7 @@ export const state = signal<ChatState>({
 });
 
 export const turns = signal<Turn[]>([]);
-export const tools = signal<ToolView[]>([]);
+export const tools = signal<ToolEntry[]>([]);
 export const permission = signal<PermissionRequest | null>(null);
 export const notice = signal<{ level: string; text: string } | null>(null);
 export const lastStop = signal<StopReason | null>(null);
@@ -89,7 +90,7 @@ export const openPopover = signal<'meter' | 'send' | null>(null);
 export interface Snapshot {
   state: ChatState;
   turns: Turn[];
-  tools: ToolView[];
+  tools: ToolEntry[];
   plan: PlanEntry[];
   changed: ChangedFile[];
   usage?: { size: number; used: number; turn?: TurnUsage };

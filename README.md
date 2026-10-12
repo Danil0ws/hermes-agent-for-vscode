@@ -75,7 +75,14 @@ code --install-extension hermes-agent-for-vscode-0.1.0.vsix
 6. Native menus in the view title bar: new conversation, history, restart session, open in editor,
    Manage (the gear), and a "…" menu with **Open Full CLI**, **Run CLI Command…**, diagnostics, log
    and traffic.
-7. **Transcript stays out of the way.** Tool calls are compact and only the *active* one is expanded
+7. **One line at the bottom says what is running.** A footer bar between the transcript and the
+   composer shows the current phase — `thinking`, `writing the response`, `Command: npm test · 12s`,
+   `waiting for your approval: …`, `paused` — with a **single** animated icon for the whole panel and
+   the elapsed time always visible (it warns once a phase passes 60s, so a stuck turn is visible
+   instead of silent). It has no buttons: stop/pause live in the composer toolbar only. A pending
+   permission is *waiting*, not running — the bar never claims otherwise.
+8. **Transcript stays out of the way.** Tool calls are one flat line under the turn they belong to
+   (icon · title · status · duration; details collapse inside), and only the *active* one is expanded
    — the running tool and the last one; the earlier ones collapse as new ones arrive (opening an old
    one by hand sticks, a re-render will not close it). **Changed files** is a collapsed card: the
    header carries the count and `+adds/−dels`, and the per-file `diff` / `Keep` / `Undo` buttons are

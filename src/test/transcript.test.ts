@@ -13,8 +13,9 @@ import { join } from 'node:path';
 import { toolDetailOpen } from '../../webview/chat/logic.ts';
 import { applyHost } from '../../webview/chat/router.ts';
 import { state, tools, turnEnd, turns } from '../../webview/chat/store.ts';
+import { toolsOfTurn } from '../../webview/chat/items.ts';
 import { S } from '../../webview/chat/i18n.ts';
-import type { StopReason } from '../core/types.ts';
+import type { StopReason, ToolView } from '../core/types.ts';
 
 const root = process.cwd();
 const css = readFileSync(join(root, 'webview', 'chat', 'styles.css'), 'utf8');
@@ -85,6 +86,56 @@ test('turn/end: turno cancelado também limpa o "pensando" (não só `end_turn`)
   applyHost({ type: 'turn/end', stopReason: 'cancelled' });
   assert.equal(turns.value.at(-1)?.streaming, false, 'cancelar deixava o spinner girando');
   assert.equal(turnEnd.value?.stopReason, 'cancelled');
+});
+
+/* ─────────── (2c) cada tool call nasce no turno dele ─────────── */
+
+const mkTool = (over: Partial<ToolView> = {}): ToolView => ({
+  id: 't1', kind: 'execute', title: 'Rodar', status: 'in_progress', startedAt: 1, ...over,
+});
+
+test('tool/start: o tool nasce vinculado ao turno certo (e não vaza para o do usuário anterior)', () => {
+  reset();
+  applyHost({ type: 'user/message', text: 'faça', chips: [] });
+  const prevUserId = turns.value.at(-1)!.id; // turno do usuário ANTERIOR (o prompt antes do agente)
+  applyHost({ type: 'agent/chunk', messageId: 'a1', text: 'rodando…' });
+  applyHost({ type: 'tool/start', tool: mkTool({ id: 't1' }) });
+
+  const tool = tools.value.at(-1)!;
+  assert.equal(tool.turnId, 'a1', 'o tool tem de carregar o turno em que nasceu (antes nascia solto)');
+  // pertence ao turno certo: sem isto o card sumia da tela
+  assert.equal(toolsOfTurn(tools.value, 'a1', false).length, 1, 'some da tela se não pertencer a este turno');
+  // e NÃO vaza para o turno do usuário anterior (era o defeito: tudo num bloco depois de todos os turnos)
+  assert.equal(toolsOfTurn(tools.value, prevUserId, false).length, 0, 'tool colado a um turno antigo');
+});
+
+test('turn/end: fecha defensivamente a tool que ficou aberta e preserva o vínculo do turno', () => {
+  reset();
+  applyHost({ type: 'user/message', text: 'x', chips: [] });
+  applyHost({ type: 'agent/chunk', messageId: 'a2', text: 'rodando…' });
+  applyHost({ type: 'tool/start', tool: mkTool({ id: 't-open', status: 'in_progress' }) });
+  assert.equal(tools.value.at(-1)!.status, 'in_progress', 'pré-condição: tool aberta');
+  assert.equal(turns.value.at(-1)!.streaming, true, 'pré-condição: turno "pensando"');
+
+  applyHost({ type: 'turn/end', stopReason: 'cancelled' });
+
+  const tool = tools.value.at(-1)!;
+  assert.equal(tool.status, 'cancelled', 'tool presa ficava "rodando" para sempre: o reducer tem de fechar');
+  assert.equal(typeof tool.endedAt, 'number', 'sem `endedAt` o card fica sem duração');
+  assert.equal(tool.turnId, 'a2', 'fechar não pode perder o vínculo com o turno');
+  // (c) o fim do turno continua zerando o "pensando" e publicando o aviso
+  assert.equal(turns.value.at(-1)!.streaming, false, 'fim do turno tem de limpar o "pensando"');
+  assert.equal(turnEnd.value?.stopReason, 'cancelled', 'fim do turno sem aviso');
+});
+
+test('turn/end: no-op nas tools que o host já fechou (não reescreve quem terminou)', () => {
+  reset();
+  applyHost({ type: 'user/message', text: 'x', chips: [] });
+  applyHost({ type: 'tool/start', tool: mkTool({ id: 'done', status: 'completed', endedAt: 5 }) });
+  applyHost({ type: 'turn/end', stopReason: 'end_turn' });
+  const tool = tools.value.at(-1)!;
+  assert.equal(tool.status, 'completed', 'tool já terminada não pode virar cancelled');
+  assert.equal(tool.endedAt, 5, '`endedAt` já reportado pelo host tem de ser preservado');
 });
 
 test('router: TODO caminho de erro do host fecha o turno (é o único evento que limpa o streaming)', () => {

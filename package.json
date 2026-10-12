@@ -2,7 +2,7 @@
   "name": "hermes-agent-for-vscode",
   "displayName": "Hermes Agent for VS Code",
   "description": "Native VS Code interface for the Hermes Agent CLI (Nous Research) over ACP — chat, tools, diffs, approvals, plans, sessions and the full CLI.",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "Danil0ws",
   "license": "MIT",
   "icon": "media/icon.png",

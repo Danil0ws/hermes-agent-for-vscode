@@ -4,6 +4,56 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versioname
 
 ## [Não publicado]
 
+### Adicionado
+
+- **Barra de execução no rodapé** (`webview/chat/runbar.tsx`): entre a conversa e o campo, uma linha
+  diz o que está rodando — `pensando`, `escrevendo a resposta`, `Comando: npm test · 12s`,
+  `aguardando sua aprovação: …`, `pausado` — com **um único** ícone animado no painel inteiro, tempo
+  sempre visível e aviso em tom de warning quando a fase passa de 60s. Escondida em `idle` e em
+  `starting` (o bloco "Iniciar" é dono do próprio giro); **sem botões** (parar/pausar seguem só no
+  composer). A leitura vem de uma função pura (`webview/chat/status.ts::runStatus`), com precedência
+  fixa `starting > paused > waiting > tool > thinking/writing > working > idle` — permissão pendente é
+  **espera**, não execução. Coberta por `src/test/runstatus.test.ts`.
+- **Vínculo tool ↔ turno** (`webview/chat/items.ts`): cada tool call agora pertence ao turno em que
+  nasceu (`ToolEntry.turnId`, carimbado pelo reducer) e é renderizado **sob** ele.
+
+### Corrigido
+
+- **Ferramenta "rodando" para sempre / tela travada.** Um turno cancelado (ou que morria sem o
+  `tool_call_update` terminal) deixava a tool `in_progress` e `busy` ligado: a UI girava sem executar
+  nada. `HermesSession.settle(id, stop)` agora roda no `finally` do `prompt` (sucesso, erro e
+  cancelamento), fecha toda tool aberta com `tool/update {status:'cancelled', endedAt}`, emite
+  `turn/end` e zera `busy` — idempotente e só liquidando o turno ainda aberto. `cancel()` liquida **na
+  hora**, sem esperar a resposta do agente ao cancel. O reducer da webview repete a limpeza em
+  `turn/end` como defesa (no-op quando o host já fechou). Coberto por `src/test/turnend.test.ts` e
+  pelas guardas novas de `src/test/transcript.test.ts`.
+- **Execução antiga aparecendo embaixo da conversa nova.** Os tool calls eram renderizados num bloco
+  **depois de todos os turnos**, com a lista só crescendo; o último (que nasce aberto) parecia
+  atividade em andamento. Agora ficam dentro do turno de origem e `hydrate` zera a lista.
+- **Indicadores concorrentes.** Antes, quatro coisas diziam "está rodando" ao mesmo tempo (spinner do
+  raciocínio, glifo do tool, spinner da aba ativa, placeholder do campo) — o relato foi "aparece
+  rodando três coisas sem rodar nada diferente". O transcript não anima mais nada e a aba ATIVA
+  deixou de carregar spinner (só a de FUNDO).
+
+### Alterado
+
+- **Menos bordas:** `.bubble`, `.tool` e `.section` perderam a caixa — borda de caixa só em superfície
+  de entrada (`.input`, `select`, `.popover`, `.chip`) e no cartão de aprovação; o agrupamento passa a
+  ser barra de acento à esquerda (`.turn.user`, `details.thought`, `.section`). Tool call é uma linha
+  plana (ícone do `kind` · título · status · duração) de ~20px.
+- **Strings novas nos 4 idiomas** (`runbar.*`, 9 chaves em `webview/chat/i18n.{pt-br,en,ru,zh-cn}.ts`),
+  com paridade conferida chave a chave.
+- Doc: `docs/UX.md` §2.3 e a nova §5.5 (wireframe + tabela de fases + regra de uma animação por vez),
+  `docs/ARCHITECTURE.md` §4/§5 e a nova §14 (inclui o que ficou de fora, com o motivo).
+
+### Medido (bundle composto, harness Chromium com tokens de Dark+)
+
+`npm test` 122/122 · `tsc --noEmit` limpo · `npm run build` exit 0 · `vsce package` exit 0.
+Em 900px e em 280px: sem rolagem horizontal (`scrollWidth == clientWidth`), `.runbar` visível durante
+a execução com **1** ícone girando em todo o painel, nenhum tool fora de um `.turn`, `border-width`
+`0px` em `.bubble` e `.tool`. Com duas tools abertas e 71s: `2 em execução · 71s · esta fase está
+demorando — pode estar travado`, ainda com um único giro.
+
 ### Alterado
 
 - **Transcript: só o tool call ATIVO abre, e os arquivos alterados recolhem.** Três mudanças na mesma

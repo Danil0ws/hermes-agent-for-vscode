@@ -153,6 +153,19 @@ export const ptBR = {
     resume: 'Retomar', resumeTip: 'Retomar as execuções e a fila',
     stop: 'Parar', stopTip: 'Parar o turno atual (Esc)',
   },
+
+  /* ───── barra de execução (rodapé: o que está rodando) ───── */
+  runbar: {
+    a11y: 'O que está rodando',
+    thinking: 'pensando',
+    writing: 'escrevendo a resposta',
+    working: 'trabalhando',
+    paused: 'pausado',
+    waitingApproval: (what: string) => `aguardando sua aprovação: ${what}`,
+    multiple: (n: number) => `${n} em execução`,
+    slow: 'esta fase está demorando — pode estar travado',
+    elapsed: (s: string) => `${s}s`,
+  },
   /* ───── envio ───── */
   send: {
     send: 'Enviar', sendTip: 'Enviar (Enter)',

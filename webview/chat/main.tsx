@@ -10,6 +10,7 @@ import { lastStop, notice, state } from './store';
 import { applyHost } from './router';
 import { S } from './i18n';
 import { Transcript } from './transcript';
+import { RunBar } from './runbar';
 import { Composer } from './composer';
 import { TabBar } from './tabbar';
 import '@vscode/codicons/dist/codicon.css';
@@ -41,6 +42,7 @@ function App() {
       {paused && <div class="notice warning" role="status">{S.notice.paused}</div>}
       {n && <div class={`notice ${n.level}`} role="status">{n.text}</div>}
       <Transcript />
+      <RunBar />
       <Composer />
     </div>
   );
